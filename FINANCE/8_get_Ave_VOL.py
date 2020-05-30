@@ -20,7 +20,7 @@ code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'})
 df2 = pd.DataFrame(columns = ['code', 'Vol(AV)'])
 
 # cnt_code = len(code_df)
-cnt_code = 200
+cnt_code = 20
 
 for i in range(0, cnt_code):
     try:
