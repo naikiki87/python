@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 start = time.time()
 
-tewt = 10
+tewt = 100
 
 idx = 0
 VOL_FIN_PAGE = 3    # 평균 volume을 구할 표본 수 -> 1 당 10일치
