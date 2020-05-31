@@ -10,7 +10,7 @@ tewt = 100
 
 idx = 0
 VOL_FIN_PAGE = 3    # 평균 volume을 구할 표본 수 -> 1 당 10일치
-VOL_AVERAGE = 500000    # 평균 volume filtering 하한치
+VOL_AVERAGE = 1000000    # 평균 volume filtering 하한치
 
 code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
 code_df.종목코드 = code_df.종목코드.map('{:06d}'.format) 
@@ -19,8 +19,8 @@ code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'})
 
 df2 = pd.DataFrame(columns = ['code', 'Vol(AV)'])
 
-# cnt_code = len(code_df)
-cnt_code = 20
+cnt_code = len(code_df)
+# cnt_code = 20
 
 for i in range(0, cnt_code):
     try:
