@@ -14,7 +14,7 @@ code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'})
 df2 = pd.DataFrame(columns = ['code', 'PER'])
 
 # codecount = len(code_df)
-codecount = 10
+codecount = 5
 
 for i in range(0, codecount):
     try:
@@ -31,7 +31,13 @@ for i in range(0, codecount):
         url = "https://finance.naver.com/item/main.nhn?code={code}".format(code=code)
         res = requests.get(url)
         soup = BeautifulSoup(res.content, 'lxml')
-        result = soup.find('em', id='_per')
+        # result = soup.find('em', id='_per')
+
+        # PER_same_sector = soup.select('#tab_con1 > div:nth-child(6) > table > tbody > tr.strong > td > em')[0].text
+        same_sector = soup.select('#tab_con1 > div:nth-child(6) > table > tbody > tr.strong > td > em')
+        # tab_con1 > div:nth-child(6) > table > tbody > tr.strong > td > em
+        print(same_sector)
+
         # print(result.text)
         # print(type(result.text))
 
@@ -43,4 +49,4 @@ for i in range(0, codecount):
     except:
         pass
 
-print(df2)
+# print(df2)

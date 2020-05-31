@@ -31,7 +31,7 @@ code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'})
 df2 = pd.DataFrame(columns = ['code', 'Vol(D)', 'Vol(D-1)', 'Vol(Avg)'])
 
 # cnt_code = len(code_df)
-cnt_code = 200
+cnt_code = 100
 
 for i in range(0, cnt_code):
     try:
@@ -114,6 +114,9 @@ for i in range(0, cnt_after_vol+1):
         res = requests.get(url)
         soup = BeautifulSoup(res.content, 'lxml')
         result = soup.find('em', id='_per')
+
+        # PER_same_sector = soup.select('#tab_con1 > div:nth-child(6) > table > tbody > tr.strong > td > em')[0].text
+        # print("PER_same_sector", PER_same_sector)
 
         val_PER = float(result.text)
 
