@@ -9,6 +9,8 @@ import time
 from bs4 import BeautifulSoup
 import sys
 
+testt = 0
+
 index = 0
 talk = 0
 heartbeat = 0
