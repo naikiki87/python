@@ -12,16 +12,16 @@ idx4 = 0
 SHOW_SCALE = 5
 
 VOL_FIN_PAGE = 3
-VOL_AVERAGE = 100000    # 평균 volume filtering 하한치
-VOL_RATIO_YESTERDAY = 1
-VOL_RATIO_TODAY_LOW = 0.7
+VOL_AVERAGE = 500000    # 평균 volume filtering 하한치
+VOL_RATIO_YESTERDAY = 2
+VOL_RATIO_TODAY_LOW = 0.5
 VOL_RATIO_TODAY_HI = 10
 
-PER_LIMIT = 100
+PER_LIMIT = 15
 
-ROE_LOW_LIMIT = 0
+ROE_LOW_LIMIT = 20
 
-SUM_LOW_LIMIT = 100     # 시가총액 하한치(단위 : 억원)
+SUM_LOW_LIMIT = 1000     # 시가총액 하한치(단위 : 억원)
 
 code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
 code_df.종목코드 = code_df.종목코드.map('{:06d}'.format) 
@@ -30,8 +30,8 @@ code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'})
 
 df2 = pd.DataFrame(columns = ['code', 'Vol(D)', 'Vol(D-1)', 'Vol(Avg)'])
 
-# cnt_code = len(code_df)
-cnt_code = 100
+cnt_code = len(code_df)
+# cnt_code = 100
 
 for i in range(0, cnt_code):
     try:
