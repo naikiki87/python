@@ -5,6 +5,8 @@ import pandas as pd
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 from PyQt5.QtGui import *
+from PyQt5.QtCore import QThread, QObject, pyqtSignal
+from PyQt5 import QtTest
 
 class Kiwoom(QMainWindow):
     index = 0
@@ -13,15 +15,15 @@ class Kiwoom(QMainWindow):
         super().__init__()
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
-        self.kiwoom.dynamicCall("CommConnect()")      # login
+        # self.kiwoom.dynamicCall("CommConnect()")      # login
+        # self.comm_connect()       # login
 
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
         self.kiwoom.OnReceiveChejanData.connect(self.receive_chejan_data)
 
         self.setWindowTitle("AutoK")
-        self.setGeometry(150, 150, 420, 500)
-
+        self.setGeometry(150, 150, 750, 500)
 
         label = QLabel('종목코드', self)
         label.move(20, 10)
@@ -39,7 +41,7 @@ class Kiwoom(QMainWindow):
 
         btn1 = QPushButton('TEST', self)
         btn1.move(290, 10)
-        btn1.clicked.connect(self.btn_test)
+        btn1.clicked.connect(self.test)
 
         btn0 = QPushButton('매수주문', self)
         btn0.move(190, 50)
@@ -62,29 +64,61 @@ class Kiwoom(QMainWindow):
 
         btn0 = QPushButton('잔고조회', self)
         btn0.move(190, 140)
-        btn0.clicked.connect(self.btn_balance)
+        # btn0.clicked.connect(self.btn_balance)
+        # btn0.clicked.connect(self.iterative_test)
+        btn0.clicked.connect(self.test2)
 
+        self.tableWidget = QTableWidget(self)
+        self.tableWidget.resize(290, 290)
+        self.tableWidget.move(430, 10)
+        self.tableWidget.setRowCount(5)
+        self.tableWidget.setColumnCount(2)
 
         self.text_edit = QTextEdit(self)
         self.text_edit.setGeometry(10, 180, 400, 300)
         self.text_edit.setEnabled(False)    # 텍스트창의 내용물 활용여부 (False : 읽기모드)
 
+    def test(self):
+        print("test clicked")
+        self.i = 0
+        while self.i == 0 :
+            self.text_edit.append(str(self.i))
+            # QTimer.singleShot(10000, loop.quit) # msec
+            QtTest.QTest.qWait(1000)
+    def test2(self):
+        self.i = 1
+        
+    def setTableWidgetData(self):
+        # i = 0
+        # while i<=5 :
+        #     self.tableWidget.setItem(0, 0, QTableWidgetItem(str(i)))
+        #     QtTest.QTest.qWait(1000)
+        #     i = i + 1
+        self.tableWidget.setItem(0, 0, QTableWidgetItem("(0,0)"))
+        self.tableWidget.setItem(0, 1, QTableWidgetItem("(0,1)"))
+        self.tableWidget.setItem(1, 0, QTableWidgetItem("(1,0)"))
+        self.tableWidget.setItem(1, 1, QTableWidgetItem("(1,1)"))
+
+        value = self.tableWidget.item(0,0)
+        print(value.text())
+    ## [START] login ##
     def comm_connect(self):
         self.kiwoom.dynamicCall("CommConnect()")
-        # self.login_event_loop = QEventLoop()
-        # self.login_event_loop.exec_()
-
+        self.login_event_loop = QThread()
+        self.login_event_loop.start()
     def event_connect(self, err_code):
         if err_code == 0:
             self.text_edit.append("login Success")
+            self.login_event_loop.terminate()
+        else:
+            print("disconnected")
+    ## [END] login ##
 
-    # def send_order(self, rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno):
-    
     def btn_test(self):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", "005930")
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10003_req", "opt10003", 0, "0101")
-
-
+    
+    ## 매수 ##
     def btn_buy_order(self):
         print("send order")
         rqname = "RQ_TEST"
@@ -146,22 +180,20 @@ class Kiwoom(QMainWindow):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
 
+    def iterative_test(self) :
+        i = 0
+        while i <= 5 :
+            self.btn_balance()
+            i = i + 1
+            # QTimer.singleShot(10000, loop.quit) # msec
+            QtTest.QTest.qWait(1000)
     
     def btn_balance(self):
-
-        while self.index < 5 :
-
-            acc_no = "8137639811"
-            acc_pw = "6458"
-            
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
-
-            self.index = self.index + 1
-
-            time.sleep(0.2)
-
+        acc_no = "8137639811"
+        acc_pw = "6458"
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("data received.")
@@ -205,9 +237,11 @@ class Kiwoom(QMainWindow):
             itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
             owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
 
-        print(self.index)
+            self.text_edit.append(capital)
 
-        self.text_edit.append(str(self.index))
+        # print(self.index)
+
+        # self.text_edit.append(str(self.index))
         # self.text_edit.append("수익률:" + percent.strip())
         # self.text_edit.append("자산:" + capital.strip())
         # self.text_edit.append("종목번호:" + itemcode.strip())

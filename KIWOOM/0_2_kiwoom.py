@@ -54,18 +54,11 @@ class Kiwoom(QAxWidget):
         ret = self.dynamicCall("CommGetData(QString, QString, QString, int, QString", code, real_type, field_name, index, item_name)
         return ret.strip()
 
-    # def _send_order(self, rqcode, real_type, field_name, index, item_name):
     def send_order(self, rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno):
         print("send order")
         order = self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
         
-        # ret = self.dynamicCall("CommGetData(QString, QString, QString, int, QString", code, real_type, field_name, index, item_name)
-        # print(rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno)
-        # order = self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString", rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno)
-        # order = self.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString", rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno)
-        # print(ret)
-
     def get_chejan_data(self, fid):
         ret = self.dynamicCall("GetChejanData(int)", fid)
         return ret
