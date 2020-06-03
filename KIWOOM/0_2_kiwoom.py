@@ -11,6 +11,7 @@ class Kiwoom(QAxWidget):
         super().__init__()
         self._create_kiwoom_instance()
         self._set_signal_slots()
+        self.comm_connect()
 
     def _create_kiwoom_instance(self):
         self.setControl("KHOPENAPI.KHOpenAPICtrl.1")
@@ -28,10 +29,9 @@ class Kiwoom(QAxWidget):
     def _event_connect(self, err_code):
         if err_code == 0:
             print("connected")
+            self.login_event_loop.exit()
         else:
             print("disconnected")
-
-        self.login_event_loop.exit()
 
     def get_code_list_by_market(self, market):
         code_list = self.dynamicCall("GetCodeListByMarket(QString)", market)
@@ -95,7 +95,6 @@ class Kiwoom(QAxWidget):
 
         if rqname == "opw00018_req":
             result = self._opw00018(rqname, trcode)
-            return result
 
         try:
             self.tr_event_loop.exit()
@@ -140,8 +139,6 @@ class Kiwoom(QAxWidget):
         print("예탁자산 : ", capital)
         capital = float(capital)
         print("예탁자산2 : ", capital)
-
-        return capital
     
     def exe_opw00018(self, acc_no, password):
         self.set_input_value("계좌번호", acc_no)
@@ -151,7 +148,7 @@ class Kiwoom(QAxWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     kiwoom = Kiwoom()
-    kiwoom.comm_connect()
+    # kiwoom.comm_connect()
 
     ## opt10081 TR 요청
     # kiwoom.set_input_value("종목코드", "039490")
