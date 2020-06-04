@@ -6,73 +6,58 @@ from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from PyQt5 import QtTest, QtCore
+from PyQt5 import QtTest, QtCore, QtWidgets
 import module_timer
 import module_worker
 
-# class Worker(QThread):
-#     finished2 = pyqtSignal(int)
-#     def __init__(self):
-#         super().__init__()
-#         self.avVal_worker = QAxWidget()
-#         self.avVal_worker.setControl("KHOPENAPI.KHOpenAPICtrl.1")
-
-#         self.avVal_worker.OnReceiveTrData.connect(self.receive_tr_data)
-
-#     def get_item_info(self):
-#         code = "005930"
-#         self.avVal_worker.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
-#         self.avVal_worker.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
-
-#     def run(self):
-#         cnt = 0
-#         while True:
-#             # print("hello", cnt)
-#             if cnt == 6:
-#                 self.finished2.emit(str(cnt))
-#                 # self.get_item_info()
-#                 cnt = 0
-#             cnt = cnt + 1
-#             time.sleep(1)
-
-#     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-#         print("data received.")
-#         print(trcode)
-#         print(data_len)
-#         if rqname == "opt10001_req":
-#             self.show_opt10001(rqname, trcode, recordname)
-#         # self.finished.emit(cnt)
-#         # print(rqname)
-#     def show_opt10001(self, rqname, trcode, recordname):
-#         # volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
-#         current_price = self.avVal_worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
-#         current_price = current_price.strip()
-#         current_price = int(current_price)
-
-#         self.finished2.emit(current_price)
+data = {'col1':['1123123123123123','2','3','4'],
+        'col2':['1','2','1','3'],
+        'col3':['1','1','2','1']}
+ 
+class TableView(QTableWidget):
+    def __init__(self, data, *args):
+        QTableWidget.__init__(self, *args)
+        self.data = data
+        self.setData()
+        
+        self.resizeColumnsToContents()
+        self.resizeRowsToContents()
+ 
+    def setData(self): 
+        horHeaders = []
+        for n, key in enumerate(sorted(self.data.keys())):
+            print(n, key)
+            print(self.data.keys())
+            print(enumerate(sorted(self.data.keys())))
+            horHeaders.append(key)
+            for m, item in enumerate(self.data[key]):
+                newitem = QTableWidgetItem(item)
+                self.setItem(m, n, newitem)
+        self.setHorizontalHeaderLabels(horHeaders)
 
 class Kiwoom(QMainWindow):
     index = 0
     is_continue = 0
     def __init__(self):
         super().__init__()
+        ## 화면 상단 시간 표시 -> import module_timer ##
         self.timer = module_timer.Timer()
         self.timer.finished.connect(self.update_times)
         self.timer.start()
 
+        ## Back Worker -> import module_worker ##
         self.worker = module_worker.Worker()
         self.worker.finished2.connect(self.update_times2)
         self.worker.start()
 
+        # self.table = TableView(data, 4, 3)
+        # self.table.show()
+
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
-        
-        
-        
-        # self.kiwoom.dynamicCall("CommConnect()")      # login
+
+
         self.comm_connect()       # login
-
-
 
 
         self.kiwoom.OnEventConnect.connect(self.event_connect)
@@ -142,6 +127,7 @@ class Kiwoom(QMainWindow):
         self.tableWidget = QTableWidget(self)
         self.set_tableWidget()
 
+
         self.text_edit = QTextEdit(self)
         self.text_edit.setGeometry(10, 180, 190, 150)
         self.text_edit.setEnabled(False)    # 텍스트창의 내용물 활용여부 (False : 읽기모드)
@@ -163,9 +149,15 @@ class Kiwoom(QMainWindow):
         row_count = 8
         col_count = 5
         self.tableWidget.resize(550, 290)
+        # self.tableWidget.setRowHeight(2, 1000)
+        
         self.tableWidget.move(430, 50)
         self.tableWidget.setRowCount(row_count)
         self.tableWidget.setColumnCount(col_count)
+
+        self.tableWidget.resizeRowsToContents()
+        self.tableWidget.verticalHeader().setVisible(False)
+        self.tableWidget.verticalHeader().setDefaultSectionSize(1)
 
         for i in range(int(row_count/2)):
             j=i*2
@@ -173,8 +165,7 @@ class Kiwoom(QMainWindow):
             self.tableWidget.setSpan(j,1,2,1)
             self.tableWidget.setSpan(j,2,2,1)
             self.tableWidget.setSpan(j,4,2,1)
-
-        self.tableWidget.verticalHeader().setVisible(False)
+        
         self.tableWidget.setHorizontalHeaderItem(0, QTableWidgetItem("Code"))
         self.tableWidget.setHorizontalHeaderItem(1, QTableWidgetItem("Name"))
         self.tableWidget.setHorizontalHeaderItem(2, QTableWidgetItem("Count"))
@@ -182,7 +173,7 @@ class Kiwoom(QMainWindow):
         self.tableWidget.setHorizontalHeaderItem(4, QTableWidgetItem("Percent"))
 
     def btn_test(self):
-        print("test clicked")
+        # print("test clicked")
         cnt = 0
         while cnt<10:
             if cnt == 3:
@@ -193,7 +184,6 @@ class Kiwoom(QMainWindow):
 
     def btn_test2(self) :
         self.text_edit.append("BUYBUYBUY")
-        
 
     def test2(self):
         self.i = 1
@@ -202,8 +192,7 @@ class Kiwoom(QMainWindow):
         item = QTableWidgetItem(content)
         item.setTextAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
         self.tableWidget.setItem(row, col, item)
-        # value = self.tableWidget.item(0,0)
-        # print(value.text())
+
     ## [START] login ##
     def comm_connect(self):
         self.kiwoom.dynamicCall("CommConnect()")
@@ -211,10 +200,10 @@ class Kiwoom(QMainWindow):
         self.login_event_loop.start()
     def event_connect(self, err_code):
         if err_code == 0:
-            self.text_edit.append("login Success")
+            self.text_edit.append("CONNECTED")
             self.login_event_loop.terminate()
         else:
-            print("disconnected")
+            print("DISCONNECTED")
     ## [END] login ##
 
     ## 매수 ##
@@ -292,7 +281,7 @@ class Kiwoom(QMainWindow):
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("data received.")
-        print(rqname)
+        # print(rqname)
 
         if next == '2':
             self.remained_data = True
@@ -333,7 +322,7 @@ class Kiwoom(QMainWindow):
 
     def show_opw00018(self, rqname, trcode, recordname):
         data_cnt = self.get_repeat_cnt(trcode, rqname)
-        print(data_cnt)
+        # print(data_cnt)
 
         for i in range(data_cnt) :
             total_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
