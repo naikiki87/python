@@ -10,13 +10,17 @@ from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore
 
 class Timer(QThread):
-    finished = pyqtSignal(int)
+    finished = pyqtSignal(str)
 
     def run(self):
         cnt = 0
+        # date = QDateTime.currentDateTime().toString("yy-MM-dd hh:mm:ss")
         while True:
             if cnt > 5 :
-                self.finished.emit(cnt)
+                date = QDateTime.currentDateTime().toString("hh:mm:ss")
+                # self.finished.emit("abcd" + str(cnt))
+                self.finished.emit(date)
+                # self.finished.emit(cnt)
             cnt = cnt + 1
             time.sleep(1)
 
@@ -37,9 +41,10 @@ class Worker(QThread):
     def run(self):
         cnt = 0
         while True:
-            print("hello", cnt)
-            if cnt == 7:
-                self.get_item_info()
+            # print("hello", cnt)
+            if cnt == 6:
+                self.finished2.emit(str(cnt))
+                # self.get_item_info()
                 cnt = 0
             cnt = cnt + 1
             time.sleep(1)
@@ -75,8 +80,14 @@ class Kiwoom(QMainWindow):
 
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
+        
+        
+        
         # self.kiwoom.dynamicCall("CommConnect()")      # login
         self.comm_connect()       # login
+
+
+
 
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
@@ -84,9 +95,9 @@ class Kiwoom(QMainWindow):
 
         self.init_UI()
 
-    @pyqtSlot(int)
+    @pyqtSlot(str)
     def update_times(self, data) :
-        self.text_edit4.setText(str(data))
+        self.text_edit4.setText(data)
 
     @pyqtSlot(int)
     def update_times2(self, data) :
@@ -158,7 +169,7 @@ class Kiwoom(QMainWindow):
         self.text_edit3.setEnabled(False)    # 텍스트창의 내용물 활용여부 (False : 읽기모드)
 
         self.text_edit4 = QTextEdit(self)
-        self.text_edit4.setGeometry(900, 15, 30, 30)
+        self.text_edit4.setGeometry(870, 15, 80, 30)
         self.text_edit4.setEnabled(False)    # 텍스트창의 내용물 활용여부 (False : 읽기모드)
         self.text_edit4.setStyleSheet("border-style : none;")
 
