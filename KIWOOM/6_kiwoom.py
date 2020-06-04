@@ -10,30 +10,6 @@ from PyQt5 import QtTest, QtCore, QtWidgets
 import module_timer
 import module_worker
 
-data = {'col1':['1123123123123123','2','3','4'],
-        'col2':['1','2','1','3'],
-        'col3':['1','1','2','1']}
- 
-class TableView(QTableWidget):
-    def __init__(self, data, *args):
-        QTableWidget.__init__(self, *args)
-        self.data = data
-        self.setData()
-        
-        self.resizeColumnsToContents()
-        self.resizeRowsToContents()
- 
-    def setData(self): 
-        horHeaders = []
-        for n, key in enumerate(sorted(self.data.keys())):
-            print(n, key)
-            print(self.data.keys())
-            print(enumerate(sorted(self.data.keys())))
-            horHeaders.append(key)
-            for m, item in enumerate(self.data[key]):
-                newitem = QTableWidgetItem(item)
-                self.setItem(m, n, newitem)
-        self.setHorizontalHeaderLabels(horHeaders)
 
 class Kiwoom(QMainWindow):
     index = 0
