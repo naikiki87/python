@@ -362,6 +362,7 @@ class Kiwoom(QMainWindow):
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
+    print(sys.argv)
     myWindow = Kiwoom()
     myWindow.show()
     app.exec_()
