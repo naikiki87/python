@@ -13,6 +13,7 @@ import module_worker
 
 class Kiwoom(QMainWindow):
     index = 0
+    time = 0
     is_continue = 0
     def __init__(self):
         super().__init__()
@@ -33,14 +34,8 @@ class Kiwoom(QMainWindow):
     def update_times(self, data) :
         self.text_edit4.setText(data)
 
-    # @pyqtSlot(int)
-    # def update_times2(self, data) :
-    #     # self.text_edit.append(str(data))
-    #     self.setTableWidgetData(1,0,0,str(data))
-
     @pyqtSlot(dict)
     def update_times2(self, data) :
-        # self.text_edit.append(str(data))
         price = data[(0, "cur_price")]
         self.setTableWidgetData(1,0,0,str(price))
 
