@@ -11,8 +11,9 @@ from PyQt5 import QtTest, QtCore
 class Worker(QThread):
     # finished2 = pyqtSignal(int)
     finished2 = pyqtSignal(dict)
-    def __init__(self):
+    def __init__(self, acc_pw):
         super().__init__()
+        self.acc_pw = acc_pw
         self.avVal_worker = QAxWidget()
         self.avVal_worker.setControl("KHOPENAPI.KHOpenAPICtrl.1")
 
@@ -43,20 +44,7 @@ class Worker(QThread):
             current_price = current_price.strip()
             current_price = int(current_price)
 
-            # self.finished2.emit(current_price)
-
             sendDict = {}
             sendDict[(i, "cur_price")] = current_price
 
             self.finished2.emit(sendDict)
-            # print(current_price)
-
-        # self.finished.emit(cnt)
-        # print(rqname)
-    # def show_opt10001(self, rqname, trcode, recordname):
-    #     # volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
-    #     current_price = self.avVal_worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
-    #     current_price = current_price.strip()
-    #     current_price = int(current_price)
-
-    #     self.finished2.emit(current_price)

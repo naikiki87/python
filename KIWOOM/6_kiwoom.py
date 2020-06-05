@@ -9,6 +9,7 @@ from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore, QtWidgets
 import module_timer
 import module_worker
+import module_get_summary
 
 
 class Kiwoom(QMainWindow):
@@ -30,14 +31,7 @@ class Kiwoom(QMainWindow):
 
         self.init_UI()
 
-    @pyqtSlot(str)
-    def update_times(self, data) :
-        self.text_edit4.setText(data)
-
-    @pyqtSlot(dict)
-    def update_times2(self, data) :
-        price = data[(0, "cur_price")]
-        self.setTableWidgetData(1,0,0,str(price))
+    
 
 
     def init_UI(self) :
@@ -139,13 +133,30 @@ class Kiwoom(QMainWindow):
         self.text_edit6.setGeometry(830, 90, 80, 30)
         self.text_edit6.setEnabled(False)
 
+    @pyqtSlot(str)
+    def update_times(self, data) :
+        self.text_edit4.setText(data)
+
+    @pyqtSlot(dict)
+    def update_times2(self, data) :
+        print(data)
+        price = data[(0, "cur_price")]
+        self.setTableWidgetData(1,0,0,str(price))
+
     def btn_test(self) :
-        # a = 10
         ## Back Worker -> import module_worker ##
-        self.worker = module_worker.Worker()
+        acc_pw = self.input_acc_pw.text()
+        # self.th_get_summary = module_get_summary.Worker(acc_pw)
+        # self.th_get_summary = module_get_summary.Worker()
+        # self.th_get_summary.data.connect(self.update_times2)
+        # self.th_get_summary.start()
+
+        self.worker = module_worker.Worker(acc_pw)
         self.worker.finished2.connect(self.update_times2)
         self.worker.start()
-        self.text_edit.append("worker thread started")
+
+        self.text_edit.append("Get Summary started")
+    
 
     def set_table_summary(self):
         row_count = 10
