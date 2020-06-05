@@ -16,21 +16,11 @@ class Kiwoom(QMainWindow):
     is_continue = 0
     def __init__(self):
         super().__init__()
-        ## 화면 상단 시간 표시 -> import module_timer ##
-        self.timer = module_timer.Timer()
-        self.timer.finished.connect(self.update_times)
-        self.timer.start()
-
-        ## Back Worker -> import module_worker ##
-        self.worker = module_worker.Worker()
-        self.worker.finished2.connect(self.update_times2)
-        self.worker.start()
-
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
 
 
-        self.comm_connect()       # login
+        self.comm_connect()       # Aloha
 
 
         self.kiwoom.OnEventConnect.connect(self.event_connect)
@@ -43,11 +33,18 @@ class Kiwoom(QMainWindow):
     def update_times(self, data) :
         self.text_edit4.setText(data)
 
-    @pyqtSlot(int)
+    # @pyqtSlot(int)
+    # def update_times2(self, data) :
+    #     # self.text_edit.append(str(data))
+    #     self.setTableWidgetData(1,0,0,str(data))
+
+    @pyqtSlot(dict)
     def update_times2(self, data) :
-        a = 10
         # self.text_edit.append(str(data))
-    
+        price = data[(0, "cur_price")]
+        self.setTableWidgetData(1,0,0,str(price))
+
+
     def init_UI(self) :
         self.setWindowTitle("AutoK")
         self.setGeometry(100, 100, 1700, 600)
@@ -78,6 +75,9 @@ class Kiwoom(QMainWindow):
         btn4.move(290, 140)
         btn4.clicked.connect(self.btn_test)
 
+        # btn4 = QPushButton('TES2Tddd', self)
+        # btn4.move(190, 140)
+        # btn4.clicked.connect(self.btn_test2)
 
         label = QLabel('수량', self)
         label.move(20, 90)
@@ -102,13 +102,13 @@ class Kiwoom(QMainWindow):
         self.set_table_summary()
 
         label = QLabel('매매일자', self)
-        label.move(1000, 10)
+        label.move(1100, 10)
         self.input_history_date = QLineEdit(self)
-        self.input_history_date.move(1080, 10)
+        self.input_history_date.move(1180, 10)
 
         btn7 = QPushButton('검색', self)
-        btn7.move(1200, 10)
-        btn7.clicked.connect(self.show_trade_history)
+        btn7.move(1300, 10)
+        btn7.clicked.connect(self.get_trade_history)
 
         self.table_history = QTableWidget(self)     # 매매 history
         self.set_table_history()
@@ -119,30 +119,54 @@ class Kiwoom(QMainWindow):
 
         self.text_edit2 = QTextEdit(self)
         self.text_edit2.setGeometry(210, 180, 200, 150)
-        self.text_edit2.setEnabled(False)    # 텍스트창의 내용물 활용여부 (False : 읽기모드)
+        self.text_edit2.setEnabled(False)
         
         self.text_edit3 = QTextEdit(self)
         self.text_edit3.setGeometry(10, 340, 400, 150)
-        self.text_edit3.setEnabled(False)    # 텍스트창의 내용물 활용여부 (False : 읽기모드)
+        self.text_edit3.setEnabled(False)
 
         self.text_edit4 = QTextEdit(self)
         self.text_edit4.setGeometry(870, 15, 80, 30)
-        self.text_edit4.setEnabled(False)    # 텍스트창의 내용물 활용여부 (False : 읽기모드)
+        self.text_edit4.setEnabled(False)
         self.text_edit4.setStyleSheet("border-style : none;")
 
+        # 총매입금액 표시
+        label = QLabel('총매입금액', self)
+        label.move(750, 50)
+        self.text_edit5 = QTextEdit(self)
+        self.text_edit5.setGeometry(830, 50, 80, 30)
+        self.text_edit5.setEnabled(False)
+
+        # 총평가금액 표시
+        label = QLabel('총평가금액', self)
+        label.move(750, 90)
+        self.text_edit6 = QTextEdit(self)
+        self.text_edit6.setGeometry(830, 90, 80, 30)
+        self.text_edit6.setEnabled(False)
+
+    def btn_test(self) :
+        # a = 10
+        ## Back Worker -> import module_worker ##
+        self.worker = module_worker.Worker()
+        self.worker.finished2.connect(self.update_times2)
+        self.worker.start()
+        self.text_edit.append("worker thread started")
+
     def set_table_summary(self):
-        row_count = 8
-        col_count = 5
-        self.table_summary.resize(502, 350)
+        row_count = 10
+        col_count = 9
+        self.table_summary.resize(592, 350)
         
-        self.table_summary.move(430, 100)
+        self.table_summary.move(430, 130)
         self.table_summary.setRowCount(row_count)
         self.table_summary.setColumnCount(col_count)
         self.table_summary.resizeRowsToContents()
         # self.table_summary.resizeColumnsToContents()
 
         for i in range(col_count):
-            self.table_summary.setColumnWidth(i, 100)
+            self.table_summary.setColumnWidth(i, 70)
+        self.table_summary.setColumnWidth(2, 50)
+        self.table_summary.setColumnWidth(8, 50)
         self.table_summary.verticalHeader().setVisible(False)
         self.table_summary.verticalHeader().setDefaultSectionSize(1)
 
@@ -151,20 +175,28 @@ class Kiwoom(QMainWindow):
             self.table_summary.setSpan(j,0,2,1)
             self.table_summary.setSpan(j,1,2,1)
             self.table_summary.setSpan(j,2,2,1)
-            self.table_summary.setSpan(j,4,2,1)
+            self.table_summary.setSpan(j,5,2,1)
+            self.table_summary.setSpan(j,6,2,1)
+            self.table_summary.setSpan(j,7,2,1)
+            self.table_summary.setSpan(j,8,2,1)
         
         self.table_summary.setHorizontalHeaderItem(0, QTableWidgetItem("Code"))
         self.table_summary.setHorizontalHeaderItem(1, QTableWidgetItem("Name"))
         self.table_summary.setHorizontalHeaderItem(2, QTableWidgetItem("Count"))
-        self.table_summary.setHorizontalHeaderItem(3, QTableWidgetItem("Price"))
-        self.table_summary.setHorizontalHeaderItem(4, QTableWidgetItem("Percent"))
-    
+        self.table_summary.setHorizontalHeaderItem(3, QTableWidgetItem("Unit Price"))
+        
+        self.table_summary.setHorizontalHeaderItem(4, QTableWidgetItem("Total Price"))
+        
+        self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("sum"))
+        self.table_summary.setHorizontalHeaderItem(6, QTableWidgetItem("fee"))
+        self.table_summary.setHorizontalHeaderItem(7, QTableWidgetItem("평가손익"))
+        self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("%"))
     def set_table_history(self):
         row_count = 20
         col_count = 7
         self.table_history.resize(600, 480)
         
-        self.table_history.move(960, 50)
+        self.table_history.move(1050, 50)
         self.table_history.setRowCount(row_count)
         self.table_history.setColumnCount(col_count)
         self.table_history.resizeRowsToContents()
@@ -182,23 +214,8 @@ class Kiwoom(QMainWindow):
         self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("체결수량"))
         self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("체결단가"))
         self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("주문번호"))
-
-    def btn_test(self):
-        # print("test clicked")
-        cnt = 0
-        while cnt<10:
-            if cnt == 3:
-                self.btn_test2()
-            self.text_edit.append(str(cnt))
-            cnt = cnt + 1
-            QtTest.QTest.qWait(1000)
-
-    def btn_test2(self) :
-        self.text_edit.append("BUYBUYBUY")
-
     def test2(self):
         self.i = 1
-        
     def setTableWidgetData(self, table_no, row, col, content):
         if table_no == 1:
             item = QTableWidgetItem(content)
@@ -208,7 +225,6 @@ class Kiwoom(QMainWindow):
             item = QTableWidgetItem(content)
             item.setTextAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
             self.table_history.setItem(row, col, item)
-
     ## [START] login ##
     def comm_connect(self):
         self.kiwoom.dynamicCall("CommConnect()")
@@ -217,6 +233,10 @@ class Kiwoom(QMainWindow):
     def event_connect(self, err_code):
         if err_code == 0:
             self.text_edit.append("CONNECTED")
+            self.timer = module_timer.Timer()
+            self.timer.cur_time.connect(self.update_times)
+            self.timer.start()
+            self.text_edit.append("timer thread started")
             self.login_event_loop.terminate()
         else:
             print("DISCONNECTED")
@@ -272,20 +292,24 @@ class Kiwoom(QMainWindow):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
 
-    def show_trade_history(self):
+    def get_trade_history(self):
         # date = int(self.input_history_date.text())
         # date = self.input_history_date.text()
         # print(date)
         search_date = "20200603"
         acc_no = "8137639811"
-        acc_pw = "6458"
+        # acc_pw = "6458"
+        acc_pw = self.input_acc_pw.text()
+        if acc_pw != "6458" :
+            self.text_edit.append("Wrong Password")
+        else :
 
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", search_date)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "조회구분", 4)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
-        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "OPW00007_req", "OPW00007", 0, "0101")
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", search_date)
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+            # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "조회구분", 4)
+            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
+            # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "OPW00007_req", "OPW00007", 0, "0101")
 
     def iterative_test(self) :
         i = 0
@@ -365,7 +389,12 @@ class Kiwoom(QMainWindow):
 
     def show_opw00018(self, rqname, trcode, recordname):
         data_cnt = self.get_repeat_cnt(trcode, rqname)
-        print(data_cnt)
+
+        total_purchase = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
+        total_evaluation = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총평가금액")
+
+        self.text_edit5.setText(str(int(total_purchase)))
+        self.text_edit6.setText(str(int(total_evaluation)))
 
         for i in range(data_cnt) :
             total_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
@@ -375,15 +404,52 @@ class Kiwoom(QMainWindow):
             each_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수익률(%)")
             cur_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가")
             unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
-            est_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가금액")
+            total_purchase_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입금액")
+            total_evaluation_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가금액")
             owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
+            added_fee = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수수료합")
+            tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
+            eval_pl = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
+
+            # '{0:,}'.format()
+            # str('{0:,}'.format())
+            # total_fee = int(float(added_fee) + float(tax))
+            total_sum = str('{0:,}'.format(int(total_evaluation_price) - int(total_purchase_price)))
+            owncount = str('{0:,}'.format(int(owncount)))
+            cur_price = str('{0:,}'.format(int(cur_price)))
+            unit_price = str('{0:,}'.format(int(unit_price)))
+            total_evaluation_price = str('{0:,}'.format(int(total_evaluation_price)))
+            total_purchase_price = str('{0:,}'.format(int(total_purchase_price)))
+            total_fee = str('{0:,}'.format(int(float(added_fee) + float(tax))))
+            eval_pl = str('{0:,}'.format(int(eval_pl)))
+
+            # print("total_fee : ", total_fee)
 
             self.setTableWidgetData(1, 2*i, 0, itemcode)
             self.setTableWidgetData(1, 2*i, 1, itemname)
-            self.setTableWidgetData(1, 2*i, 2, str(int(owncount)))
-            self.setTableWidgetData(1, (2*i + 1), 3, str(int(unit_price)))
-            self.setTableWidgetData(1, 2*i, 3, str(int(cur_price)))
-            self.setTableWidgetData(1, 2*i, 4, str(round(float(each_percent), 2)))
+            self.setTableWidgetData(1, 2*i, 2, owncount)
+            # self.setTableWidgetData(1, 2*i, 2, str(int(owncount)))
+            # self.setTableWidgetData(1, 2*i, 2, str(int('{0:,}'.format(owncount))))
+
+            # self.setTableWidgetData(1, 2*i, 3, str(int(cur_price)))
+            # self.setTableWidgetData(1, (2*i + 1), 3, str(int(unit_price)))
+            self.setTableWidgetData(1, 2*i, 3, cur_price)
+            self.setTableWidgetData(1, (2*i + 1), 3, unit_price)
+            
+            # self.setTableWidgetData(1, (2*i + 1), 3, str(int('{0:,}'.format(unit_price))))
+            
+            # self.setTableWidgetData(1, 2*i, 4, str(int(total_evaluation_price)))
+            # self.setTableWidgetData(1, (2*i + 1), 4, str(int(total_purchase_price)))
+            self.setTableWidgetData(1, 2*i, 4, total_evaluation_price)
+            self.setTableWidgetData(1, (2*i + 1), 4, total_purchase_price)
+
+            
+            # self.setTableWidgetData(1, 2*i, 6, str(total_fee))
+            self.setTableWidgetData(1, 2*i, 5, total_sum)
+            self.setTableWidgetData(1, 2*i, 6, total_fee)
+            
+            self.setTableWidgetData(1, 2*i, 7, eval_pl)
+            self.setTableWidgetData(1, 2*i, 8, str(round(float(each_percent), 2)))
 
     def show_opw00009(self, rqname, trcode, recordname):
         print("Show opw00009")
