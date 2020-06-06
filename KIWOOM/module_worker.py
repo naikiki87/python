@@ -10,27 +10,63 @@ from PyQt5 import QtTest, QtCore
 
 class Worker(QThread):
     # finished2 = pyqtSignal(int)
+    # acc_password = 0
+    connected = 0
     finished2 = pyqtSignal(dict)
+    summary_data = pyqtSignal(dict)
     def __init__(self, acc_pw):
         super().__init__()
-        self.acc_pw = acc_pw
-        self.avVal_worker = QAxWidget()
-        self.avVal_worker.setControl("KHOPENAPI.KHOpenAPICtrl.1")
+        print("thread worker init")
+        self.acc_password = acc_pw
+        self.worker = QAxWidget()
+        self.worker.setControl("KHOPENAPI.KHOpenAPICtrl.1")
+        self.worker.dynamicCall("CommConnect()")
 
-        self.avVal_worker.OnReceiveTrData.connect(self.receive_tr_data)
+        self.worker.OnEventConnect.connect(self.event_connect)
+        self.worker.OnReceiveTrData.connect(self.receive_tr_data)
+
+    def event_connect(self, err_code):
+        if err_code == 0:
+            self.connected = 1
+        else:
+            print("thread disconnected")
 
     def get_item_info(self):
         code = "005930"
-        self.avVal_worker.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
-        self.avVal_worker.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
+        self.worker.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
+        self.worker.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
+
+    def get_summary(self):
+        acc_no = "8137639811"
+        acc_pw = self.acc_password
+        
+        if self.acc_password != "6458":
+            print("Wrong password")
+        else :
+            print("Corret password")
+            # self.is_continue = 1
+            # while self.is_continue:
+            self.worker.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+            self.worker.dynamicCall("SetInputValue(QString, QString)", "비밀번호", self.acc_password)
+            self.worker.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
 
     def run(self):
+        while True:
+            try:
+                print("con : ", self.connected)
+                if self.connected == 1:
+                    break
+
+                time.sleep(1)
+            except:
+                pass
+        
         cnt = 0
         while True:
             # self.finished2.emit(cnt)
-
             if cnt == 3 :
-                self.get_item_info()
+                # self.get_item_info()
+                self.get_summary()
                 cnt = 0
             cnt = cnt + 1
             # QtTest.QTest.qWait(1000)
@@ -40,7 +76,7 @@ class Worker(QThread):
         i = 0
         print("data received.")
         if rqname == "opt10001_req":
-            current_price = self.avVal_worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
+            current_price = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
             current_price = current_price.strip()
             current_price = int(current_price)
 
@@ -48,3 +84,54 @@ class Worker(QThread):
             sendDict[(i, "cur_price")] = current_price
 
             self.finished2.emit(sendDict)
+
+        if rqname == "opw00018_req":
+            print("data received", rqname)
+            data_cnt = self.get_repeat_cnt(trcode, rqname)
+            print("count : ", data_cnt)
+
+            total_purchase = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
+            total_evaluation = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총평가금액")
+
+            sendDict = {}
+            sendDict["total_purchase"] = str(int(total_purchase))
+            sendDict["total_evaluation"] = str(int(total_evaluation))
+
+            for i in range(data_cnt) :
+                total_percent = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
+                capital = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "추정예탁자산")
+                itemcode = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
+                itemname = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
+                each_percent = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수익률(%)")
+                cur_price = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가")
+                unit_price = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
+                total_purchase_price = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입금액")
+                total_evaluation_price = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가금액")
+                owncount = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
+                added_fee = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수수료합")
+                tax = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
+                eval_pl = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
+
+                total_sum = str('{0:,}'.format(int(total_evaluation_price) - int(total_purchase_price)))
+                owncount = str('{0:,}'.format(int(owncount)))
+                cur_price = str('{0:,}'.format(int(cur_price)))
+                unit_price = str('{0:,}'.format(int(unit_price)))
+                total_evaluation_price = str('{0:,}'.format(int(total_evaluation_price)))
+                total_purchase_price = str('{0:,}'.format(int(total_purchase_price)))
+                total_fee = str('{0:,}'.format(int(float(added_fee) + float(tax))))
+                eval_pl = str('{0:,}'.format(int(eval_pl)))
+
+                sendDict[(i, "total_sum")] = total_sum
+                sendDict[(i, "owncount")] = owncount
+                sendDict[(i, "cur_price")] = cur_price
+                sendDict[(i, "unit_price")] = unit_price
+                sendDict[(i, "total_evaluation_price")] = total_evaluation_price
+                sendDict[(i, "total_purchase_price")] = total_purchase_price
+                sendDict[(i, "total_fee")] = total_fee
+                sendDict[(i, "eval_pl")] = eval_pl
+
+            self.summary_data.emit(sendDict)
+
+    def get_repeat_cnt(self, trcode, rqname):
+        ret = self.worker.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
+        return ret

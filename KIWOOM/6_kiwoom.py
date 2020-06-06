@@ -22,7 +22,7 @@ class Kiwoom(QMainWindow):
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
 
 
-        self.comm_connect()       # Aloha
+        # self.comm_connect()       # Aloha
 
 
         self.kiwoom.OnEventConnect.connect(self.event_connect)
@@ -140,23 +140,17 @@ class Kiwoom(QMainWindow):
     @pyqtSlot(dict)
     def update_times2(self, data) :
         print(data)
-        price = data[(0, "cur_price")]
-        self.setTableWidgetData(1,0,0,str(price))
+        # price = data[(0, "cur_price")]
+        # self.setTableWidgetData(1,0,0,str(price))
 
     def btn_test(self) :
         ## Back Worker -> import module_worker ##
         acc_pw = self.input_acc_pw.text()
-        # self.th_get_summary = module_get_summary.Worker(acc_pw)
-        # self.th_get_summary = module_get_summary.Worker()
-        # self.th_get_summary.data.connect(self.update_times2)
-        # self.th_get_summary.start()
+        self.th_get_summary = module_worker.Worker(acc_pw)
+        self.th_get_summary.summary_data.connect(self.update_times2)
+        self.th_get_summary.start()
+        self.text_edit.append("Thread Started")
 
-        self.worker = module_worker.Worker(acc_pw)
-        self.worker.finished2.connect(self.update_times2)
-        self.worker.start()
-
-        self.text_edit.append("Get Summary started")
-    
 
     def set_table_summary(self):
         row_count = 10
