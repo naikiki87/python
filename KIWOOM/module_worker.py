@@ -64,13 +64,17 @@ class Worker(QThread):
         cnt = 0
         while True:
             # self.finished2.emit(cnt)
-            if cnt == 3 :
-                # self.get_item_info()
-                self.get_summary()
-                cnt = 0
-            cnt = cnt + 1
-            # QtTest.QTest.qWait(1000)
-            time.sleep(1)
+            self.get_summary()
+            time.sleep(3)
+            # if cnt == 0 :
+            #     # self.get_item_info()
+            #     self.get_summary()
+                
+            # cnt = cnt + 1
+            # if cnt == 3:
+            #     cnt = 0
+            # # QtTest.QTest.qWait(1000)
+            # time.sleep(1)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         i = 0
@@ -94,14 +98,15 @@ class Worker(QThread):
             total_evaluation = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총평가금액")
 
             sendDict = {}
-            sendDict["total_purchase"] = str(int(total_purchase))
-            sendDict["total_evaluation"] = str(int(total_evaluation))
+            sendDict["count"] = data_cnt
+            sendDict["total_purchase"] = str('{0:,}'.format(int(total_purchase)))
+            sendDict["total_evaluation"] = str('{0:,}'.format(int(total_evaluation)))
 
             for i in range(data_cnt) :
                 total_percent = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
                 capital = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "추정예탁자산")
-                itemcode = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-                itemname = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
+                item_code = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
+                item_name = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
                 each_percent = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수익률(%)")
                 cur_price = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가")
                 unit_price = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
@@ -120,7 +125,10 @@ class Worker(QThread):
                 total_purchase_price = str('{0:,}'.format(int(total_purchase_price)))
                 total_fee = str('{0:,}'.format(int(float(added_fee) + float(tax))))
                 eval_pl = str('{0:,}'.format(int(eval_pl)))
+                each_percent = str(round(float(each_percent), 2))
 
+                sendDict[(i, "item_code")] = item_code
+                sendDict[(i, "item_name")] = item_name
                 sendDict[(i, "total_sum")] = total_sum
                 sendDict[(i, "owncount")] = owncount
                 sendDict[(i, "cur_price")] = cur_price
@@ -129,6 +137,7 @@ class Worker(QThread):
                 sendDict[(i, "total_purchase_price")] = total_purchase_price
                 sendDict[(i, "total_fee")] = total_fee
                 sendDict[(i, "eval_pl")] = eval_pl
+                sendDict[(i, "each_percent")] = each_percent
 
             self.summary_data.emit(sendDict)
 

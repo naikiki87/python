@@ -157,37 +157,10 @@ class Kiwoom(QMainWindow):
             self.setTableWidgetData(1, 2*i, 7, data[(i, "eval_pl")])
             self.setTableWidgetData(1, 2*i, 8, data[(i, "each_percent")])
 
-        #     self.setTableWidgetData(1, 2*i, 0, itemcode)
-        #     self.setTableWidgetData(1, 2*i, 1, itemname)
-        #     self.setTableWidgetData(1, 2*i, 2, owncount)
-        #     # self.setTableWidgetData(1, 2*i, 2, str(int(owncount)))
-        #     # self.setTableWidgetData(1, 2*i, 2, str(int('{0:,}'.format(owncount))))
-
-        #     # self.setTableWidgetData(1, 2*i, 3, str(int(cur_price)))
-        #     # self.setTableWidgetData(1, (2*i + 1), 3, str(int(unit_price)))
-        #     self.setTableWidgetData(1, 2*i, 3, cur_price)
-        #     self.setTableWidgetData(1, (2*i + 1), 3, unit_price)
-            
-        #     # self.setTableWidgetData(1, (2*i + 1), 3, str(int('{0:,}'.format(unit_price))))
-            
-        #     # self.setTableWidgetData(1, 2*i, 4, str(int(total_evaluation_price)))
-        #     # self.setTableWidgetData(1, (2*i + 1), 4, str(int(total_purchase_price)))
-        #     self.setTableWidgetData(1, 2*i, 4, total_evaluation_price)
-        #     self.setTableWidgetData(1, (2*i + 1), 4, total_purchase_price)
-
-            
-        #     # self.setTableWidgetData(1, 2*i, 6, str(total_fee))
-        #     self.setTableWidgetData(1, 2*i, 5, total_sum)
-        #     self.setTableWidgetData(1, 2*i, 6, total_fee)
-            
-        #     self.setTableWidgetData(1, 2*i, 7, eval_pl)
-        #     self.setTableWidgetData(1, 2*i, 8, str(round(float(each_percent), 2)))
-
-
-        # price = data[(0, "cur_price")]
-        # self.setTableWidgetData(1,0,0,str(price))
-
-    def btn_test(self) :
+    def btn_test(self):
+        a = 0
+        
+    def check_balance(self) :
         ## Back Worker -> import module_worker ##
         acc_pw = self.input_acc_pw.text()
         self.th_get_summary = module_worker.Worker(acc_pw)
@@ -362,18 +335,18 @@ class Kiwoom(QMainWindow):
             i = i + 1
             QtTest.QTest.qWait(1000)
     
-    def check_balance(self):
-        acc_no = "8137639811"
-        acc_pw = self.input_acc_pw.text()
-        if acc_pw != "6458":
-            self.text_edit.append("Password Incorrect")
-        else :
-            self.is_continue = 1
-            while self.is_continue:
-                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
-                QtTest.QTest.qWait(3000)
+    # def check_balance(self):
+    #     acc_no = "8137639811"
+    #     acc_pw = self.input_acc_pw.text()
+    #     if acc_pw != "6458":
+    #         self.text_edit.append("Password Incorrect")
+    #     else :
+    #         self.is_continue = 1
+    #         while self.is_continue:
+    #             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+    #             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+    #             self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
+    #             QtTest.QTest.qWait(3000)
 
     def stop_check_balance(self):
         self.is_continue = 0
