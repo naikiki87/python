@@ -8,7 +8,6 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore, QtWidgets
 import module_timer
-import module_worker
 import module_get_summary
 
 
@@ -139,7 +138,7 @@ class Kiwoom(QMainWindow):
 
     @pyqtSlot(dict)
     def update_times2(self, data) :
-        print(data)
+        # print(data)
         data_cnt = data['count']
         self.text_edit5.setText(data['total_purchase'])
         self.text_edit6.setText(data['total_evaluation'])
@@ -161,9 +160,9 @@ class Kiwoom(QMainWindow):
         a = 0
         
     def check_balance(self) :
-        ## Back Worker -> import module_worker ##
+        ## Back Worker -> import module_get_summary ##
         acc_pw = self.input_acc_pw.text()
-        self.th_get_summary = module_worker.Worker(acc_pw)
+        self.th_get_summary = module_get_summary.Worker(acc_pw)
         self.th_get_summary.summary_data.connect(self.update_times2)
         self.th_get_summary.start()
         self.text_edit.append("Thread Started")
@@ -349,7 +348,9 @@ class Kiwoom(QMainWindow):
     #             QtTest.QTest.qWait(3000)
 
     def stop_check_balance(self):
-        self.is_continue = 0
+        # self.is_continue = 0
+        self.th_get_summary.terminate()
+        self.text_edit.append("thread stopped")
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("data received.")
