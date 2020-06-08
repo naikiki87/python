@@ -12,5 +12,7 @@ for j in range(2):
     globals()['variable{}'.format(j)].loc[0] = ['1234', 3456]
     # variable{}.format(j).loc[0] = ["1234"]
 
-print(variable0)
-print(variable1)
+for k in range(2):
+    print(globals()['variable{}'.format(j)]['price'])
+# print(variable0)
+# print(variable1)

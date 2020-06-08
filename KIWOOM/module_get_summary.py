@@ -114,6 +114,13 @@ class Worker(QThread):
                 tax = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
                 eval_pl = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
 
+                if self.elapsed_min == 0 :
+                    if self.save_times == 3:
+                        mean_1 = globals()['DF_item{}'.format(i)]['price'].mean()
+                        globals()['DF_item{}'.format(i)].loc[self.save_times] = [item_code, int(cur_price), mean_1, 0, 0, 0, 0, 0]
+                        self.save_times = 0
+                    globals()['DF_item{}'.format(i)].loc[self.save_times] = [item_code, int(cur_price), 0, 0, 0, 0, 0, 0]
+
                 total_sum = str('{0:,}'.format(int(total_evaluation_price) - int(total_purchase_price)))
                 owncount = str('{0:,}'.format(int(owncount)))
                 cur_price = str('{0:,}'.format(int(cur_price)))
@@ -136,15 +143,7 @@ class Worker(QThread):
                 sendDict[(i, "eval_pl")] = eval_pl
                 sendDict[(i, "each_percent")] = each_percent
 
-                if self.elapsed_min == 0 :
-                    if self.save_times == 2:
-                        print("HERE")
-                        print(globals()['DF_item{}'.format(i)].loc['av_1'])
-                        # mean_1 = globals()['DF_item{}'.format(i)].loc['av_1'].mean()
-                        globals()['DF_item{}'.format(i)].loc[self.save_times] = [item_code, cur_price, mean_1, 0, 0, 0, 0, 0]
-                        self.save_times = 0
-                    globals()['DF_item{}'.format(i)].loc[self.save_times] = [item_code, cur_price, 0, 0, 0, 0, 0, 0]
-                    # self.save_times = self.save_times + 1
+                
                     
 
             print(DF_item0)
