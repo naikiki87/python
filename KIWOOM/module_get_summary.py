@@ -8,16 +8,21 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore
 
-DF_item0 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-DF_item1 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-DF_item2 = pd.DataFrame(columns = ['code', 'price'])
-DF_item3 = pd.DataFrame(columns = ['code', 'price'])
-DF_item4 = pd.DataFrame(columns = ['code', 'price'])
-DF_item5 = pd.DataFrame(columns = ['code', 'price'])
-DF_item6 = pd.DataFrame(columns = ['code', 'price'])
-DF_item7 = pd.DataFrame(columns = ['code', 'price'])
-DF_item8 = pd.DataFrame(columns = ['code', 'price'])
-DF_item9 = pd.DataFrame(columns = ['code', 'price'])
+for i in range(10) :
+    globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', 'price', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5'])
+    globals()['save_times{}'.format(i)] = 0
+    globals()['elapsed_min{}'.format(i)] = 0
+
+# DF_item0 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+# DF_item1 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+# DF_item2 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+# DF_item3 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+# DF_item4 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+# DF_item5 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+# DF_item6 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+# DF_item7 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+# DF_item8 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+# DF_item9 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
 
 class Worker(QThread):
     connected = 0
@@ -25,6 +30,7 @@ class Worker(QThread):
     summary_data = pyqtSignal(dict)
     save_times = 0
     elapsed_min = 0
+    save_times_init = 0
 
     def __init__(self, acc_pw):
         super().__init__()
@@ -59,9 +65,10 @@ class Worker(QThread):
         acc_pw = self.acc_password
         
         if self.acc_password != "6458":
-            print("Wrong password")
+            # print("Wrong password")
+            a = 1
         else :
-            print("Corret password")
+            # print("Corret password")
             self.worker.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
             self.worker.dynamicCall("SetInputValue(QString, QString)", "비밀번호", self.acc_password)
             self.worker.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
@@ -83,13 +90,9 @@ class Worker(QThread):
             time.sleep(3)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        i = 0
-        
-        # print("data received.")
         if rqname == "opw00018_req":
             # print("data received", rqname)
             data_cnt = self.get_repeat_cnt(trcode, rqname)
-            # print("count : ", data_cnt)
 
             total_purchase = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
             total_evaluation = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총평가금액")
@@ -114,12 +117,18 @@ class Worker(QThread):
                 tax = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
                 eval_pl = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
 
-                if self.elapsed_min == 0 :
-                    if self.save_times == 3:
-                        mean_1 = globals()['DF_item{}'.format(i)]['price'].mean()
-                        globals()['DF_item{}'.format(i)].loc[self.save_times] = [item_code, int(cur_price), mean_1, 0, 0, 0, 0, 0]
-                        self.save_times = 0
-                    globals()['DF_item{}'.format(i)].loc[self.save_times] = [item_code, int(cur_price), 0, 0, 0, 0, 0, 0]
+                if globals()['save_times{}'.format(i)] == 20:
+                    globals()['save_times{}'.format(i)] = 0
+                    m_1 = globals()['DF_item{}'.format(i)]['price'].mean()
+                    m_2 = globals()['DF_item{}'.format(i)].loc[0]['m_1']
+                    m_3 = globals()['DF_item{}'.format(i)].loc[0]['m_2']
+                    m_4 = globals()['DF_item{}'.format(i)].loc[0]['m_3']
+                    m_5 = globals()['DF_item{}'.format(i)].loc[0]['m_4']
+                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, int(cur_price), m_1, m_2, m_3, m_4, m_5]
+                    globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
+                else:
+                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, int(cur_price), 0, 0, 0, 0, 0]
+                    globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
 
                 total_sum = str('{0:,}'.format(int(total_evaluation_price) - int(total_purchase_price)))
                 owncount = str('{0:,}'.format(int(owncount)))
@@ -145,9 +154,9 @@ class Worker(QThread):
 
                 
                     
-
+            # self.save_times = self.save_times + 1
             print(DF_item0)
-            self.save_times = self.save_times + 1
+            
             self.summary_data.emit(sendDict)
 
     def get_repeat_cnt(self, trcode, rqname):

@@ -16,3 +16,15 @@ for k in range(2):
     print(globals()['variable{}'.format(j)]['price'])
 # print(variable0)
 # print(variable1)
+
+v0 = "ddddd"
+
+# for i in range(2):
+#     globals()['v{}'.format(i)] = "1234"
+
+print(v0)
+# print(v1)
+
+globals()['v{}'.format(0)] = "2345"
+
+print(v0)
