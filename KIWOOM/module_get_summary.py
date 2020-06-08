@@ -8,8 +8,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore
 
-DF_item0 = pd.DataFrame(columns = ['code', 'price', 'ave_1'])
-DF_item1 = pd.DataFrame(columns = ['code', 'price', 'ave_1'])
+DF_item0 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
+DF_item1 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
 DF_item2 = pd.DataFrame(columns = ['code', 'price'])
 DF_item3 = pd.DataFrame(columns = ['code', 'price'])
 DF_item4 = pd.DataFrame(columns = ['code', 'price'])
@@ -23,7 +23,8 @@ class Worker(QThread):
     connected = 0
     finished2 = pyqtSignal(dict)
     summary_data = pyqtSignal(dict)
-    save_price = 0
+    save_times = 0
+    elapsed_min = 0
 
     def __init__(self, acc_pw):
         super().__init__()
@@ -31,9 +32,9 @@ class Worker(QThread):
         # for i in range(10) :
         #     globals()['self.DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', 'price'])
 
-        # self.save_price = 0
-        # print("save price : ", save_price)
-        # self.save_price = 0
+        # self.save_times = 0
+        # print("save price : ", save_times)
+        # self.save_times = 0
         self.acc_password = acc_pw
         self.worker = QAxWidget()
         self.worker.setControl("KHOPENAPI.KHOpenAPICtrl.1")
@@ -135,13 +136,19 @@ class Worker(QThread):
                 sendDict[(i, "eval_pl")] = eval_pl
                 sendDict[(i, "each_percent")] = each_percent
 
-                if self.save_price == 0:
-                    globals()['DF_item{}'.format(i)].loc[self.save_price] = [item_code, cur_price, 0]
-                else:
-                    globals()['DF_item{}'.format(i)].loc[self.save_price] = [item_code, cur_price, 1]
+                if self.elapsed_min == 0 :
+                    if self.save_times == 2:
+                        print("HERE")
+                        print(globals()['DF_item{}'.format(i)].loc['av_1'])
+                        # mean_1 = globals()['DF_item{}'.format(i)].loc['av_1'].mean()
+                        globals()['DF_item{}'.format(i)].loc[self.save_times] = [item_code, cur_price, mean_1, 0, 0, 0, 0, 0]
+                        self.save_times = 0
+                    globals()['DF_item{}'.format(i)].loc[self.save_times] = [item_code, cur_price, 0, 0, 0, 0, 0, 0]
+                    # self.save_times = self.save_times + 1
+                    
 
             print(DF_item0)
-            self.save_price = self.save_price + 1
+            self.save_times = self.save_times + 1
             self.summary_data.emit(sendDict)
 
     def get_repeat_cnt(self, trcode, rqname):
