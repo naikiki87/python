@@ -3,6 +3,7 @@ import requests
 import threading
 import time
 from bs4 import BeautifulSoup
+from sklearn import preprocessing
 
 start = time.time()
 
@@ -17,10 +18,12 @@ code_df.종목코드 = code_df.종목코드.map('{:06d}'.format)
 code_df = code_df[['회사명', '종목코드']]
 code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'}) 
 
-df2 = pd.DataFrame(columns = ['code', 'Vol(AV)'])
+df3 = pd.DataFrame(columns = ['date', 'end'])
+df2 = pd.DataFrame(columns = ['end'])
+df_last = pd.DataFrame(columns = ['code', 'p_avr', 'std'])
 
 # cnt_code = len(code_df)
-cnt_code = 1
+cnt_code = 100
 
 for i in range(0, cnt_code):
     try:
@@ -41,15 +44,18 @@ for i in range(0, cnt_code):
         df = df.rename(columns={'날짜':'date', '종가':'end', '전일비':'gap', '시가':'start', '고가':'high', '저가':'low', '거래량' : 'vol'})
         df = df.dropna()
 
-        print(df)
-        vol_average = int(round(df['vol'].mean(), 0))
+        df2 = df[['end']]
+        mean = df2.end.mean()       # 종가평균
 
+        norm_df=(df2-df2.min())/(df2.max()-df2.min())
+        norm_df.columns=['norm']
+        std = norm_df.norm.std()    # 종가 min-max 정규화/표준편차
 
-        if vol_average > VOL_AVERAGE :
-            idx = len(df2) + 1
-            df2.loc[idx] = [code, vol_average]
+        idx = len(df_last)
+        df_last.loc[idx] = [code, mean, std]
     except:
         pass
 
-print(df2)
-print("time :", time.time() - start)
+df_last = df_last.sort_values(by=['std'], axis=0, ascending=False)  # sorting by std(descending)
+df_last = df_last.reset_index(drop=True, inplace=False)     # re-indexing
+print(df_last)
