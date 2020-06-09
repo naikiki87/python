@@ -10,38 +10,41 @@ import seaborn as sns
 # rawdata = pd.read_csv('total.txt', sep="\t")
 
 # rawdata = pd.read_csv('total.txt', sep = "\t", engine='python', encoding = "cp949")
+rawdata = pd.read_csv('total.txt', sep = "\t", names=['timestamp', 'data', 'id', 'x', 'y'])
+print(rawdata)
+
+feature = rawdata[['timestamp', 'x', 'y']]
+
+print(feature)
 
 
-# print(rawdata)
-# print(rawdata[0])
+# iris = datasets.load_iris()
 
+# labels = pd.DataFrame(iris.target)
+# labels.columns=['labels']
+# data = pd.DataFrame(iris.data)
+# data.columns=['Sepal length','Sepal width','Petal length','Petal width']
+# data = pd.concat([data,labels],axis=1)
 
-iris = datasets.load_iris()
+# print(data.head())
 
-labels = pd.DataFrame(iris.target)
-labels.columns=['labels']
-data = pd.DataFrame(iris.data)
-data.columns=['Sepal length','Sepal width','Petal length','Petal width']
-data = pd.concat([data,labels],axis=1)
-
-print(data.head())
-
-feature = data[ ['Sepal length','Sepal width','Petal length','Petal width']]
-print(feature.head())
+# feature = data[ ['Sepal length','Sepal width','Petal length','Petal width']]
+# print(feature.head())
 
 model = DBSCAN(eps=0.3,min_samples=6)
 predict = pd.DataFrame(model.fit_predict(feature))
-predict.columns=['predict']
+# predict.columns=['predict']
 
-print(predict.head())
+# print(predict.head())
 
-r = pd.concat([feature,predict],axis=1)
+# r = pd.concat([feature,predict],axis=1)
 
-print(r)
+# print(r)
 
-feature = data[ ['Sepal length','Sepal width']]
+# feature = data[ ['Sepal length','Sepal width']]
 
-sns.jointplot(x="Sepal length", y="Sepal width", data=feature, kind="kde")
+# sns.jointplot(x="Sepal length", y="Sepal width", data=feature, kind="kde")
+sns.jointplot(x="x", y="y", data=feature, kind="kde")
 plt.suptitle("꽃받침의 길이와 넓이의 Joint Plot 과 Kernel Density Plot", y=1.02)
 plt.show()
 

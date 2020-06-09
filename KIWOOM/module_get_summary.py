@@ -9,7 +9,7 @@ from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore
 
 for i in range(10) :
-    globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', 'price', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5'])
+    globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', 'price', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5', 'm_6', 'm_7', 'm_8', 'm_9', 'm_10'])
     globals()['save_times{}'.format(i)] = 0
     globals()['elapsed_min{}'.format(i)] = 0
 
@@ -81,13 +81,15 @@ class Worker(QThread):
                     break
 
                 time.sleep(1)
+                
             except:
                 pass
         
         cnt = 0
         while True:
             self.get_summary()
-            time.sleep(3)
+            QtTest.QTest.qWait(3000)
+            # time.sleep(3)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         if rqname == "opw00018_req":
@@ -124,11 +126,19 @@ class Worker(QThread):
                     m_3 = globals()['DF_item{}'.format(i)].loc[0]['m_2']
                     m_4 = globals()['DF_item{}'.format(i)].loc[0]['m_3']
                     m_5 = globals()['DF_item{}'.format(i)].loc[0]['m_4']
-                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, int(cur_price), m_1, m_2, m_3, m_4, m_5]
+                    m_6 = globals()['DF_item{}'.format(i)].loc[0]['m_5']
+                    m_7 = globals()['DF_item{}'.format(i)].loc[0]['m_6']
+                    m_8 = globals()['DF_item{}'.format(i)].loc[0]['m_7']
+                    m_9 = globals()['DF_item{}'.format(i)].loc[0]['m_8']
+                    m_10 = globals()['DF_item{}'.format(i)].loc[0]['m_9']
+
+                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, int(cur_price), m_1, m_2, m_3, m_4, m_5, m_6, m_7, m_8, m_9, m_10]
                     globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
                 else:
-                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, int(cur_price), 0, 0, 0, 0, 0]
+                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [0, int(cur_price), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
                     globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
+
+                print(globals()['save_times{}'.format(i)])
 
                 total_sum = str('{0:,}'.format(int(total_evaluation_price) - int(total_purchase_price)))
                 owncount = str('{0:,}'.format(int(owncount)))

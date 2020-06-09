@@ -10,6 +10,11 @@ from PyQt5 import QtTest, QtCore, QtWidgets
 import module_timer
 import module_get_summary
 
+for i in range(10) :
+    globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', '%', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5', 'm_6', 'm_7', 'm_8', 'm_9', 'm_10'])
+    globals()['save_times{}'.format(i)] = 0
+    globals()['elapsed_min{}'.format(i)] = 0
+
 
 class Kiwoom(QMainWindow):
     index = 0
@@ -57,10 +62,6 @@ class Kiwoom(QMainWindow):
         btn4 = QPushButton('TES2T', self)
         btn4.move(290, 140)
         btn4.clicked.connect(self.btn_test)
-
-        # btn4 = QPushButton('TES2Tddd', self)
-        # btn4.move(190, 140)
-        # btn4.clicked.connect(self.btn_test2)
 
         label = QLabel('수량', self)
         label.move(20, 90)
@@ -352,12 +353,7 @@ class Kiwoom(QMainWindow):
         # self.text_edit.append("thread stopped")
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        print("data received.")
-
-        print("rqname", rqname)
-        print("trcode", trcode)
-        print("recordname", recordname)
-
+        print("data received")
         if next == '2':
             self.remained_data = True
         else:
@@ -370,9 +366,7 @@ class Kiwoom(QMainWindow):
             self.show_opw00018(rqname, trcode, recordname)
 
         if rqname == "opw00009_req":
-            print("HERE")
             ret = self.kiwoom.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
-            print(ret)
             self.show_opw00009(rqname, trcode, recordname)
         if rqname == "OPW00007_req":
             # print("HERER")
@@ -428,6 +422,27 @@ class Kiwoom(QMainWindow):
             tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
             eval_pl = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
 
+            print(globals()['save_times{}'.format(i)])
+
+            if globals()['save_times{}'.format(i)] == 3:
+                globals()['save_times{}'.format(i)] = 0
+                m_1 = globals()['DF_item{}'.format(i)]['%'].mean()
+                m_2 = globals()['DF_item{}'.format(i)].loc[0]['m_1']
+                m_3 = globals()['DF_item{}'.format(i)].loc[0]['m_2']
+                m_4 = globals()['DF_item{}'.format(i)].loc[0]['m_3']
+                m_5 = globals()['DF_item{}'.format(i)].loc[0]['m_4']
+                m_6 = globals()['DF_item{}'.format(i)].loc[0]['m_5']
+                m_7 = globals()['DF_item{}'.format(i)].loc[0]['m_6']
+                m_8 = globals()['DF_item{}'.format(i)].loc[0]['m_7']
+                m_9 = globals()['DF_item{}'.format(i)].loc[0]['m_8']
+                m_10 = globals()['DF_item{}'.format(i)].loc[0]['m_9']
+
+                globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [itemcode, round(float(each_percent), 2), m_1, m_2, m_3, m_4, m_5, m_6, m_7, m_8, m_9, m_10]
+                globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
+            else:
+                globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [itemcode, round(float(each_percent), 2), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+                globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
+
             # '{0:,}'.format()
             # str('{0:,}'.format())
             # total_fee = int(float(added_fee) + float(tax))
@@ -440,33 +455,18 @@ class Kiwoom(QMainWindow):
             total_fee = str('{0:,}'.format(int(float(added_fee) + float(tax))))
             eval_pl = str('{0:,}'.format(int(eval_pl)))
 
-            # print("total_fee : ", total_fee)
-
             self.setTableWidgetData(1, 2*i, 0, itemcode)
             self.setTableWidgetData(1, 2*i, 1, itemname)
             self.setTableWidgetData(1, 2*i, 2, owncount)
-            # self.setTableWidgetData(1, 2*i, 2, str(int(owncount)))
-            # self.setTableWidgetData(1, 2*i, 2, str(int('{0:,}'.format(owncount))))
-
-            # self.setTableWidgetData(1, 2*i, 3, str(int(cur_price)))
-            # self.setTableWidgetData(1, (2*i + 1), 3, str(int(unit_price)))
             self.setTableWidgetData(1, 2*i, 3, cur_price)
             self.setTableWidgetData(1, (2*i + 1), 3, unit_price)
-            
-            # self.setTableWidgetData(1, (2*i + 1), 3, str(int('{0:,}'.format(unit_price))))
-            
-            # self.setTableWidgetData(1, 2*i, 4, str(int(total_evaluation_price)))
-            # self.setTableWidgetData(1, (2*i + 1), 4, str(int(total_purchase_price)))
             self.setTableWidgetData(1, 2*i, 4, total_evaluation_price)
             self.setTableWidgetData(1, (2*i + 1), 4, total_purchase_price)
-
-            
-            # self.setTableWidgetData(1, 2*i, 6, str(total_fee))
             self.setTableWidgetData(1, 2*i, 5, total_sum)
             self.setTableWidgetData(1, 2*i, 6, total_fee)
-            
             self.setTableWidgetData(1, 2*i, 7, eval_pl)
             self.setTableWidgetData(1, 2*i, 8, str(round(float(each_percent), 2)))
+        print(DF_item0)
 
     def show_opw00009(self, rqname, trcode, recordname):
         print("Show opw00009")

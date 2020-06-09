@@ -12,14 +12,14 @@ idx4 = 0
 SHOW_SCALE = 5
 
 VOL_FIN_PAGE = 3
-VOL_AVERAGE = 500000    # 평균 volume filtering 하한치
-VOL_RATIO_YESTERDAY = 2
-VOL_RATIO_TODAY_LOW = 0.5
-VOL_RATIO_TODAY_HI = 10
+VOL_AVERAGE = 1000000       # 평균 volume
+VOL_RATIO_YESTERDAY = 2     # 그저께 대비 어제 volume
+VOL_RATIO_TODAY_LOW = 0.5   # 어제 대비 오늘의 volume low
+VOL_RATIO_TODAY_HI = 10     # 어제 대비 오늘의 volume high
 
 PER_LIMIT = 15
 
-ROE_LOW_LIMIT = 20
+ROE_LOW_LIMIT = 15
 
 SUM_LOW_LIMIT = 1000     # 시가총액 하한치(단위 : 억원)
 
