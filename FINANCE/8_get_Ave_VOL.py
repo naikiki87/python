@@ -19,8 +19,8 @@ code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'})
 
 df2 = pd.DataFrame(columns = ['code', 'Vol(AV)'])
 
-cnt_code = len(code_df)
-# cnt_code = 20
+# cnt_code = len(code_df)
+cnt_code = 5
 
 for i in range(0, cnt_code):
     try:
@@ -40,6 +40,8 @@ for i in range(0, cnt_code):
     
         df = df.rename(columns={'날짜':'date', '종가':'end', '전일비':'gap', '시가':'start', '고가':'high', '저가':'low', '거래량' : 'vol'})
         df = df.dropna()
+
+        print(df)
         vol_average = int(round(df['vol'].mean(), 0))
 
         if vol_average > VOL_AVERAGE :
