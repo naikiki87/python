@@ -9,6 +9,7 @@ from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore, QtWidgets
 import module_timer
 import module_get_summary
+import module_item_finder
 
 for i in range(10) :
     globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', '%', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5', 'm_6', 'm_7', 'm_8', 'm_9', 'm_10'])
@@ -35,7 +36,7 @@ class Kiwoom(QMainWindow):
    
     def init_UI(self) :
         self.setWindowTitle("AutoK")
-        self.setGeometry(100, 100, 1700, 600)
+        self.setGeometry(100, 100, 1800, 600)
 
         label = QLabel('종목코드', self)
         label.move(20, 10)
@@ -86,12 +87,12 @@ class Kiwoom(QMainWindow):
         self.set_table_summary()
 
         label = QLabel('매매일자', self)
-        label.move(1100, 10)
+        label.move(1200, 10)
         self.input_history_date = QLineEdit(self)
-        self.input_history_date.move(1180, 10)
+        self.input_history_date.move(1280, 10)
 
         btn7 = QPushButton('검색', self)
-        btn7.move(1300, 10)
+        btn7.move(1400, 10)
         btn7.clicked.connect(self.get_trade_history)
 
         self.table_history = QTableWidget(self)     # 매매 history
@@ -131,40 +132,21 @@ class Kiwoom(QMainWindow):
     @pyqtSlot(str)
     def update_times(self, data) :
         self.text_edit4.setText(data)
-
+    @pyqtSlot(str)
+    def item_finder_messages(self, data):
+        self.text_edit.append(data)
     @pyqtSlot(dict)
-    def update_times2(self, data) :
-        # print(data)
-        data_cnt = data['count']
-        self.text_edit5.setText(data['total_purchase'])
-        self.text_edit6.setText(data['total_evaluation'])
-
-        for i in range(data_cnt):
-            self.setTableWidgetData(1, 2*i, 0, data[(i, "item_code")])
-            self.setTableWidgetData(1, 2*i, 1, data[(i, "item_name")])
-            self.setTableWidgetData(1, 2*i, 2, data[(i, "owncount")])
-            self.setTableWidgetData(1, 2*i, 3, data[(i, "cur_price")])
-            self.setTableWidgetData(1, (2*i+1), 3, data[(i, "unit_price")])
-            self.setTableWidgetData(1, 2*i, 4, data[(i, "total_evaluation_price")])
-            self.setTableWidgetData(1, (2*i+1), 4, data[(i, "total_purchase_price")])
-            self.setTableWidgetData(1, 2*i, 5, data[(i, "total_sum")])
-            self.setTableWidgetData(1, 2*i, 6, data[(i, "total_fee")])
-            self.setTableWidgetData(1, 2*i, 7, data[(i, "eval_pl")])
-            self.setTableWidgetData(1, 2*i, 8, data[(i, "each_percent")])
+    def item_finder_items(self, data):
+        new_items = pd.DataFrame.from_dict(data)
+        print(new_items)
 
     def btn_test(self):
-        a = 0
+        self.item_finder = module_item_finder.Item_Finder()
+        self.item_finder.item_finder_messages.connect(self.item_finder_messages)
+        self.item_finder.item_finder_items.connect(self.item_finder_items)
+        self.item_finder.start()
+        # a = 0
         
-    # def check_balance(self) :
-    #     ## Back Worker -> import module_get_summary ##
-    #     # acc_pw = self.input_acc_pw.text()
-    #     acc_pw = "6458"
-    #     self.th_get_summary = module_get_summary.Worker(acc_pw)
-    #     self.th_get_summary.summary_data.connect(self.update_times2)
-    #     self.th_get_summary.start()
-    #     self.text_edit.append("Thread Started")
-
-
     def set_table_summary(self):
         row_count = 10
         col_count = 9
@@ -209,7 +191,7 @@ class Kiwoom(QMainWindow):
         col_count = 7
         self.table_history.resize(600, 480)
         
-        self.table_history.move(1050, 50)
+        self.table_history.move(1150, 50)
         self.table_history.setRowCount(row_count)
         self.table_history.setColumnCount(col_count)
         self.table_history.resizeRowsToContents()
@@ -227,8 +209,6 @@ class Kiwoom(QMainWindow):
         self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("체결수량"))
         self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("체결단가"))
         self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("주문번호"))
-    def test2(self):
-        self.i = 1
     def setTableWidgetData(self, table_no, row, col, content):
         if table_no == 1:
             item = QTableWidgetItem(content)
@@ -252,7 +232,7 @@ class Kiwoom(QMainWindow):
             self.text_edit.append("timer thread started")
             self.login_event_loop.terminate()
 
-            self.check_balance()
+            self.check_balance()          # showing summary data
         else:
             print("DISCONNECTED")
     ## [END] login ##
@@ -326,13 +306,6 @@ class Kiwoom(QMainWindow):
             self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
             # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "OPW00007_req", "OPW00007", 0, "0101")
 
-    def iterative_test(self) :
-        i = 0
-        while i <= 5 :
-            self.check_balance()
-            i = i + 1
-            QtTest.QTest.qWait(1000)
-    
     def check_balance(self):
         acc_no = "8137639811"
         acc_pw = "6458"
@@ -349,8 +322,6 @@ class Kiwoom(QMainWindow):
 
     def stop_check_balance(self):
         self.is_continue = 0
-        # self.th_get_summary.terminate()
-        # self.text_edit.append("thread stopped")
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("data received")
@@ -422,7 +393,7 @@ class Kiwoom(QMainWindow):
             tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
             eval_pl = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
 
-            print(globals()['save_times{}'.format(i)])
+            # print(globals()['save_times{}'.format(i)])
 
             if globals()['save_times{}'.format(i)] == 3:
                 globals()['save_times{}'.format(i)] = 0
@@ -466,7 +437,7 @@ class Kiwoom(QMainWindow):
             self.setTableWidgetData(1, 2*i, 6, total_fee)
             self.setTableWidgetData(1, 2*i, 7, eval_pl)
             self.setTableWidgetData(1, 2*i, 8, str(round(float(each_percent), 2)))
-        print(DF_item0)
+        # print(DF_item0)
 
     def show_opw00009(self, rqname, trcode, recordname):
         print("Show opw00009")
@@ -506,7 +477,7 @@ class Kiwoom(QMainWindow):
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
-    print(sys.argv)
+    # print(sys.argv)
     myWindow = Kiwoom()
     myWindow.show()
     app.exec_()
