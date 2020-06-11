@@ -140,11 +140,14 @@ class Kiwoom(QMainWindow):
         new_items = pd.DataFrame.from_dict(data)
         print(new_items)
 
-    def btn_test(self):
-        self.item_finder = module_item_finder.Item_Finder()
-        self.item_finder.item_finder_messages.connect(self.item_finder_messages)
-        self.item_finder.item_finder_items.connect(self.item_finder_items)
-        self.item_finder.start()
+    def btn_test(self) :
+        self.get_trade_history()
+
+    # def btn_test(self):
+    #     self.item_finder = module_item_finder.Item_Finder()
+    #     self.item_finder.item_finder_messages.connect(self.item_finder_messages)
+    #     self.item_finder.item_finder_items.connect(self.item_finder_items)
+    #     self.item_finder.start()
         # a = 0
         
     def set_table_summary(self):
@@ -188,8 +191,8 @@ class Kiwoom(QMainWindow):
         self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("%"))
     def set_table_history(self):
         row_count = 20
-        col_count = 7
-        self.table_history.resize(600, 480)
+        col_count = 8
+        self.table_history.resize(680, 480)
         
         self.table_history.move(1150, 50)
         self.table_history.setRowCount(row_count)
@@ -202,13 +205,14 @@ class Kiwoom(QMainWindow):
         self.table_history.verticalHeader().setVisible(False)
         self.table_history.verticalHeader().setDefaultSectionSize(1)
 
-        self.table_history.setHorizontalHeaderItem(0, QTableWidgetItem("체결번호"))
-        self.table_history.setHorizontalHeaderItem(1, QTableWidgetItem("체결시간"))
-        self.table_history.setHorizontalHeaderItem(2, QTableWidgetItem("종목번호"))
-        self.table_history.setHorizontalHeaderItem(3, QTableWidgetItem("종 목 명"))
-        self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("체결수량"))
-        self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("체결단가"))
-        self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("주문번호"))
+        self.table_history.setHorizontalHeaderItem(0, QTableWidgetItem("구분"))
+        self.table_history.setHorizontalHeaderItem(1, QTableWidgetItem("체결번호"))
+        self.table_history.setHorizontalHeaderItem(2, QTableWidgetItem("체결시간"))
+        self.table_history.setHorizontalHeaderItem(3, QTableWidgetItem("종목번호"))
+        self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("종 목 명"))
+        self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("체결수량"))
+        self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("체결단가"))
+        self.table_history.setHorizontalHeaderItem(7, QTableWidgetItem("주문번호"))
     def setTableWidgetData(self, table_no, row, col, content):
         if table_no == 1:
             item = QTableWidgetItem(content)
@@ -232,7 +236,7 @@ class Kiwoom(QMainWindow):
             self.text_edit.append("timer thread started")
             self.login_event_loop.terminate()
 
-            self.check_balance()          # showing summary data
+            # self.check_balance()          # showing summary data
         else:
             print("DISCONNECTED")
     ## [END] login ##
@@ -288,23 +292,17 @@ class Kiwoom(QMainWindow):
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
 
     def get_trade_history(self):
-        # date = int(self.input_history_date.text())
-        # date = self.input_history_date.text()
-        # print(date)
-        search_date = "20200603"
+        print("clicked get trade history")
+        search_date = "20200611"
         acc_no = "8137639811"
-        # acc_pw = "6458"
-        acc_pw = self.input_acc_pw.text()
-        if acc_pw != "6458" :
-            self.text_edit.append("Wrong Password")
-        else :
+        acc_pw = "6458"
 
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", search_date)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-            # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "조회구분", 4)
-            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
-            # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "OPW00007_req", "OPW00007", 0, "0101")
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", search_date)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", "0")
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
 
     def check_balance(self):
         acc_no = "8137639811"
@@ -337,14 +335,7 @@ class Kiwoom(QMainWindow):
             self.show_opw00018(rqname, trcode, recordname)
 
         if rqname == "opw00009_req":
-            ret = self.kiwoom.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
             self.show_opw00009(rqname, trcode, recordname)
-        if rqname == "OPW00007_req":
-            # print("HERER")
-            # print(err_code)
-            # data_cnt = self.get_repeat_cnt(trcode, recordname)
-            # print(data_cnt)
-            self.show_OPW00007(rqname, trcode, recordname)
 
     def show_opt10001(self, rqname, trcode, recordname):
         itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
@@ -446,23 +437,24 @@ class Kiwoom(QMainWindow):
         data_cnt = self.get_repeat_cnt(trcode, rqname)
         print("count : ", data_cnt)
 
-        # for i in range(data_cnt) :
-
-        #     trade_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결번호")
-        #     trade_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결시간")
-        #     itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-        #     itemname = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
-        #     trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
-        #     trade_unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결단가")
-        #     req_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
-
-        #     self.setTableWidgetData(2, i, 0, trade_no)
-        #     self.setTableWidgetData(2, i, 1, trade_time)
-        #     self.setTableWidgetData(2, i, 2, itemcode)
-        #     self.setTableWidgetData(2, i, 3, itemname)
-        #     self.setTableWidgetData(2, i, 4, trade_amount)
-        #     self.setTableWidgetData(2, i, 5, trade_unit_price)
-        #     self.setTableWidgetData(2, i, 6, req_no)
+        for i in range(data_cnt) :
+            deal_type = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문유형구분")
+            trade_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결번호")
+            trade_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결시간")
+            itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
+            itemname = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
+            trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
+            trade_unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결단가")
+            req_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
+            
+            self.setTableWidgetData(2, i, 0, deal_type)
+            self.setTableWidgetData(2, i, 1, trade_no)
+            self.setTableWidgetData(2, i, 2, trade_time)
+            self.setTableWidgetData(2, i, 3, itemcode)
+            self.setTableWidgetData(2, i, 4, itemname)
+            self.setTableWidgetData(2, i, 5, str(int(trade_amount)))
+            self.setTableWidgetData(2, i, 6, str(round(float(trade_unit_price), 1)))
+            self.setTableWidgetData(2, i, 7, req_no)
 
     def show_OPW00007(self, rqname, trcode, recordname):
         print("Show OPW00007")
