@@ -228,30 +228,59 @@ class Kiwoom(QMainWindow):
             self.text_edit.append("CONNECTED")
             self.timer = module_timer.Timer()
             self.timer.cur_time.connect(self.update_times)
+            
+            # self.buy_test()
             self.timer.start()
             self.text_edit.append("timer thread started")
             self.login_event_loop.terminate()
 
             self.check_balance()          # showing summary data
+            
         else:
             print("DISCONNECTED")
     ## [END] login ##
 
+    def buy_test(self):
+        cnt = 0
+        for i in range(10) :
+            self.text_edit.append(str(cnt))
+            cnt = cnt + 1
+            QtTest.QTest.qWait(1000)
+
     ## 매수 ##
-    def btn_buy_order(self):
+    def btn_buy_order(self) :
+        self.text_edit.append("BUY Clicked")
+        item_code = self.code_edit.text()
+        qty = int(self.buy_sell_count.text())
+        price = int(self.buy_price.text())
+
+        self.buy_order(item_code, qty, price)
+
+    def buy_order(self, item_code, qty, price) :
         self.text_edit.append("Send Order : BUY")
         rqname = "RQ_TEST"
         screen_no = "0101"
         acc_no = "8137639811"
         order_type = 1
-        item_code = self.code_edit.text()
-        qty = int(self.buy_sell_count.text())
-        price = int(self.buy_price.text())
         hogagb = "00"
         orgorderno = ""
-        
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
+
+    # def btn_buy_order(self):
+    #     self.text_edit.append("Send Order : BUY")
+    #     rqname = "RQ_TEST"
+    #     screen_no = "0101"
+    #     acc_no = "8137639811"
+    #     order_type = 1
+    #     item_code = self.code_edit.text()
+    #     qty = int(self.buy_sell_count.text())
+    #     price = int(self.buy_price.text())
+    #     hogagb = "00"
+    #     orgorderno = ""
+        
+    #     order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+    #                  [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
     ## 매도 ##
     def btn_sell_order(self):
         self.text_edit.append("Send Order : SELL")
@@ -306,7 +335,15 @@ class Kiwoom(QMainWindow):
             self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
             # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "OPW00007_req", "OPW00007", 0, "0101")
 
+    def auto_item_info(self):
+        code = "005930"
+        
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
+
     def check_balance(self):
+        self.buy_cnt = 0
+        self.auto_buy = 0
         acc_no = "8137639811"
         acc_pw = "6458"
         # acc_pw = self.input_acc_pw.text()
@@ -315,6 +352,12 @@ class Kiwoom(QMainWindow):
         else :
             self.is_continue = 1
             while self.is_continue:
+                if self.buy_cnt == 2:
+                    self.auto_item_info()
+                    self.auto_buy = 1
+                self.text_edit.append(str(self.buy_cnt))
+                self.buy_cnt = self.buy_cnt + 1
+
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
                 self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
@@ -340,10 +383,6 @@ class Kiwoom(QMainWindow):
             ret = self.kiwoom.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
             self.show_opw00009(rqname, trcode, recordname)
         if rqname == "OPW00007_req":
-            # print("HERER")
-            # print(err_code)
-            # data_cnt = self.get_repeat_cnt(trcode, recordname)
-            # print(data_cnt)
             self.show_OPW00007(rqname, trcode, recordname)
 
     def show_opt10001(self, rqname, trcode, recordname):
@@ -356,6 +395,7 @@ class Kiwoom(QMainWindow):
         current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
         current_price = current_price.strip()
         current_price = int(current_price)
+
         if current_price < 0:        
             current_price = current_price * -1
 
@@ -368,6 +408,15 @@ class Kiwoom(QMainWindow):
         self.text_edit2.append("시가:" + prices.strip())
         self.text_edit2.append("PER:" + per.strip())
         self.text_edit2.append("현재가:" + str(current_price))
+
+        if self.auto_buy == 1:
+            self.text_edit.append("BUY")
+            self.text_edit.append("종목 : " + name.strip())
+            self.text_edit.append("현재가 : " + str(current_price))
+
+            self.buy_order(itemcode.strip(), 1, current_price + 50)
+            self.auto_buy = 0
+            
 
     def show_opw00018(self, rqname, trcode, recordname):
         data_cnt = self.get_repeat_cnt(trcode, rqname)

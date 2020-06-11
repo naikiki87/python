@@ -52,21 +52,19 @@ start = time.time()
 
 SHOW_SCALE = 5
 VOL_FIN_PAGE = 3    # 평균 volume을 구할 표본 수 -> 1 당 10일치
-STDEV_LIMIT = 0.3
-VOL_AVERAGE = 500000    # 평균 volume filtering 하한치
-MKT_SUM_LIMIT = 2000
+STDEV_LIMIT = 0.25
+VOL_AVERAGE = 1000000    # 평균 volume filtering 하한치
+MKT_SUM_LIMIT = 3000
 
 code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
 code_df.종목코드 = code_df.종목코드.map('{:06d}'.format) 
 code_df = code_df[['회사명', '종목코드']]
 code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'}) 
 
-# df3 = pd.DataFrame(columns = ['date', 'end'])
-# df2 = pd.DataFrame(columns = ['end'])
 df_last = pd.DataFrame(columns = ['code', 'p_avr', 'stdev'])
 
 # cnt_code = len(code_df)
-cnt_code = 100
+cnt_code = 1000
 idx = 0
 
 for i in range(0, cnt_code):
