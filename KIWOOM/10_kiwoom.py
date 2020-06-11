@@ -194,7 +194,7 @@ class Kiwoom(QMainWindow):
         col_count = 8
         self.table_history.resize(680, 480)
         
-        self.table_history.move(1150, 50)
+        self.table_history.move(1050, 50)
         self.table_history.setRowCount(row_count)
         self.table_history.setColumnCount(col_count)
         self.table_history.resizeRowsToContents()
@@ -238,7 +238,7 @@ class Kiwoom(QMainWindow):
             self.text_edit.append("timer thread started")
             self.login_event_loop.terminate()
 
-            self.check_balance()          # showing summary data
+            # self.check_balance()          # showing summary data
             
         else:
             print("DISCONNECTED")
@@ -271,30 +271,21 @@ class Kiwoom(QMainWindow):
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
 
-    # def btn_buy_order(self):
-    #     self.text_edit.append("Send Order : BUY")
-    #     rqname = "RQ_TEST"
-    #     screen_no = "0101"
-    #     acc_no = "8137639811"
-    #     order_type = 1
-    #     item_code = self.code_edit.text()
-    #     qty = int(self.buy_sell_count.text())
-    #     price = int(self.buy_price.text())
-    #     hogagb = "00"
-    #     orgorderno = ""
-        
-    #     order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
-    #                  [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
     ## 매도 ##
-    def btn_sell_order(self):
+    def btn_sell_order(self) :
+        self.text_edit.append("SELL Clicked")
+        item_code = self.code_edit.text()
+        qty = int(self.buy_sell_count.text())
+        price = int(self.buy_price.text())
+
+        self.sell_order(item_code, qty, price)
+
+    def sell_order(self, item_code, qty, price) :
         self.text_edit.append("Send Order : SELL")
         rqname = "RQ_TEST"
         screen_no = "0101"
         acc_no = "8137639811"
         order_type = 2
-        item_code = self.code_edit.text()
-        qty = int(self.buy_sell_count.text())
-        price = int(self.buy_price.text())
         hogagb = "00"
         orgorderno = ""
         
@@ -322,7 +313,7 @@ class Kiwoom(QMainWindow):
 
     def get_trade_history(self):
         print("clicked get trade history")
-        search_date = "20200611"
+        search_date = "20200603"
         acc_no = "8137639811"
         acc_pw = "6458"
 
