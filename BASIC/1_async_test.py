@@ -9,13 +9,27 @@ async def find_users_async(n):
 
 async def process_async():
     start = time.time()
-    await asyncio.wait([
-        find_users_async(3),
-        find_users_async(2),
-        find_users_async(1),
-    ])
+    job_list = []
+    for i in range(1, 5):
+        job_list.append(find_users_async(i))
+
+    print("job list")
+    # print(job_list)
+    await asyncio.wait(job_list)
+    # await asyncio.wait([
+    #     find_users_async(3),
+    #     find_users_async(2),
+    #     find_users_async(1),
+    # ])
     end = time.time()
     print(f'>>> 비동기 처리 총 소요 시간: {end - start}')
 
 if __name__ == '__main__':
     asyncio.run(process_async())
+
+
+# job_list = []
+# for i in range(1, 4):
+#     job_list.append(i)
+
+# print(job_list)
