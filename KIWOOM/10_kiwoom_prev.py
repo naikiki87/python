@@ -254,6 +254,43 @@ class Kiwoom(QMainWindow):
             self.history_index = self.history_index + 1
             self.get_trade_history2()
 
+
+    # def get_trade_history(self):
+    #     print("clicked get trade history")
+    #     acc_no = "8137639811"
+    #     acc_pw = "6458"
+
+    #     # self.search_date_list = ["20200601", "20200602", "20200603", "20200609", "20200611"]
+    #     self.search_date_list = list(range(20200601, 20200612))
+    #     self.search_date_list = list(map(str, self.search_date_list))
+
+    #     cont = 1
+    #     self.history_index = 0
+
+    #     self.show_history_continue = 1
+
+    #     while cont:
+
+    #         if self.show_history_continue == 1 :
+
+    #             # self.search_date = "20200609"
+    #             self.search_date = self.search_date_list[self.history_index]
+    #             print("DATE : ", self.search_date)
+    #             self.history_index = self.history_index + 1
+    #             if len(self.search_date_list) == self.history_index :
+    #                 cont = 0
+
+    #             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", self.search_date)
+    #             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+    #             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+    #             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
+    #             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", "0")
+    #             self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
+    #             self.show_history_continue = 0
+
+    #         QtTest.QTest.qWait(210)
+
+
     def show_opw00009(self, rqname, trcode, recordname):
         data_cnt = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "조회건수")
         
@@ -355,7 +392,6 @@ class Kiwoom(QMainWindow):
             self.login_event_loop.terminate()
 
             # self.check_balance()          # Aloha
-            # self.btn_test()
             
         else:
             print("DISCONNECTED")
@@ -433,8 +469,6 @@ class Kiwoom(QMainWindow):
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10004_req", "opt10004", 0, "0101")
 
     def check_balance(self):
-
-        self.btn_test()
         self.buy_cnt = 0
         self.auto_buy = 0
         acc_no = "8137639811"
