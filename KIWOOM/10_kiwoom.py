@@ -16,6 +16,7 @@ for i in range(10) :
     globals()['save_times{}'.format(i)] = 0
     globals()['elapsed_min{}'.format(i)] = 0
 
+df_history = pd.DataFrame(columns = ['day', 'type', 'T_ID', 'time', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
 
 class Kiwoom(QMainWindow):
     index = 0
@@ -68,6 +69,9 @@ class Kiwoom(QMainWindow):
         label.move(20, 90)
         self.buy_sell_count = QLineEdit(self)
         self.buy_sell_count.move(80, 90)
+
+        self.test_text = QLineEdit(self)
+        self.test_text.move(80, 140)
 
         label = QLabel('비밀번호', self)
         label.move(430, 10)
@@ -146,45 +150,79 @@ class Kiwoom(QMainWindow):
 
     def get_trade_history(self):
         print("clicked get trade history")
-        search_date = "20200611"
         acc_no = "8137639811"
         acc_pw = "6458"
 
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", search_date)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", "0")
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
+        # self.search_date_list = ["20200601", "20200602", "20200603", "20200609", "20200611"]
+        self.search_date_list = list(range(20200601, 20200612))
+        self.search_date_list = list(map(str, self.search_date_list))
+
+        cont = 1
+        self.history_index = 0
+
+        self.show_history_continue = 1
+
+        while cont:
+
+            if self.show_history_continue == 1 :
+
+                # self.search_date = "20200609"
+                self.search_date = self.search_date_list[self.history_index]
+                print("DATE : ", self.search_date)
+                self.history_index = self.history_index + 1
+                if len(self.search_date_list) == self.history_index :
+                    cont = 0
+
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", self.search_date)
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", "0")
+                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
+                self.show_history_continue = 0
+
+            QtTest.QTest.qWait(1000)
+
 
     def show_opw00009(self, rqname, trcode, recordname):
-        print("Show opw00009")
-        # data_cnt = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "조회건수")
+        data_cnt = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "조회건수")
         
-        data_cnt = self.get_repeat_cnt(trcode, rqname)
         print("count : ", data_cnt)
+        print(type(data_cnt))
 
-        for i in range(data_cnt) :
-            deal_type = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문유형구분")
-            trade_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결번호")
-            trade_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결시간")
-            itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-            itemname = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
-            trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
-            trade_unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결단가")
-            req_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
+        if data_cnt == "":
+            print("nothing")
+            self.show_history_continue = 1
+        else :
+            data_cnt = int(data_cnt)
 
-            next_row = self.cnt_tab_history
+            for i in range(data_cnt) :
+                deal_type = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문유형구분")
+                trade_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결번호")
+                trade_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결시간")
+                itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
+                itemname = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
+                trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
+                trade_unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결단가")
+                req_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
 
-            self.setTableWidgetData(2, next_row, 0, deal_type)
-            self.setTableWidgetData(2, next_row, 1, trade_no)
-            self.setTableWidgetData(2, next_row, 2, trade_time)
-            self.setTableWidgetData(2, next_row, 3, itemcode)
-            self.setTableWidgetData(2, next_row, 4, itemname)
-            self.setTableWidgetData(2, next_row, 5, str(int(trade_amount)))
-            self.setTableWidgetData(2, next_row, 6, str(round(float(trade_unit_price), 1)))
-            self.setTableWidgetData(2, next_row, 7, req_no)
-            self.cnt_tab_history = self.cnt_tab_history + 1
+                next_row = self.cnt_tab_history
+
+                df_history.loc[self.cnt_tab_history] = [self.search_date, deal_type, trade_no, trade_time, itemcode, itemname, int(trade_amount), round(float(trade_unit_price), 1), req_no]
+
+                # self.setTableWidgetData(2, next_row, 0, deal_type)
+                # self.setTableWidgetData(2, next_row, 1, trade_no)
+                # self.setTableWidgetData(2, next_row, 2, trade_time)
+                # self.setTableWidgetData(2, next_row, 3, itemcode)
+                # self.setTableWidgetData(2, next_row, 4, itemname)
+                # self.setTableWidgetData(2, next_row, 5, str(int(trade_amount)))
+                # self.setTableWidgetData(2, next_row, 6, str(round(float(trade_unit_price), 1)))
+                # self.setTableWidgetData(2, next_row, 7, req_no)
+                self.cnt_tab_history = self.cnt_tab_history + 1
+            
+            print("df history")
+            print(df_history)
+            self.show_history_continue = 1
 
     def setTableWidgetData(self, table_no, row, col, content):
         if table_no == 1:
