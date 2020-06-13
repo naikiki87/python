@@ -99,11 +99,11 @@ class Kiwoom(QMainWindow):
 
         btn7 = QPushButton('검색', self)
         btn7.move(1400, 10)
-        btn7.clicked.connect(self.get_trade_history)
+        btn7.clicked.connect(self.func_GET_TradeHistory)
 
         self.table_history = QTableWidget(self)     # 매매 history
         self.cnt_tab_history = 0
-        self.set_table_history()
+        self.func_SET_HistoryTable()
 
         self.text_edit = QTextEdit(self)
         self.text_edit.setGeometry(10, 180, 190, 150)
@@ -162,19 +162,19 @@ class Kiwoom(QMainWindow):
 
         if rqname == "opw00009_man":
             print("opw20009 man")
-            self.fnc_show_TradeHistory(rqname, trcode, recordname)
+            self.func_SHOW_TradeHistory(rqname, trcode, recordname)
 
         if rqname == "opw00009_req":
             if self.init_history == 1:
                 self.init_history_table(rqname, trcode, recordname)
             else :
                 print("#######")
-                # self.fnc_show_TradeHistory(rqname, trcode, recordname)
+                # self.func_SHOW_TradeHistory(rqname, trcode, recordname)
 
 
             self.show_opt10004(rqname, trcode, recordname)
 
-    def get_trade_history(self) :       # search history data manually
+    def func_GET_TradeHistory(self) :       # search history data manually
         self.df_history = pd.DataFrame(columns = ['day', 'time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
         self.search_date = self.input_history_date.text()
 
@@ -257,15 +257,15 @@ class Kiwoom(QMainWindow):
                 T_price = str(self.df_history.Price[i])
                 T_reqid = str(self.df_history.Req_ID[i])
 
-                self.setTableWidgetData(2, i, 0, T_day)
-                self.setTableWidgetData(2, i, 1, T_type)
-                self.setTableWidgetData(2, i, 2, T_id)
-                self.setTableWidgetData(2, i, 3, T_time)
-                self.setTableWidgetData(2, i, 4, T_code)
-                self.setTableWidgetData(2, i, 5, T_name)
-                self.setTableWidgetData(2, i, 6, T_qty)
-                self.setTableWidgetData(2, i, 7, T_price)
-                self.setTableWidgetData(2, i, 8, T_reqid)
+                self.func_SET_TableData(2, i, 0, T_day)
+                self.func_SET_TableData(2, i, 1, T_type)
+                self.func_SET_TableData(2, i, 2, T_id)
+                self.func_SET_TableData(2, i, 3, T_time)
+                self.func_SET_TableData(2, i, 4, T_code)
+                self.func_SET_TableData(2, i, 5, T_name)
+                self.func_SET_TableData(2, i, 6, T_qty)
+                self.func_SET_TableData(2, i, 7, T_price)
+                self.func_SET_TableData(2, i, 8, T_reqid)
             
             
         else :
@@ -273,7 +273,7 @@ class Kiwoom(QMainWindow):
             self.history_index = self.history_index + 1
             self.get_trade_history2()
 
-    def fnc_show_TradeHistory(self, rqname, trcode, recordname):
+    def func_SHOW_TradeHistory(self, rqname, trcode, recordname):
         data_cnt = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "조회건수")
 
         if data_cnt == "":
@@ -303,17 +303,17 @@ class Kiwoom(QMainWindow):
             data_cnt = len(self.df_history)
 
             for i in range(data_cnt):
-                self.setTableWidgetData(2, i, 0, self.df_history.day[i])
-                self.setTableWidgetData(2, i, 1, self.df_history.time[i])
-                self.setTableWidgetData(2, i, 2, self.df_history.type[i])
-                self.setTableWidgetData(2, i, 3, self.df_history.T_ID[i])
-                self.setTableWidgetData(2, i, 4, self.df_history.Code[i])
-                self.setTableWidgetData(2, i, 5, self.df_history.Name[i])
-                self.setTableWidgetData(2, i, 6, str(self.df_history.Qty[i]))
-                self.setTableWidgetData(2, i, 7, str(self.df_history.Price[i]))
-                self.setTableWidgetData(2, i, 8, str(self.df_history.Req_ID[i]))
+                self.func_SET_TableData(2, i, 0, self.df_history.day[i])
+                self.func_SET_TableData(2, i, 1, self.df_history.time[i])
+                self.func_SET_TableData(2, i, 2, self.df_history.type[i])
+                self.func_SET_TableData(2, i, 3, self.df_history.T_ID[i])
+                self.func_SET_TableData(2, i, 4, self.df_history.Code[i])
+                self.func_SET_TableData(2, i, 5, self.df_history.Name[i])
+                self.func_SET_TableData(2, i, 6, str(self.df_history.Qty[i]))
+                self.func_SET_TableData(2, i, 7, str(self.df_history.Price[i]))
+                self.func_SET_TableData(2, i, 8, str(self.df_history.Req_ID[i]))
             
-    def setTableWidgetData(self, table_no, row, col, content):
+    def func_SET_TableData(self, table_no, row, col, content):
         if table_no == 1:
             item = QTableWidgetItem(content)
             item.setTextAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
@@ -331,12 +331,12 @@ class Kiwoom(QMainWindow):
         # a = 0
         
     
-    def set_table_history(self):
+    def func_SET_HistoryTable(self):
         row_count = 0
         col_count = 9
         self.table_history.resize(722, 480)
         
-        self.table_history.move(1030, 50)
+        self.table_history.move(1050, 50)
         self.table_history.setRowCount(row_count)
         self.table_history.setColumnCount(col_count)
         self.table_history.resizeRowsToContents()
@@ -346,6 +346,11 @@ class Kiwoom(QMainWindow):
             self.table_history.setColumnWidth(i, 80)
         self.table_history.verticalHeader().setVisible(False)
         self.table_history.verticalHeader().setDefaultSectionSize(1)
+
+        # header_item = QTableWidgetItem("추가") 
+        # header_item.setBackground(Qt.red) # 헤더 배경색 설정 --> app.setStyle() 설정해야만 작동한다. 
+        # self.table_history.setHorizontalHeaderItem(0, header_item)
+
 
         self.table_history.setHorizontalHeaderItem(0, QTableWidgetItem("날짜"))
         self.table_history.setHorizontalHeaderItem(1, QTableWidgetItem("체결시간"))
@@ -573,17 +578,17 @@ class Kiwoom(QMainWindow):
             total_fee = str('{0:,}'.format(int(float(added_fee) + float(tax))))
             eval_pl = str('{0:,}'.format(int(eval_pl)))
 
-            self.setTableWidgetData(1, 2*i, 0, itemcode)
-            self.setTableWidgetData(1, 2*i, 1, itemname)
-            self.setTableWidgetData(1, 2*i, 2, owncount)
-            self.setTableWidgetData(1, 2*i, 3, cur_price)
-            self.setTableWidgetData(1, (2*i + 1), 3, unit_price)
-            self.setTableWidgetData(1, 2*i, 4, total_evaluation_price)
-            self.setTableWidgetData(1, (2*i + 1), 4, total_purchase_price)
-            self.setTableWidgetData(1, 2*i, 5, total_sum)
-            self.setTableWidgetData(1, 2*i, 6, total_fee)
-            self.setTableWidgetData(1, 2*i, 7, eval_pl)
-            self.setTableWidgetData(1, 2*i, 8, str(round(float(each_percent), 2)))
+            self.func_SET_TableData(1, 2*i, 0, itemcode)
+            self.func_SET_TableData(1, 2*i, 1, itemname)
+            self.func_SET_TableData(1, 2*i, 2, owncount)
+            self.func_SET_TableData(1, 2*i, 3, cur_price)
+            self.func_SET_TableData(1, (2*i + 1), 3, unit_price)
+            self.func_SET_TableData(1, 2*i, 4, total_evaluation_price)
+            self.func_SET_TableData(1, (2*i + 1), 4, total_purchase_price)
+            self.func_SET_TableData(1, 2*i, 5, total_sum)
+            self.func_SET_TableData(1, 2*i, 6, total_fee)
+            self.func_SET_TableData(1, 2*i, 7, eval_pl)
+            self.func_SET_TableData(1, 2*i, 8, str(round(float(each_percent), 2)))
         # print(DF_item0)
 
     
@@ -626,20 +631,19 @@ class Kiwoom(QMainWindow):
             self.table_summary.setSpan(j,8,2,1)
         
         self.table_summary.setHorizontalHeaderItem(0, QTableWidgetItem("Code"))
-        self.table_summary.setHorizontalHeaderItem(1, QTableWidgetItem("Name"))
-        self.table_summary.setHorizontalHeaderItem(2, QTableWidgetItem("Count"))
-        self.table_summary.setHorizontalHeaderItem(3, QTableWidgetItem("Unit Price"))
-        
-        self.table_summary.setHorizontalHeaderItem(4, QTableWidgetItem("Total Price"))
-        
-        self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("sum"))
-        self.table_summary.setHorizontalHeaderItem(6, QTableWidgetItem("fee"))
-        self.table_summary.setHorizontalHeaderItem(7, QTableWidgetItem("평가손익"))
+        self.table_summary.setHorizontalHeaderItem(1, QTableWidgetItem("종목"))
+        self.table_summary.setHorizontalHeaderItem(2, QTableWidgetItem("수량"))
+        self.table_summary.setHorizontalHeaderItem(3, QTableWidgetItem("단가"))
+        self.table_summary.setHorizontalHeaderItem(4, QTableWidgetItem("금액"))
+        self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("합계"))
+        self.table_summary.setHorizontalHeaderItem(6, QTableWidgetItem("수수료"))
+        self.table_summary.setHorizontalHeaderItem(7, QTableWidgetItem("손익"))
         self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("%"))
     
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
+    app.setStyle(QStyleFactory.create('Fusion')) # --> 없으면, 헤더색 변경 안됨.
     # print(sys.argv)
     myWindow = Kiwoom()
     myWindow.show()
