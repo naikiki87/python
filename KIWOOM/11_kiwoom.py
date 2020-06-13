@@ -1,5 +1,6 @@
 import sys
 import time
+from time import localtime, strftime
 import pandas as pd
 
 from PyQt5.QtWidgets import *
@@ -23,6 +24,7 @@ class Kiwoom(QMainWindow):
     time = 0
     is_continue = 0
     init_history = 0
+    flag_HistoryData_Auto = 0
     # self.df_history = pd.DataFrame(columns = ['day', 'type', 'T_ID', 'time', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
     def __init__(self):
         super().__init__()
@@ -174,11 +176,17 @@ class Kiwoom(QMainWindow):
 
             self.show_opt10004(rqname, trcode, recordname)
 
-    def func_GET_TradeHistory(self) :       # search history data manually
+    def func_GET_TradeHistory(self, date) :       # search history data manually
         self.df_history = pd.DataFrame(columns = ['day', 'time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
-        self.search_date = self.input_history_date.text()
 
-        # print("get history", search_date)
+        if self.flag_HistoryData_Auto == 1:
+            self.search_date = date
+            self.flag_HistoryData_Auto = 0
+        else :
+            self.search_date = self.input_history_date.text()
+
+        print("Date : ", self.search_date)
+
         acc_no = "8137639811"
         acc_pw = "6458"
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", self.search_date)
@@ -445,6 +453,15 @@ class Kiwoom(QMainWindow):
         self.text_edit3.append("체결량 : " + self.get_chejan_data(911))
         self.text_edit3.append("체결단가 : " + self.get_chejan_data(931))
         self.text_edit3.append("")
+
+        ##### 체결시 history table 갱신 수행
+        year = strftime("%Y", localtime())
+        month = strftime("%m", localtime())
+        day = strftime("%d", localtime())
+        today = year + month + day
+
+        self.flag_HistoryData_Auto = 1
+        self.func_GET_TradeHistory(today)
 
     def btn_item_info(self):
         code = self.code_edit.text()
