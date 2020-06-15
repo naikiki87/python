@@ -25,6 +25,8 @@ class Kiwoom(QMainWindow):
     is_continue = 0
     init_history = 0
     flag_HistoryData_Auto = 0
+    flag_ItemInfo_click = 0
+    auto_buy = 0
     # self.df_history = pd.DataFrame(columns = ['day', 'type', 'T_ID', 'time', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
     def __init__(self):
         super().__init__()
@@ -55,7 +57,7 @@ class Kiwoom(QMainWindow):
 
         btn0 = QPushButton('조회', self)
         btn0.move(190, 10)
-        btn0.clicked.connect(self.btn_item_info)
+        btn0.clicked.connect(self.func_get_ItemInfo)
 
         btn2 = QPushButton('매수주문', self)
         btn2.move(190, 90)
@@ -157,6 +159,10 @@ class Kiwoom(QMainWindow):
             self.remained_data = False
 
         if rqname == "opt10001_req":
+            print("RQ Name : ", rqname)
+            print("TRcode : ", trcode)
+            print("recordname : ", recordname)
+
             self.show_opt10001(rqname, trcode, recordname)
 
         if rqname == "opw00018_req":
@@ -340,7 +346,7 @@ class Kiwoom(QMainWindow):
         
     
     def func_SET_HistoryTable(self):
-        row_count = 0
+        row_count = 1
         col_count = 9
         self.table_history.resize(722, 480)
         
@@ -369,12 +375,22 @@ class Kiwoom(QMainWindow):
         self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("체결수량"))
         self.table_history.setHorizontalHeaderItem(7, QTableWidgetItem("체결단가"))
         self.table_history.setHorizontalHeaderItem(8, QTableWidgetItem("주문번호"))
+
+        
     
     ## [START] login ##
     def comm_connect(self):
         self.kiwoom.dynamicCall("CommConnect()")
         self.login_event_loop = QThread()
         self.login_event_loop.start()
+
+
+        # btn = QPushButton(self.table_history)
+        # btn.setText('12/1/12')
+        # self.table_history.setCellWidget(0, 0, btn)
+
+
+
     def event_connect(self, err_code):
         if err_code == 0:
             self.text_edit.append("CONNECTED")
@@ -463,8 +479,12 @@ class Kiwoom(QMainWindow):
         self.flag_HistoryData_Auto = 1
         self.func_GET_TradeHistory(today)
 
-    def btn_item_info(self):
-        code = self.code_edit.text()
+    def func_get_ItemInfo(self, code):
+        if self.flag_ItemInfo_click == 0:
+            code = self.code_edit.text()
+        else :
+            code = code
+            self.flag_ItemInfo_click = 0
         
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
@@ -474,7 +494,6 @@ class Kiwoom(QMainWindow):
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10004_req", "opt10004", 0, "0101")
 
     def check_balance(self):
-
         # self.btn_test()       # start get history data automatically
         self.buy_cnt = 0
         self.auto_buy = 0
@@ -487,7 +506,7 @@ class Kiwoom(QMainWindow):
             self.is_continue = 1
             while self.is_continue:
                 if self.buy_cnt == 2:
-                    self.auto_item_info()
+                    # self.auto_item_info()
                     self.auto_buy = 1
                 self.text_edit.append(str(self.buy_cnt))
                 self.buy_cnt = self.buy_cnt + 1
@@ -513,7 +532,10 @@ class Kiwoom(QMainWindow):
         prices = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "시가")
         per = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "PER")
         current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
+        print("here", current_price)
         current_price = current_price.strip()
+
+        
         current_price = int(current_price)
 
         if current_price < 0:        
@@ -534,7 +556,7 @@ class Kiwoom(QMainWindow):
             self.text_edit.append("종목 : " + name.strip())
             self.text_edit.append("현재가 : " + str(current_price))
 
-            self.buy_order(itemcode.strip(), 1, current_price + 50)
+            # self.buy_order(itemcode.strip(), 1, current_price + 50)                   ## auto buy
             self.auto_buy = 0
             
 
@@ -608,8 +630,6 @@ class Kiwoom(QMainWindow):
             self.func_SET_TableData(1, 2*i, 8, str(round(float(each_percent), 2)))
         # print(DF_item0)
 
-    
-
     def get_repeat_cnt(self, trcode, rqname):
         ret = self.kiwoom.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
         return ret
@@ -656,7 +676,24 @@ class Kiwoom(QMainWindow):
         self.table_summary.setHorizontalHeaderItem(6, QTableWidgetItem("수수료"))
         self.table_summary.setHorizontalHeaderItem(7, QTableWidgetItem("손익"))
         self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("%"))
+
+        self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)
     
+    def func_GET_ItemInfo_by_click(self, index) :
+        row = index.row()
+        if row % 2 == 1:
+            row = row - 1
+        itemcode = self.table_summary.item(row, 0).text()
+        itemcode = itemcode.replace("A", "")
+        self.flag_ItemInfo_click = 1
+        self.func_get_ItemInfo(itemcode.strip())
+
+    def func_test(self, _str) :
+        print(_str)
+        itemcode = _str.replace("A", "")
+        self.flag_ItemInfo_click = 1
+        # itemcode = "005930"
+        # print(itemcode)
 
 if __name__=="__main__":
     app = QApplication(sys.argv)

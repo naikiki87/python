@@ -29,7 +29,7 @@ class Kiwoom(QMainWindow):
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
 
-        self.comm_connect()       # Aloha
+        # self.comm_connect()       # Aloha
         
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
