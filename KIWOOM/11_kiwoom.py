@@ -688,13 +688,6 @@ class Kiwoom(QMainWindow):
         self.flag_ItemInfo_click = 1
         self.func_get_ItemInfo(itemcode.strip())
 
-    def func_test(self, _str) :
-        print(_str)
-        itemcode = _str.replace("A", "")
-        self.flag_ItemInfo_click = 1
-        # itemcode = "005930"
-        # print(itemcode)
-
 if __name__=="__main__":
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create('Fusion')) # --> 없으면, 헤더색 변경 안됨.
