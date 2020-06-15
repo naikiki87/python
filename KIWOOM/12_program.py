@@ -43,7 +43,6 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.OnReceiveChejanData.connect(self.receive_chejan_data)
 
         self.init_UI()
-        # self.init_UI()
 
     def init_UI(self) :
         self.cnt_tab_history = 0
@@ -58,105 +57,6 @@ class Kiwoom(QMainWindow, form_class):
 
         self.func_SET_tableSUMMARY()
         self.func_SET_tableHISTORY()
-
-    # def init_UI(self) :
-    #     self.setWindowTitle("AutoK")
-    #     self.setGeometry(80, 80, 1800, 600)
-
-    #     label = QLabel('종목코드', self)
-    #     label.move(20, 10)
-    #     self.code_edit = QLineEdit(self)
-    #     self.code_edit.move(80, 10)
-
-    #     label = QLabel('금액', self)
-    #     label.move(20, 50)
-    #     self.buy_price = QLineEdit(self)
-    #     self.buy_price.move(80, 50)
-
-    #     btn0 = QPushButton('조회', self)
-    #     btn0.move(190, 10)
-    #     btn0.clicked.connect(self.func_GET_ItemInfo)
-
-    #     btn2 = QPushButton('매수주문', self)
-    #     btn2.move(190, 90)
-    #     btn2.clicked.connect(self.btn_buy_order)
-
-    #     btn3 = QPushButton('매도주문', self)
-    #     btn3.move(290, 90)
-    #     btn3.clicked.connect(self.btn_sell_order)
-        
-    #     btn4 = QPushButton('TES2T', self)
-    #     btn4.move(290, 140)
-    #     btn4.clicked.connect(self.btn_test)
-
-    #     label = QLabel('수량', self)
-    #     label.move(20, 90)
-    #     self.buy_sell_count = QLineEdit(self)
-    #     self.buy_sell_count.move(80, 90)
-
-    #     self.test_text = QLineEdit(self)
-    #     self.test_text.move(80, 140)
-
-    #     label = QLabel('비밀번호', self)
-    #     label.move(430, 10)
-    #     self.input_acc_pw = QLineEdit(self)
-    #     self.input_acc_pw.setEchoMode(QLineEdit.Password)
-    #     self.input_acc_pw.move(500, 10)
-
-    #     btn5 = QPushButton('실행', self)
-    #     btn5.move(630, 10)
-    #     btn5.clicked.connect(self.func_START_CheckBalance)
-
-    #     btn6 = QPushButton('중지', self)
-    #     btn6.move(730, 10)
-    #     btn6.clicked.connect(self.func_STOP_CheckBalance)
-
-    #     self.table_summary = QTableWidget(self)   # 보유내역 table
-    #     self.func_SET_tableSUMMARY()
-
-    #     label = QLabel('매매일자', self)
-    #     label.move(1200, 10)
-    #     self.input_history_date = QLineEdit(self)
-    #     self.input_history_date.move(1280, 10)
-
-    #     btn7 = QPushButton('검색', self)
-    #     btn7.move(1400, 10)
-    #     btn7.clicked.connect(self.func_GET_TradeHistory)
-
-    #     self.table_history = QTableWidget(self)     # 매매 history
-    #     self.cnt_tab_history = 0
-    #     self.func_SET_tableHISTORY()
-
-    #     self.text_edit = QTextEdit(self)
-    #     self.text_edit.setGeometry(10, 180, 190, 150)
-    #     self.text_edit.setEnabled(False)    # 텍스트창의 내용물 활용여부 (False : 읽기모드)
-
-    #     self.text_edit2 = QTextEdit(self)
-    #     self.text_edit2.setGeometry(210, 180, 200, 150)
-    #     self.text_edit2.setEnabled(False)
-        
-    #     self.text_edit3 = QTextEdit(self)
-    #     self.text_edit3.setGeometry(10, 340, 400, 150)
-    #     self.text_edit3.setEnabled(False)
-
-    #     self.text_edit4 = QTextEdit(self)
-    #     self.text_edit4.setGeometry(870, 15, 80, 30)
-    #     self.text_edit4.setEnabled(False)
-    #     self.text_edit4.setStyleSheet("border-style : none;")
-
-    #     # 총매입금액 표시
-    #     label = QLabel('총매입금액', self)
-    #     label.move(750, 50)
-    #     self.text_edit5 = QTextEdit(self)
-    #     self.text_edit5.setGeometry(830, 50, 80, 30)
-    #     self.text_edit5.setEnabled(False)
-
-    #     # 총평가금액 표시
-    #     label = QLabel('총평가금액', self)
-    #     label.move(750, 90)
-    #     self.text_edit6 = QTextEdit(self)
-    #     self.text_edit6.setGeometry(830, 90, 80, 30)
-    #     self.text_edit6.setEnabled(False)
 
     @pyqtSlot(str)
     def update_times(self, data) :
@@ -357,36 +257,7 @@ class Kiwoom(QMainWindow, form_class):
     #     self.item_finder.start()
         # a = 0
         
-    def func_SET_tableHISTORY(self):
-        row_count = 1
-        col_count = 9
-        self.table_history.resize(722, 480)
-        
-        self.table_history.move(1050, 50)
-        self.table_history.setRowCount(row_count)
-        self.table_history.setColumnCount(col_count)
-        self.table_history.resizeRowsToContents()
-        # self.table_history.resizeColumnsToContents()
-
-        for i in range(col_count):
-            self.table_history.setColumnWidth(i, 80)
-        self.table_history.verticalHeader().setVisible(False)
-        self.table_history.verticalHeader().setDefaultSectionSize(1)
-
-        # header_item = QTableWidgetItem("추가") 
-        # header_item.setBackground(Qt.red) # 헤더 배경색 설정 --> app.setStyle() 설정해야만 작동한다. 
-        # self.table_history.setHorizontalHeaderItem(0, header_item)
-
-
-        self.table_history.setHorizontalHeaderItem(0, QTableWidgetItem("날짜"))
-        self.table_history.setHorizontalHeaderItem(1, QTableWidgetItem("체결시간"))
-        self.table_history.setHorizontalHeaderItem(2, QTableWidgetItem("구분"))
-        self.table_history.setHorizontalHeaderItem(3, QTableWidgetItem("체결번호"))
-        self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("종목번호"))
-        self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("종 목 명"))
-        self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("체결수량"))
-        self.table_history.setHorizontalHeaderItem(7, QTableWidgetItem("체결단가"))
-        self.table_history.setHorizontalHeaderItem(8, QTableWidgetItem("주문번호"))
+    
     
     ## [START] login ##
     def comm_connect(self):
@@ -420,7 +291,7 @@ class Kiwoom(QMainWindow, form_class):
     def buy_test(self):
         cnt = 0
         for i in range(10) :
-            self.text_edit.append(str(cnt))
+            # self.text_edit.append(str(cnt))
             cnt = cnt + 1
             QtTest.QTest.qWait(1000)
 
@@ -505,6 +376,7 @@ class Kiwoom(QMainWindow, form_class):
         # self.btn_test()       # start get history data automatically
         self.buy_cnt = 0
         self.auto_buy = 0
+        self.request_times = 0
         acc_no = "8137639811"
         acc_pw = "6458"
         # acc_pw = self.input_acc_pw.text()
@@ -515,8 +387,8 @@ class Kiwoom(QMainWindow, form_class):
             while self.flag_cont_CheckBalance:
                 if self.buy_cnt == 2:
                     self.auto_buy = 1
-                self.text_edit.append(str(self.buy_cnt))
-                self.buy_cnt = self.buy_cnt + 1
+                # self.text_edit.append(str(self.buy_cnt))
+                # self.buy_cnt = self.buy_cnt + 1
 
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
@@ -544,15 +416,21 @@ class Kiwoom(QMainWindow, form_class):
         if current_price < 0:        
             current_price = current_price * -1
 
-        self.text_edit.append("Request Item Info : " + itemcode.strip())
-        self.text_edit2.setText("종목코드:" + itemcode.strip())
-        self.text_edit2.append("종목명:" + name.strip())
-        self.text_edit2.append("거래량:" + volume.strip())
-        self.text_edit2.append("상장주식:" + numStocks.strip())
-        self.text_edit2.append("시가:" + prices.strip())
-        self.text_edit2.append("등락:" + percent.strip() + " %")
-        self.text_edit2.append("PER:" + per.strip())
-        self.text_edit2.append("현재가:" + str(current_price))
+        # self.text_edit.append("Request Item Info : " + itemcode.strip())
+        # self.text_edit2.setText("종목코드:" + itemcode.strip())
+        # self.text_edit2.append("종목명:" + name.strip())
+        # self.text_edit2.append("거래량:" + volume.strip())
+        # self.text_edit2.append("상장주식:" + numStocks.strip())
+        # self.text_edit2.append("시가:" + prices.strip())
+        # self.text_edit2.append("등락:" + percent.strip() + " %")
+        # self.text_edit2.append("PER:" + per.strip())
+        # self.text_edit2.append("현재가:" + str(current_price))
+
+        self.te_iteminfo_code.setText(itemcode.strip())
+        self.te_iteminfo_name.setText(name.strip())
+        self.te_iteminfo_price.setText(str(current_price))
+        self.te_iteminfo_vol.setText(volume.strip())
+        self.te_iteminfo_percent.setText(percent.strip() + " %")
 
         if self.auto_buy == 1:
             self.text_edit.append("BUY")
@@ -569,8 +447,10 @@ class Kiwoom(QMainWindow, form_class):
         total_purchase = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
         total_evaluation = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총평가금액")
 
-        self.text_edit5.setText(str(int(total_purchase)))
-        self.text_edit6.setText(str(int(total_evaluation)))
+        # self.text_edit5.setText(str(int(total_purchase)))
+        # self.text_edit6.setText(str(int(total_evaluation)))
+        self.wid_total_purchase.setText(str(int(total_purchase)))
+        self.wid_total_evaluation.setText(str(int(total_evaluation)))
 
         for i in range(data_cnt) :
             total_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
@@ -631,6 +511,9 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SET_TableData(1, 2*i, 6, total_fee)
             self.func_SET_TableData(1, 2*i, 7, eval_pl)
             self.func_SET_TableData(1, 2*i, 8, str(round(float(each_percent), 2)))
+
+        self.wid_req_times.setText(str(self.request_times))
+        self.request_times = self.request_times + 1
         # print(DF_item0)
 
     def get_repeat_cnt(self, trcode, rqname):
@@ -640,9 +523,9 @@ class Kiwoom(QMainWindow, form_class):
     def func_SET_tableSUMMARY(self):
         row_count = 10
         col_count = 9
-        self.table_summary.resize(592, 350)
+        # self.table_summary.resize(592, 211)
         
-        self.table_summary.move(430, 130)
+        # self.table_summary.move(430, 130)
         self.table_summary.setRowCount(row_count)
         self.table_summary.setColumnCount(col_count)
         self.table_summary.resizeRowsToContents()
@@ -676,6 +559,35 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("%"))
 
         self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)
+
+    def func_SET_tableHISTORY(self):
+        row_count = 0
+        col_count = 9
+        # self.table_history.resize(722, 250)
+        
+        self.table_history.setRowCount(row_count)
+        self.table_history.setColumnCount(col_count)
+        self.table_history.resizeRowsToContents()
+        # self.table_history.resizeColumnsToContents()
+
+        for i in range(col_count):
+            self.table_history.setColumnWidth(i, 80)
+        self.table_history.verticalHeader().setVisible(False)
+        self.table_history.verticalHeader().setDefaultSectionSize(1)
+
+        # header_item = QTableWidgetItem("추가") 
+        # header_item.setBackground(Qt.red) # 헤더 배경색 설정 --> app.setStyle() 설정해야만 작동한다. 
+        # self.table_history.setHorizontalHeaderItem(0, header_item)
+
+        self.table_history.setHorizontalHeaderItem(0, QTableWidgetItem("날짜"))
+        self.table_history.setHorizontalHeaderItem(1, QTableWidgetItem("체결시간"))
+        self.table_history.setHorizontalHeaderItem(2, QTableWidgetItem("구분"))
+        self.table_history.setHorizontalHeaderItem(3, QTableWidgetItem("체결번호"))
+        self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("종목번호"))
+        self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("종 목 명"))
+        self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("체결수량"))
+        self.table_history.setHorizontalHeaderItem(7, QTableWidgetItem("체결단가"))
+        self.table_history.setHorizontalHeaderItem(8, QTableWidgetItem("주문번호"))
     
     def func_GET_ItemInfo_by_click(self, index) :
         row = index.row()
