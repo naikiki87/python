@@ -13,23 +13,23 @@ import module_get_summary
 import module_item_finder
 
 form_class = uic.loadUiType("interface.ui")[0]
+ACCOUNT = "8137639811"
+PASSWORD = "6458"
 
 for i in range(10) :
     globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', '%', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5', 'm_6', 'm_7', 'm_8', 'm_9', 'm_10'])
     globals()['save_times{}'.format(i)] = 0
     globals()['elapsed_min{}'.format(i)] = 0
 
-# self.df_history = pd.DataFrame(columns = ['day', 'type', 'T_ID', 'time', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
-
 class Kiwoom(QMainWindow, form_class):
-    index = 0
-    time = 0
+    # index = 0
+    # time = 0
     flag_cont_CheckBalance = 0
     init_history = 0
     flag_HistoryData_Auto = 0
     flag_ItemInfo_click = 0
     auto_buy = 0
-    # self.df_history = pd.DataFrame(columns = ['day', 'type', 'T_ID', 'time', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -42,15 +42,16 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
         self.kiwoom.OnReceiveChejanData.connect(self.receive_chejan_data)
 
-        self.init_UI()
+        self.init_ENV()
 
-    def init_UI(self) :
+    def init_ENV(self) :
         self.cnt_tab_history = 0
+        self.df_history = pd.DataFrame(columns = ['day', 'time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
 
         self.btn0.clicked.connect(self.func_GET_ItemInfo)
         self.btn2.clicked.connect(self.btn_buy_order)
         self.btn3.clicked.connect(self.btn_sell_order)
-        self.btn4.clicked.connect(self.btn_test)
+        self.btn4.clicked.connect(self.func_GET_CurrentTime)
         self.btn5.clicked.connect(self.func_START_CheckBalance)
         self.btn6.clicked.connect(self.func_STOP_CheckBalance)
         self.btn7.clicked.connect(self.func_GET_TradeHistory)
@@ -76,6 +77,9 @@ class Kiwoom(QMainWindow, form_class):
         else:
             self.remained_data = False
 
+        if rqname == "GET_Deposit":
+            self.func_SHOW_Deposit(rqname, trcode, recordname)
+
         if rqname == "GET_ItemInfo":
             self.func_SHOW_ItemInfo(rqname, trcode, recordname)
 
@@ -86,119 +90,38 @@ class Kiwoom(QMainWindow, form_class):
             print("opw20009 man")
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
 
-        if rqname == "opw00009_req":
-            if self.init_history == 1:
-                self.init_history_table(rqname, trcode, recordname)
-            else :
-                print("#######")
+        # if rqname == "opw00009_req":
+        #     if self.init_history == 1:
+        #         self.init_history_table(rqname, trcode, recordname)
+        #     else :
+        #         print("#######")
                 # self.func_SHOW_TradeHistory(rqname, trcode, recordname)
 
+    def func_SHOW_Deposit(self, rqname, trcode, recordname) :
+        deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
+        d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
+        d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
 
-            self.show_opt10004(rqname, trcode, recordname)
+        # str('{0:,}'.format())
+        self.wid_show_deposit.setText(str('{0:,}'.format(int(deposit))))
+        self.wid_show_deposit_d1.setText(str('{0:,}'.format(int(d_1))))
+        self.wid_show_deposit_d2.setText(str('{0:,}'.format(int(d_2))))
 
     def func_GET_TradeHistory(self, date) :       # search history data manually
-        self.df_history = pd.DataFrame(columns = ['day', 'time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
-
         if self.flag_HistoryData_Auto == 1:
             self.search_date = date
             self.flag_HistoryData_Auto = 0
         else :
             self.search_date = self.input_history_date.text()
 
-        print("Date : ", self.search_date)
-
-        acc_no = "8137639811"
-        acc_pw = "6458"
+        acc_no = ACCOUNT
+        acc_pw = PASSWORD
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", self.search_date)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", "8137639811")
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", "6458")
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", "0")
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_man", "opw00009", 0, "0101")
-
-    def btn_test(self) :                # search histlry data automatically
-        self.search_date_list = list(range(20200601, 20200612))
-        self.search_date_list = list(map(str, self.search_date_list))
-        self.history_index = 0
-        self.init_history = 1
-        self.cnt_check_history = 0
-        self.cnt_tab_history = 0
-
-        self.df_history = pd.DataFrame(columns = ['day', 'type', 'T_ID', 'time', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
-
-        self.get_trade_history2()
-
-    def get_trade_history2(self):
-        self.search_date = self.search_date_list[self.history_index]
-        # print("Src Date : ", self.search_date)
-        acc_no = "8137639811"
-        acc_pw = "6458"
-
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", self.search_date)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", "8137639811")
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", "6458")
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", "0")
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_req", "opw00009", 0, "0101")
-
-    def init_history_table(self, rqname, trcode, recordname) :
-        len_list = len(self.search_date_list)
-        data_cnt = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "조회건수")
-
-        if data_cnt == "":
-            print("nothing")
-        
-        else :
-            data_cnt = int(data_cnt)
-
-            for i in range(data_cnt):
-                deal_type = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문유형구분")
-                trade_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결번호")
-                trade_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결시간")
-                itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-                itemname = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
-                trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
-                trade_unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결단가")
-                req_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
-
-                self.df_history.loc[self.cnt_tab_history] = [self.search_date, deal_type, trade_no, trade_time, itemcode, itemname, int(trade_amount), round(float(trade_unit_price), 1), req_no]
-                self.cnt_tab_history = self.cnt_tab_history + 1
-
-        self.cnt_check_history = self.cnt_check_history + 1
-
-        if self.cnt_check_history == len_list :
-            self.init_history = 0
-            self.df_history = self.df_history.sort_values(['day', 'time'], ascending=[False, False])
-            self.df_history = self.df_history.reset_index(drop=True, inplace=False)
-
-            data_cnt = len(self.df_history)
-
-            for i in range(data_cnt):
-                T_day = self.df_history.day[i]
-                T_type = self.df_history.type[i]
-                T_id = self.df_history.T_ID[i]
-                T_time = self.df_history.time[i]
-                T_code = self.df_history.Code[i]
-                T_name = self.df_history.Name[i]
-                T_qty = str(self.df_history.Qty[i])
-                T_price = str(self.df_history.Price[i])
-                T_reqid = str(self.df_history.Req_ID[i])
-
-                self.func_SET_TableData(2, i, 0, T_day)
-                self.func_SET_TableData(2, i, 1, T_type)
-                self.func_SET_TableData(2, i, 2, T_id)
-                self.func_SET_TableData(2, i, 3, T_time)
-                self.func_SET_TableData(2, i, 4, T_code)
-                self.func_SET_TableData(2, i, 5, T_name)
-                self.func_SET_TableData(2, i, 6, T_qty)
-                self.func_SET_TableData(2, i, 7, T_price)
-                self.func_SET_TableData(2, i, 8, T_reqid)
-            
-            
-        else :
-            QtTest.QTest.qWait(280)
-            self.history_index = self.history_index + 1
-            self.get_trade_history2()
 
     def func_SHOW_TradeHistory(self, rqname, trcode, recordname):
         data_cnt = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "조회건수")
@@ -250,42 +173,29 @@ class Kiwoom(QMainWindow, form_class):
             item.setTextAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
             self.table_history.setItem(row, col, item)
 
-    # def btn_test(self):
-    #     self.item_finder = module_item_finder.Item_Finder()
-    #     self.item_finder.item_finder_messages.connect(self.item_finder_messages)
-    #     self.item_finder.item_finder_items.connect(self.item_finder_items)
-    #     self.item_finder.start()
-        # a = 0
-        
-    
-    
     ## [START] login ##
     def comm_connect(self):
         self.kiwoom.dynamicCall("CommConnect()")
         self.login_event_loop = QThread()
         self.login_event_loop.start()
 
-
-        # btn = QPushButton(self.table_history)
-        # btn.setText('12/1/12')
-        # self.table_history.setCellWidget(0, 0, btn)
-
     def event_connect(self, err_code):
         if err_code == 0:
-            self.text_edit.append("CONNECTED")
+            timestamp = self.func_GET_CurrentTime()
+            self.text_edit.append(timestamp + "Login Complete")
             self.timer = module_timer.Timer()
             self.timer.cur_time.connect(self.update_times)
-            
-            # self.buy_test()
             self.timer.start()
-            self.text_edit.append("timer thread started")
+
+            timestamp = self.func_GET_CurrentTime()
+            self.text_edit.append(timestamp + "Timer Thread Started")
             self.login_event_loop.terminate()
 
             # self.func_START_CheckBalance()          # Aloha
-            # self.btn_test()
+            # self.func_GET_CurrentTime()
             
         else:
-            print("DISCONNECTED")
+            print("Login Failed")
     ## [END] login ##
 
     def buy_test(self):
@@ -297,7 +207,8 @@ class Kiwoom(QMainWindow, form_class):
 
     ## 매수 ##
     def btn_buy_order(self) :
-        self.text_edit.append("BUY Clicked")
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "BUY Clicked")
         item_code = self.code_edit.text()
         qty = int(self.buy_sell_count.text())
         price = int(self.buy_price.text())
@@ -308,7 +219,7 @@ class Kiwoom(QMainWindow, form_class):
         self.text_edit.append("Send Order : BUY")
         rqname = "RQ_TEST"
         screen_no = "0101"
-        acc_no = "8137639811"
+        acc_no = ACCOUNT
         order_type = 1
         hogagb = "00"
         orgorderno = ""
@@ -328,7 +239,7 @@ class Kiwoom(QMainWindow, form_class):
         self.text_edit.append("Send Order : SELL")
         rqname = "RQ_TEST"
         screen_no = "0101"
-        acc_no = "8137639811"
+        acc_no = ACCOUNT
         order_type = 2
         hogagb = "00"
         orgorderno = ""
@@ -341,13 +252,13 @@ class Kiwoom(QMainWindow, form_class):
         return ret
     def receive_chejan_data(self, gubun, item_cnt, fid_list):
         if gubun == "0" :
-            self.text_edit3.append("-- 체결완료 --")
-        self.text_edit3.append("주문번호 : " + self.get_chejan_data(9203))
-        self.text_edit3.append("종목명 : " + self.get_chejan_data(302))
-        self.text_edit3.append("체결가 : " + self.get_chejan_data(910))
-        self.text_edit3.append("체결량 : " + self.get_chejan_data(911))
-        self.text_edit3.append("체결단가 : " + self.get_chejan_data(931))
-        self.text_edit3.append("")
+            self.text_edit.append("-- 체결완료 --")
+        self.text_edit.append("주문번호 : " + self.get_chejan_data(9203))
+        self.text_edit.append("종목명 : " + self.get_chejan_data(302))
+        self.text_edit.append("체결가 : " + self.get_chejan_data(910))
+        self.text_edit.append("체결량 : " + self.get_chejan_data(911))
+        self.text_edit.append("체결단가 : " + self.get_chejan_data(931))
+        self.text_edit.append("")
 
         ##### 체결시 history table 갱신 수행
         year = strftime("%Y", localtime())
@@ -372,14 +283,22 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10004_req", "opt10004", 0, "0101")
 
+    def func_GET_Deposit(self) :
+        acc_no = ACCOUNT
+        acc_pw = PASSWORD
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
+        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "조회구분", 2)     ## 1 : 추정조회, 2 : 일반조회
+
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Deposit", "opw00001", 0, "0101")
+
     def func_START_CheckBalance(self):
-        # self.btn_test()       # start get history data automatically
         self.buy_cnt = 0
         self.auto_buy = 0
         self.request_times = 0
-        acc_no = "8137639811"
-        acc_pw = "6458"
-        # acc_pw = self.input_acc_pw.text()
+        acc_no = ACCOUNT
+        acc_pw = PASSWORD
         if acc_pw != "6458":
             self.text_edit.append("Password Incorrect")
         else :
@@ -390,6 +309,8 @@ class Kiwoom(QMainWindow, form_class):
                 # self.text_edit.append(str(self.buy_cnt))
                 # self.buy_cnt = self.buy_cnt + 1
 
+                self.func_GET_Deposit()     ## 잔고 확인
+
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
                 self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
@@ -397,10 +318,7 @@ class Kiwoom(QMainWindow, form_class):
 
     def func_STOP_CheckBalance(self):
         self.flag_cont_CheckBalance = 0
-
-    def show_opt10004(self, rqname, trcode, recordname):
-        a= 0
-
+    
     def func_SHOW_ItemInfo(self, rqname, trcode, recordname):
         itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
         name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
@@ -416,16 +334,6 @@ class Kiwoom(QMainWindow, form_class):
         if current_price < 0:        
             current_price = current_price * -1
 
-        # self.text_edit.append("Request Item Info : " + itemcode.strip())
-        # self.text_edit2.setText("종목코드:" + itemcode.strip())
-        # self.text_edit2.append("종목명:" + name.strip())
-        # self.text_edit2.append("거래량:" + volume.strip())
-        # self.text_edit2.append("상장주식:" + numStocks.strip())
-        # self.text_edit2.append("시가:" + prices.strip())
-        # self.text_edit2.append("등락:" + percent.strip() + " %")
-        # self.text_edit2.append("PER:" + per.strip())
-        # self.text_edit2.append("현재가:" + str(current_price))
-
         self.te_iteminfo_code.setText(itemcode.strip())
         self.te_iteminfo_name.setText(name.strip())
         self.te_iteminfo_price.setText(str(current_price))
@@ -439,18 +347,13 @@ class Kiwoom(QMainWindow, form_class):
 
             # self.buy_order(itemcode.strip(), 1, current_price + 50)                   ## auto buy
             self.auto_buy = 0
-            
 
     def show_opw00018(self, rqname, trcode, recordname):
-        data_cnt = self.get_repeat_cnt(trcode, rqname)
-
+        data_cnt = self.func_GET_RepeatCount(trcode, rqname)
         total_purchase = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
         total_evaluation = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총평가금액")
-
-        # self.text_edit5.setText(str(int(total_purchase)))
-        # self.text_edit6.setText(str(int(total_evaluation)))
-        self.wid_total_purchase.setText(str(int(total_purchase)))
-        self.wid_total_evaluation.setText(str(int(total_evaluation)))
+        self.wid_total_purchase.setText(str('{0:,}'.format(int(total_purchase))))
+        self.wid_total_evaluation.setText(str('{0:,}'.format(int(total_evaluation))))
 
         for i in range(data_cnt) :
             total_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
@@ -514,9 +417,8 @@ class Kiwoom(QMainWindow, form_class):
 
         self.wid_req_times.setText(str(self.request_times))
         self.request_times = self.request_times + 1
-        # print(DF_item0)
 
-    def get_repeat_cnt(self, trcode, rqname):
+    def func_GET_RepeatCount(self, trcode, rqname):
         ret = self.kiwoom.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
         return ret
 
@@ -524,7 +426,6 @@ class Kiwoom(QMainWindow, form_class):
         row_count = 10
         col_count = 9
         # self.table_summary.resize(592, 211)
-        
         # self.table_summary.move(430, 130)
         self.table_summary.setRowCount(row_count)
         self.table_summary.setColumnCount(col_count)
@@ -597,6 +498,18 @@ class Kiwoom(QMainWindow, form_class):
         itemcode = itemcode.replace("A", "")
         self.flag_ItemInfo_click = 1
         self.func_GET_ItemInfo(itemcode.strip())
+
+    def func_GET_CurrentTime(self) :
+        year = strftime("%Y", localtime())
+        month = strftime("%m", localtime())
+        day = strftime("%d", localtime())
+        hour = strftime("%H", localtime())
+        cmin = strftime("%M", localtime())
+        sec = strftime("%S", localtime())
+
+        now = "[" + year + "/" + month +"/" + day + " " + hour + ":" + cmin + ":" + sec + "] "
+
+        return now
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
