@@ -51,7 +51,7 @@ class Kiwoom(QMainWindow, form_class):
         self.btn0.clicked.connect(self.func_GET_ItemInfo)
         self.btn2.clicked.connect(self.btn_buy_order)
         self.btn3.clicked.connect(self.btn_sell_order)
-        self.btn4.clicked.connect(self.btn_test)
+        self.btn4.clicked.connect(self.func_GET_ItemPrice)
         self.btn5.clicked.connect(self.func_START_CheckBalance)
         self.btn6.clicked.connect(self.func_STOP_CheckBalance)
         self.btn7.clicked.connect(self.func_GET_TradeHistory)
@@ -70,8 +70,9 @@ class Kiwoom(QMainWindow, form_class):
         new_items = pd.DataFrame.from_dict(data)
         print(new_items)
 
-    def btn_test(self):
-        self.code_edit.setText("005930")
+    def func_GET_ItemPrice(self, item_code):
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Item_Price", "opt10004", 0, "0101")
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("data received")
@@ -79,6 +80,9 @@ class Kiwoom(QMainWindow, form_class):
             self.remained_data = True
         else:
             self.remained_data = False
+
+        if rqname == "GET_Item_Price":
+            self.func_GET_HOGA(rqname, trcode, recordname)
 
         if rqname == "GET_Deposit":
             self.func_SHOW_Deposit(rqname, trcode, recordname)
@@ -92,6 +96,13 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00009_man":
             print("opw20009 man")
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
+
+    def func_GET_HOGA(self, rqname, trcode, recordname) :
+        hoga_buy = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가")
+        hoga_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가")
+
+        self.wid_buy_price.setText(str(int(hoga_buy)))
+        self.wid_sell_price.setText(str(int(hoga_sell)))
 
     def func_SHOW_Deposit(self, rqname, trcode, recordname) :
         deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
@@ -272,6 +283,7 @@ class Kiwoom(QMainWindow, form_class):
             code = code
             self.flag_ItemInfo_click = 0
         
+        self.func_GET_ItemPrice(code)       # 해당 item의 호가 호출
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
 
