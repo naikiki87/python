@@ -316,14 +316,14 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>10</x>
+      <x>150</x>
       <y>230</y>
       <width>64</width>
       <height>23</height>
      </rect>
     </property>
     <property name="text">
-     <string>Logs</string>
+     <string>[ Logs ]</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
@@ -424,9 +424,6 @@
         <string>조회</string>
        </property>
       </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QLineEdit" name="test_text"/>
      </item>
      <item row="3" column="3">
       <widget class="QPushButton" name="btn4">

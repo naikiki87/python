@@ -51,7 +51,7 @@ class Kiwoom(QMainWindow, form_class):
         self.btn0.clicked.connect(self.func_GET_ItemInfo)
         self.btn2.clicked.connect(self.btn_buy_order)
         self.btn3.clicked.connect(self.btn_sell_order)
-        self.btn4.clicked.connect(self.func_GET_CurrentTime)
+        self.btn4.clicked.connect(self.btn_test)
         self.btn5.clicked.connect(self.func_START_CheckBalance)
         self.btn6.clicked.connect(self.func_STOP_CheckBalance)
         self.btn7.clicked.connect(self.func_GET_TradeHistory)
@@ -69,6 +69,9 @@ class Kiwoom(QMainWindow, form_class):
     def item_finder_items(self, data):
         new_items = pd.DataFrame.from_dict(data)
         print(new_items)
+
+    def btn_test(self):
+        self.code_edit.setText("005930")
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("data received")
@@ -89,13 +92,6 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00009_man":
             print("opw20009 man")
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
-
-        # if rqname == "opw00009_req":
-        #     if self.init_history == 1:
-        #         self.init_history_table(rqname, trcode, recordname)
-        #     else :
-        #         print("#######")
-                # self.func_SHOW_TradeHistory(rqname, trcode, recordname)
 
     def func_SHOW_Deposit(self, rqname, trcode, recordname) :
         deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
@@ -297,12 +293,21 @@ class Kiwoom(QMainWindow, form_class):
         self.buy_cnt = 0
         self.auto_buy = 0
         self.request_times = 0
+        self.flag_HistoryData_Auto = 1
+
         acc_no = ACCOUNT
         acc_pw = PASSWORD
         if acc_pw != "6458":
             self.text_edit.append("Password Incorrect")
         else :
             self.flag_cont_CheckBalance = 1
+
+            year = strftime("%Y", localtime())
+            month = strftime("%m", localtime())
+            day = strftime("%d", localtime())
+            today = year + month + day
+            self.func_GET_TradeHistory(today)
+
             while self.flag_cont_CheckBalance:
                 if self.buy_cnt == 2:
                     self.auto_buy = 1
@@ -494,10 +499,14 @@ class Kiwoom(QMainWindow, form_class):
         row = index.row()
         if row % 2 == 1:
             row = row - 1
-        itemcode = self.table_summary.item(row, 0).text()
-        itemcode = itemcode.replace("A", "")
-        self.flag_ItemInfo_click = 1
-        self.func_GET_ItemInfo(itemcode.strip())
+        try:
+            itemcode = self.table_summary.item(row, 0).text()
+            itemcode = itemcode.replace("A", "")
+            self.flag_ItemInfo_click = 1
+            self.code_edit.setText(itemcode.strip())
+            self.func_GET_ItemInfo(itemcode.strip())
+        except:
+            pass
 
     def func_GET_CurrentTime(self) :
         year = strftime("%Y", localtime())
