@@ -45,14 +45,14 @@
       </widget>
      </item>
      <item row="0" column="2">
-      <widget class="QPushButton" name="btn5">
+      <widget class="QPushButton" name="btn_START">
        <property name="text">
         <string>실행</string>
        </property>
       </widget>
      </item>
      <item row="0" column="3">
-      <widget class="QPushButton" name="btn6">
+      <widget class="QPushButton" name="btn_STOP">
        <property name="text">
         <string>정지</string>
        </property>
@@ -99,7 +99,7 @@
       <widget class="QLineEdit" name="input_history_date"/>
      </item>
      <item row="0" column="2">
-      <widget class="QPushButton" name="btn7">
+      <widget class="QPushButton" name="btn_HISTORY">
        <property name="text">
         <string>실행</string>
        </property>
@@ -366,7 +366,7 @@
       </widget>
      </item>
      <item row="2" column="2">
-      <widget class="QPushButton" name="btn2">
+      <widget class="QPushButton" name="btn_BUY">
        <property name="text">
         <string>매수</string>
        </property>
@@ -393,7 +393,7 @@
       </widget>
      </item>
      <item row="2" column="3">
-      <widget class="QPushButton" name="btn3">
+      <widget class="QPushButton" name="btn_SELL">
        <property name="text">
         <string>매도</string>
        </property>
@@ -416,14 +416,14 @@
       <widget class="QLineEdit" name="buy_sell_count"/>
      </item>
      <item row="0" column="2">
-      <widget class="QPushButton" name="btn0">
+      <widget class="QPushButton" name="btn_ITEM_LOOKUP">
        <property name="text">
         <string>조회</string>
        </property>
       </widget>
      </item>
      <item row="3" column="3">
-      <widget class="QPushButton" name="btn4">
+      <widget class="QPushButton" name="btn_TEST">
        <property name="text">
         <string>Test</string>
        </property>
