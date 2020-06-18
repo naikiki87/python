@@ -89,6 +89,16 @@ class Kiwoom(QMainWindow, form_class):
         else:
             return row[0]
 
+    def func_INSERT_ItemStep(self, code, step):
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "insert into STATUS (code, step) values(:CODE, :STEP)"
+        cur.execute(sql, {"CODE" : code, "STEP" : step})
+        conn.commit()
+        conn.close()
+        print("INSERTED")
+
+
     def func_UPDATE_ItemStep(self, code, step) :
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
@@ -101,15 +111,13 @@ class Kiwoom(QMainWindow, form_class):
         print("UPDATED")
 
     def btn_test(self) :
-        code = "005930"
-        val = self.func_GET_ItemStep(code)
-        print(val)
-
+        code = "000001"
+        step = 0
+        self.func_INSERT_ItemStep(code, step)
     def btn_test_2(self):
-        code = "005930"
+        code = "000001"
         val = int(self.func_GET_ItemStep(code))
-        val = val + 1
-        self.func_UPDATE_ItemStep(code, val)
+        print(val)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("data received")
@@ -223,17 +231,19 @@ class Kiwoom(QMainWindow, form_class):
             self.flag_HistoryData_Auto = 1
             self.func_GET_TradeHistory(today)
 
+            item_code = item_code.replace("A", "").strip()
+            status = self.func_GET_ItemStep(item_code)
 
             conn = sqlite3.connect("item_status.db")
             cur = conn.cursor()
             sql = "select status from STATUS where code=?"
-            itemcode = item_code.replace("A", "").strip()
-            cur.execute(sql, [itemcode])
+            
+            cur.execute(sql, [item_code])
             status = cur.fetchone()
-            if status is None:
-                print("NNONONONON")
+            if status == "none":
+                self.func_INSERT_ItemStep(item_code, 0)     # step 관리 신규생성
             else :
-                print(status[0])
+                print(status)
 
 
     def func_START_CheckBalance(self):
@@ -290,8 +300,21 @@ class Kiwoom(QMainWindow, form_class):
             added_fee = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수수료합")
             tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
             eval_pl = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
+
             item_code = item_code.replace("A", "")
             step = self.func_GET_ItemStep(item_code.strip())
+
+            print("judgement")
+            print("item : ", item_code)
+            print("단가 : ", unit_price)
+            print("현재가 : ", cur_price)
+            print("수익률 : ", each_percent)
+            print("단계 : ", step)
+        
+        try:
+            self.func_SHOW_CheckBalance(rqname, trcode, recordname)
+        except:
+            pass
 
     def func_SHOW_CheckBalance(self, rqname, trcode, recordname):
         data_cnt = self.func_GET_RepeatCount(trcode, rqname)
