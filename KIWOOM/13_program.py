@@ -277,6 +277,9 @@ class Kiwoom(QMainWindow, form_class):
                 QtTest.QTest.qWait(3000)
     def func_STOP_CheckBalance(self):
         self.flag_cont_CheckBalance = 0
+    
+    def func_
+
     def func_SHOW_CheckBalance(self, rqname, trcode, recordname):
         data_cnt = self.func_GET_RepeatCount(trcode, rqname)
         total_purchase = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
