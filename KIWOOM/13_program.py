@@ -39,7 +39,7 @@ class Kiwoom(QMainWindow, form_class):
         
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
-        self.kiwoom.OnReceiveChejanData.connect(self.receive_chejan_data)
+        self.kiwoom.OnReceiveChejanData.connect(self.func_RECEIVE_Chejan_data)
 
         self.init_ENV()
 
@@ -128,7 +128,8 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SHOW_ItemInfo(rqname, trcode, recordname)
 
         if rqname == "opw00018_req":
-            self.func_SHOW_CheckBalance(rqname, trcode, recordname)
+            self.func_JUDGE_Status(rqname, trcode, recordname)
+            # self.func_SHOW_CheckBalance(rqname, trcode, recordname)
 
         if rqname == "opw00009_man":
             print("opw20009 man")
@@ -198,19 +199,19 @@ class Kiwoom(QMainWindow, form_class):
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
         
-    def get_chejan_data(self, fid):
+    def func_GET_Chejan_data(self, fid):
         ret = self.kiwoom.dynamicCall("GetChejanData(int)", fid)
         return ret
-    def receive_chejan_data(self, gubun, item_cnt, fid_list):
+    def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
         if gubun == "0" :
             self.text_edit.append("-- 체결완료 --")
-            item_code = self.get_chejan_data(9001)
-            self.text_edit.append("주문번호 : " + self.get_chejan_data(9203))
+            item_code = self.func_GET_Chejan_data(9001)
+            self.text_edit.append("주문번호 : " + self.func_GET_Chejan_data(9203))
             self.text_edit.append("종목코드 : " + item_code)
-            self.text_edit.append("종목명 : " + self.get_chejan_data(302))
-            self.text_edit.append("체결가 : " + self.get_chejan_data(910))
-            self.text_edit.append("체결량 : " + self.get_chejan_data(911))
-            self.text_edit.append("체결단가 : " + self.get_chejan_data(931))
+            self.text_edit.append("종목명 : " + self.func_GET_Chejan_data(302))
+            self.text_edit.append("체결가 : " + self.func_GET_Chejan_data(910))
+            self.text_edit.append("체결량 : " + self.func_GET_Chejan_data(911))
+            self.text_edit.append("체결단가 : " + self.func_GET_Chejan_data(931))
             self.text_edit.append("")
 
             ##### 체결시 history table 갱신 수행
@@ -233,9 +234,6 @@ class Kiwoom(QMainWindow, form_class):
                 print("NNONONONON")
             else :
                 print(status[0])
-
-            
-
 
 
     def func_START_CheckBalance(self):
@@ -277,8 +275,23 @@ class Kiwoom(QMainWindow, form_class):
                 QtTest.QTest.qWait(3000)
     def func_STOP_CheckBalance(self):
         self.flag_cont_CheckBalance = 0
-    
-    def func_
+
+    def func_JUDGE_Status(self, rqname, trcode, recordname):
+        data_cnt = self.func_GET_RepeatCount(trcode, rqname)
+
+        for i in range(data_cnt) :
+            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
+            each_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수익률(%)")
+            cur_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가")
+            unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
+            total_purchase_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입금액")
+            total_evaluation_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가금액")
+            owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
+            added_fee = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수수료합")
+            tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
+            eval_pl = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
+            item_code = item_code.replace("A", "")
+            step = self.func_GET_ItemStep(item_code.strip())
 
     def func_SHOW_CheckBalance(self, rqname, trcode, recordname):
         data_cnt = self.func_GET_RepeatCount(trcode, rqname)
