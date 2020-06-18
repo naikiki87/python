@@ -75,29 +75,41 @@ class Kiwoom(QMainWindow, form_class):
         new_items = pd.DataFrame.from_dict(data)
         print(new_items)
 
-    def btn_test(self) :
+    def func_GET_ItemStep(self, code):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
+        sql = "select step from STATUS where code = ?"
+        cur.execute(sql, [code])
 
-        code = '005935'
-        cur.execute("select status from STATUS where code=?", [code])
+        row = cur.fetchone()
+        conn.close()
 
-        rows = cur.fetchone()
-        if rows is None:
-            print("NONONONONONON")
-        # print(rows)
-        # print(rows[0])
+        if row is None:
+            return "none"
+        else:
+            return row[0]
+
+    def func_UPDATE_ItemStep(self, code, step) :
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        code2 = "005930"
+        sql = "update STATUS set step = :STEP where code = :CODE"
+        cur.execute(sql, {"STEP" : step, "CODE" : code2})
+        
+        conn.commit()
+        conn.close()
+        print("UPDATED")
+
+    def btn_test(self) :
+        code = "005930"
+        val = self.func_GET_ItemStep(code)
+        print(val)
 
     def btn_test_2(self):
-        conn = sqlite3.connect("test.db")
-
-        with conn:
-            cur = conn.cursor()
-            cur.execute("select * from dftest")
-            rows = cur.fetchall()
-
-            for row in rows:
-                print(row)
+        code = "005930"
+        val = int(self.func_GET_ItemStep(code))
+        val = val + 1
+        self.func_UPDATE_ItemStep(code, val)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("data received")
@@ -210,8 +222,19 @@ class Kiwoom(QMainWindow, form_class):
             self.flag_HistoryData_Auto = 1
             self.func_GET_TradeHistory(today)
 
-            # conn = sqlite3.connect("item_status.db")
-            # cur = conn.cursor()
+
+            conn = sqlite3.connect("item_status.db")
+            cur = conn.cursor()
+            sql = "select status from STATUS where code=?"
+            itemcode = item_code.replace("A", "").strip()
+            cur.execute(sql, [itemcode])
+            status = cur.fetchone()
+            if status is None:
+                print("NNONONONON")
+            else :
+                print(status[0])
+
+            
 
 
 
@@ -261,16 +284,6 @@ class Kiwoom(QMainWindow, form_class):
         self.wid_total_purchase.setText(str('{0:,}'.format(int(total_purchase))))
         self.wid_total_evaluation.setText(str('{0:,}'.format(int(total_evaluation))))
 
-        # conn = sqlite3.connect("item_status.db")
-        # cur = conn.cursor()
-        # sql = "insert "
-
-        # conn = sqlite3.connect("item_status.db")
-        # cur = conn.cursor()
-        # sql = "create table if not exists STATUS (id integer, status integer)"
-        # cur.execute(sql)
-        # conn.close()
-
         for i in range(data_cnt) :
             total_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
             capital = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "추정예탁자산")
@@ -309,7 +322,6 @@ class Kiwoom(QMainWindow, form_class):
 
             # '{0:,}'.format()
             # str('{0:,}'.format())
-            # total_fee = int(float(added_fee) + float(tax))
             total_sum = str('{0:,}'.format(int(total_evaluation_price) - int(total_purchase_price)))
             owncount = str('{0:,}'.format(int(owncount)))
             cur_price = str('{0:,}'.format(int(cur_price)))
@@ -331,12 +343,16 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SET_TableData(1, 2*i, 7, eval_pl)
             self.func_SET_TableData(1, 2*i, 8, str(round(float(each_percent), 2)))
 
+            itemcode = itemcode.replace("A", "")
+            step = self.func_GET_ItemStep(itemcode.strip())
+            self.func_SET_TableData(1, 2*i, 9, str(step))
+
         self.wid_req_times.setText(str(self.request_times))
         self.request_times = self.request_times + 1
 
     def func_SET_tableSUMMARY(self):
         row_count = 10
-        col_count = 9
+        col_count = 10
         # self.table_summary.resize(592, 211)
         # self.table_summary.move(430, 130)
         self.table_summary.setRowCount(row_count)
@@ -346,8 +362,8 @@ class Kiwoom(QMainWindow, form_class):
 
         for i in range(col_count):
             self.table_summary.setColumnWidth(i, 70)
-        self.table_summary.setColumnWidth(2, 50)
-        self.table_summary.setColumnWidth(8, 50)
+        # self.table_summary.setColumnWidth(2, 50)
+        # self.table_summary.setColumnWidth(8, 50)
         self.table_summary.verticalHeader().setVisible(False)
         self.table_summary.verticalHeader().setDefaultSectionSize(1)
 
@@ -360,6 +376,7 @@ class Kiwoom(QMainWindow, form_class):
             self.table_summary.setSpan(j,6,2,1)
             self.table_summary.setSpan(j,7,2,1)
             self.table_summary.setSpan(j,8,2,1)
+            self.table_summary.setSpan(j,9,2,1)
         
         self.table_summary.setHorizontalHeaderItem(0, QTableWidgetItem("Code"))
         self.table_summary.setHorizontalHeaderItem(1, QTableWidgetItem("종목"))
@@ -370,6 +387,7 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.setHorizontalHeaderItem(6, QTableWidgetItem("수수료"))
         self.table_summary.setHorizontalHeaderItem(7, QTableWidgetItem("손익"))
         self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("%"))
+        self.table_summary.setHorizontalHeaderItem(9, QTableWidgetItem("단계"))
 
         self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)
     def func_SET_tableHISTORY(self):
