@@ -136,8 +136,8 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SHOW_ItemInfo(rqname, trcode, recordname)
 
         if rqname == "opw00018_req":
-            self.func_JUDGE_Status(rqname, trcode, recordname)
-            # self.func_SHOW_CheckBalance(rqname, trcode, recordname)
+            # self.func_JUDGE_Status(rqname, trcode, recordname)
+            self.func_SHOW_CheckBalance(rqname, trcode, recordname)
 
         if rqname == "opw00009_man":
             print("opw20009 man")
@@ -465,9 +465,17 @@ class Kiwoom(QMainWindow, form_class):
         hoga_buy = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가")
         hoga_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가")
 
-        self.wid_buy_price.setText(str(int(hoga_buy)))
-        self.wid_sell_price.setText(str(int(hoga_sell)))
-    
+        hoga_buy = int(hoga_buy)
+        hoga_sell = int(hoga_sell)
+
+        if hoga_buy < 0 :
+            hoga_buy = hoga_buy * -1
+        if hoga_sell < 0 :
+            hoga_sell = hoga_sell * -1
+
+        self.wid_buy_price.setText(str(hoga_buy))
+        self.wid_sell_price.setText(str(hoga_sell))
+
     def func_GET_Deposit(self) :
         acc_no = ACCOUNT
         acc_pw = PASSWORD
