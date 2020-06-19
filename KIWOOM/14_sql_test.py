@@ -19,5 +19,11 @@ def get_status(code) :
     else:
         return row[0]
 
-val = get_status("005935")
-print(val)
+# val = get_status("005935")
+# print(val)
+
+str1 = "abc"
+
+if str1 in "abcde" :
+    print("true")
+    
