@@ -55,7 +55,8 @@ class Kiwoom(QMainWindow, form_class):
 
         self.df_history = pd.DataFrame(columns = ['day', 'time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
         self.btn_ITEM_LOOKUP.clicked.connect(self.func_GET_ItemInfo)
-        self.btn_BUY.clicked.connect(self.func_ORDER_BUY_1)
+        # self.btn_BUY.clicked.connect(lambda : self.func_ORDER_BUY_click(0))
+        self.btn_BUY.clicked.connect(self.func_ORDER_BUY_click)
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL_1)
         self.btn_TEST.clicked.connect(self.btn_test)
         self.btn_TEST_2.clicked.connect(self.btn_test_2)
@@ -161,7 +162,7 @@ class Kiwoom(QMainWindow, form_class):
             self.table_history.setItem(row, col, item)
 
     ## 매수 ##
-    def func_ORDER_BUY_1(self) :
+    def func_ORDER_BUY_click(self) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Clicked : BUY")
         try:
@@ -174,6 +175,19 @@ class Kiwoom(QMainWindow, form_class):
             self.text_edit.append(timestamp + str(e))
 
         self.func_ORDER_BUY_2(item_code, qty, price)
+    
+    def func_ORDER_BUY_auto(self, item_code, qty, price) :
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "Auto : BUY")
+
+        print("order buy")
+        print(item_code, qty, price)
+
+        # try:
+        #     self.func_ORDER_BUY_2(item_code, qty, price)
+        # except Exception as e:
+        #     timestamp = self.func_GET_CurrentTime()
+        #     self.text_edit.append(timestamp + str(e))
 
     def func_ORDER_BUY_2(self, item_code, qty, price) :
         self.text_edit.append("Send Order : BUY")
@@ -396,6 +410,9 @@ class Kiwoom(QMainWindow, form_class):
 
                 if percent < -2 and step < 6 and ordered == 0:
                     print(i, " : OK")
+                    item_code = self.table_summary.item(i, 0).text()
+                    self.func_ORDER_BUY_auto(item_code, 1, 100)
+
             except:
                 pass
 
