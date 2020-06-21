@@ -296,13 +296,13 @@ class Kiwoom(QMainWindow, form_class):
     
     def func_SHOW_CheckBalance(self, rqname, trcode, recordname):
         # print("SHOW CB")
-        self.data_cnt = self.func_GET_RepeatCount(trcode, rqname)
+        self.cnt_own_item = self.func_GET_RepeatCount(trcode, rqname)
         total_purchase = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
         total_evaluation = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총평가금액")
         self.wid_total_purchase.setText(str('{0:,}'.format(int(total_purchase))))
         self.wid_total_evaluation.setText(str('{0:,}'.format(int(total_evaluation))))
 
-        for i in range(self.data_cnt) :
+        for i in range(self.cnt_own_item) :
             item_code = item_name = owncount = unit_price = cur_price = total_pur_price = total_eval_price = added_fee = tax = eval_pl = 0
 
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
@@ -383,7 +383,7 @@ class Kiwoom(QMainWindow, form_class):
         # print("SHOW DB LoOp out")
 
     def func_JUDGE(self):
-        for i in range(self.data_cnt) :
+        for i in range(self.cnt_own_item) :
             try:
                 percent = float(self.table_summary.item(i, 12).text())
                 step = int(self.table_summary.item(i, 13).text())
@@ -399,13 +399,8 @@ class Kiwoom(QMainWindow, form_class):
             except:
                 pass
 
-        #     if percent < -2 and step < 6 and self.flag_ordered[i] == 0 :
-        #         print(item_code, ": OK")
-        #         print("")
-
         self.wid_req_times.setText(str(self.request_times))
         self.request_times = self.request_times + 1
-
     
     def func_GET_Hoga_1(self, item_code, index):
         rqname = "GET_Item_Price" + index
@@ -431,7 +426,7 @@ class Kiwoom(QMainWindow, form_class):
         else :
             self.cnt_call_hoga = self.cnt_call_hoga + 1
 
-            if self.cnt_call_hoga > self.data_cnt :
+            if self.cnt_call_hoga > self.cnt_own_item :
                 self.cnt_call_hoga = 0
                 self.func_JUDGE()
                 
