@@ -44,6 +44,7 @@ class Kiwoom(QMainWindow, form_class):
         self.init_ENV()
 
     def init_ENV(self) :
+        self.cnt_call_hoga = 0
         self.cnt_tab_history = 0
         self.flag_ordered = [0,0,0,0,0]
         self.conn = sqlite3.connect("test.db")
@@ -124,10 +125,11 @@ class Kiwoom(QMainWindow, form_class):
         print(val)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        print("data received")
+        # print("data received")
         comp_str = "GET_Item_Price"
 
         if comp_str in rqname:
+            # print("DATA : HOGA")
             self.func_GET_Hoga_2(rqname, trcode, recordname)
 
         if rqname == "GET_Deposit":
@@ -137,18 +139,16 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SHOW_ItemInfo(rqname, trcode, recordname)
 
         if rqname == "opw00018_req":
-            # self.func_JUDGE_Status(rqname, trcode, recordname)
+            # print("DATA : CHECK BALANCE")
             self.func_SHOW_CheckBalance(rqname, trcode, recordname)
 
         if rqname == "opw00009_man":
-            print("opw20009 man")
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
 
     def func_SET_TableData(self, table_no, row, col, content, color):
         if table_no == 1:
             item = QTableWidgetItem(content)
-            
-            item.setTextAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
+            item.setTextAlignment(QtCore.Qt.AlignHCenter)
             if color == 1:
                 item.setForeground(QBrush(Qt.red)) # 글자색
             elif color == 2:
@@ -293,56 +293,18 @@ class Kiwoom(QMainWindow, form_class):
     def func_STOP_CheckBalance(self):
         self.flag_cont_CheckBalance = 0
 
-    def func_JUDGE_Status(self, rqname, trcode, recordname):
-        data_cnt = self.func_GET_RepeatCount(trcode, rqname)
-
-        for i in range(data_cnt) :
-            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-            item_code = item_code.replace("A", "")
-            step = self.func_GET_ItemStep(item_code.strip())
-            self.func_GET_Hoga_1(item_code.strip(), str(i))
-            
-            percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수익률(%)")
-            cur_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가")
-            unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
-            total_purchase_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입금액")
-            total_evaluation_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가금액")
-            owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
-            added_fee = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수수료합")
-            tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
-            eval_pl = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
-
-            print("judgement")
-            print("item : ", item_code)
-            # print("단가 : ", unit_price)
-            # print("현재가 : ", cur_price)
-            
-            # print("단계 : ", step, type(step))
-            # print("")
-
-            percent = round(float(percent), 2)
-            print("수익률 : ", percent)
-
-            if percent < -2 and step < 6 and self.flag_ordered[i] == 0 :
-                print(item_code, ": OK")
-                print("")
-
-                
-
-        
-        try:
-            self.func_SHOW_CheckBalance(rqname, trcode, recordname)
-        except:
-            pass
-
+    
     def func_SHOW_CheckBalance(self, rqname, trcode, recordname):
-        data_cnt = self.func_GET_RepeatCount(trcode, rqname)
+        # print("SHOW CB")
+        self.data_cnt = self.func_GET_RepeatCount(trcode, rqname)
         total_purchase = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
         total_evaluation = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총평가금액")
         self.wid_total_purchase.setText(str('{0:,}'.format(int(total_purchase))))
         self.wid_total_evaluation.setText(str('{0:,}'.format(int(total_evaluation))))
 
-        for i in range(data_cnt) :
+        for i in range(self.data_cnt) :
+            item_code = item_name = owncount = unit_price = cur_price = total_pur_price = total_eval_price = added_fee = tax = eval_pl = 0
+
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
             item_code = item_code.replace("A", "")
             step = self.func_GET_ItemStep(item_code.strip())
@@ -383,103 +345,71 @@ class Kiwoom(QMainWindow, form_class):
             # '{0:,}'.format()
             # str('{0:,}'.format())
 
-            self.func_SET_TableData(1, i, 0, item_code, 0)
-            self.func_SET_TableData(1, i, 1, item_name, 0)
-            self.func_SET_TableData(1, i, 2, str('{0:,}'.format(int(owncount))), 0)
-            self.func_SET_TableData(1, i, 3, str('{0:,}'.format(int(unit_price))), 0)
+            try:
+                self.func_SET_TableData(1, i, 0, item_code, 0)
+                self.func_SET_TableData(1, i, 1, item_name, 0)
+                self.func_SET_TableData(1, i, 2, str('{0:,}'.format(int(owncount))), 0)
+                self.func_SET_TableData(1, i, 3, str('{0:,}'.format(int(unit_price))), 0)
 
-            if int(cur_price) > int(unit_price) :
-                self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 1)
-            else:
-                self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 2)
+                if int(cur_price) > int(unit_price) :
+                    self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 1)
+                else:
+                    self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 2)
 
-            self.func_SET_TableData(1, i, 7, str('{0:,}'.format(int(total_pur_price))), 0)
-            
-            if int(total_eval_price) > int(total_pur_price) :
-                self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 1)
-            else:
-                self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 2)
+                self.func_SET_TableData(1, i, 7, str('{0:,}'.format(int(total_pur_price))), 0)
+                
+                if int(total_eval_price) > int(total_pur_price) :
+                    self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 1)
+                else:
+                    self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 2)
 
-            self.func_SET_TableData(1, i, 9, str('{0:,}'.format(int(total_eval_price) - int(total_pur_price))), 0)
-            self.func_SET_TableData(1, i, 10, str('{0:,}'.format(int(float(added_fee) + float(tax)))), 0)
-            self.func_SET_TableData(1, i, 11, str('{0:,}'.format(int(eval_pl))), 0)
-            
-            if float(percent) == 0:
-                self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 0)
-            elif float(percent) > 0:
-                self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 1)
-            else :
-                self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 2)
+                self.func_SET_TableData(1, i, 9, str('{0:,}'.format(int(total_eval_price) - int(total_pur_price))), 0)
+                self.func_SET_TableData(1, i, 10, str('{0:,}'.format(int(float(added_fee) + float(tax)))), 0)
+                self.func_SET_TableData(1, i, 11, str('{0:,}'.format(int(eval_pl))), 0)
+                
+                if float(percent) == 0:
+                    self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 0)
+                elif float(percent) > 0:
+                    self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 1)
+                else :
+                    self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 2)
 
-            step = self.func_GET_ItemStep(item_code.strip())
-            self.func_SET_TableData(1, i, 13, str(step), 0)
+                step = self.func_GET_ItemStep(item_code.strip())
+                self.func_SET_TableData(1, i, 13, str(step), 0)
+
+            except:
+                pass
+
+        # print("SHOW DB LoOp out")
+
+    def func_JUDGE(self):
+        for i in range(self.data_cnt) :
+            try:
+                percent = float(self.table_summary.item(i, 12).text())
+                step = int(self.table_summary.item(i, 13).text())
+                ordered = self.flag_ordered[i]
+                price_buy = self.table_summary.item(i, 5).text()
+                price_sell = self.table_summary.item(i, 6).text()
+
+                # print(i, " : percent : ", percent, ", step : ", step, ", ordered : ", ordered)
+                # print("price_buy : ", price_buy, "/price sell : ", price_sell)
+
+                if percent < -2 and step < 6 and ordered == 0:
+                    print(i, " : OK")
+            except:
+                pass
+
+        #     if percent < -2 and step < 6 and self.flag_ordered[i] == 0 :
+        #         print(item_code, ": OK")
+        #         print("")
 
         self.wid_req_times.setText(str(self.request_times))
         self.request_times = self.request_times + 1
 
-    def func_SET_tableSUMMARY(self):
-        row_count = 5
-        col_count = 14
-        self.table_summary.setRowCount(row_count)
-        self.table_summary.setColumnCount(col_count)
-        self.table_summary.resizeRowsToContents()
-
-        for i in range(col_count):
-            self.table_summary.setColumnWidth(i, 100)
-        
-        self.table_summary.verticalHeader().setVisible(False)
-        self.table_summary.verticalHeader().setDefaultSectionSize(1)
-        
-        self.table_summary.setHorizontalHeaderItem(0, QTableWidgetItem("코드"))
-        self.table_summary.setHorizontalHeaderItem(1, QTableWidgetItem("종목"))
-        self.table_summary.setHorizontalHeaderItem(2, QTableWidgetItem("수량"))
-        self.table_summary.setHorizontalHeaderItem(3, QTableWidgetItem("단가"))
-        self.table_summary.setHorizontalHeaderItem(4, QTableWidgetItem("현재가"))
-        self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("매도최"))
-        self.table_summary.setHorizontalHeaderItem(6, QTableWidgetItem("매수최"))
-        self.table_summary.setHorizontalHeaderItem(7, QTableWidgetItem("매입금액"))
-        self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("평가금액"))
-        self.table_summary.setHorizontalHeaderItem(9, QTableWidgetItem("합계"))
-        self.table_summary.setHorizontalHeaderItem(10, QTableWidgetItem("수수료"))
-        self.table_summary.setHorizontalHeaderItem(11, QTableWidgetItem("손익"))
-        self.table_summary.setHorizontalHeaderItem(12, QTableWidgetItem("%"))
-        self.table_summary.setHorizontalHeaderItem(13, QTableWidgetItem("단계"))
-        
-
-        self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)
-    def func_SET_tableHISTORY(self):
-        row_count = 0
-        col_count = 9
-        # self.table_history.resize(722, 250)
-        
-        self.table_history.setRowCount(row_count)
-        self.table_history.setColumnCount(col_count)
-        self.table_history.resizeRowsToContents()
-        # self.table_history.resizeColumnsToContents()
-
-        for i in range(col_count):
-            self.table_history.setColumnWidth(i, 80)
-        self.table_history.verticalHeader().setVisible(False)
-        self.table_history.verticalHeader().setDefaultSectionSize(1)
-
-        # header_item = QTableWidgetItem("추가") 
-        # header_item.setBackground(Qt.red) # 헤더 배경색 설정 --> app.setStyle() 설정해야만 작동한다. 
-        # self.table_history.setHorizontalHeaderItem(0, header_item)
-
-        self.table_history.setHorizontalHeaderItem(0, QTableWidgetItem("날짜"))
-        self.table_history.setHorizontalHeaderItem(1, QTableWidgetItem("체결시간"))
-        self.table_history.setHorizontalHeaderItem(2, QTableWidgetItem("구분"))
-        self.table_history.setHorizontalHeaderItem(3, QTableWidgetItem("체결번호"))
-        self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("종목번호"))
-        self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("종 목 명"))
-        self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("체결수량"))
-        self.table_history.setHorizontalHeaderItem(7, QTableWidgetItem("체결단가"))
-        self.table_history.setHorizontalHeaderItem(8, QTableWidgetItem("주문번호"))
-
+    
     def func_GET_Hoga_1(self, item_code, index):
         rqname = "GET_Item_Price" + index
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
-        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Item_Price", "opt10004", 0, "0101")
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10004", 0, "0101")
     def func_GET_Hoga_2(self, rqname, trcode, recordname) :
         index = int(rqname[-1])
@@ -497,9 +427,17 @@ class Kiwoom(QMainWindow, form_class):
         if index == 9:
             self.wid_buy_price.setText(str(hoga_buy))
             self.wid_sell_price.setText(str(hoga_sell))
+        
+        else :
+            self.cnt_call_hoga = self.cnt_call_hoga + 1
 
-        self.func_SET_TableData(1, index, 5, str('{0:,}'.format(int(hoga_sell))), 0)
-        self.func_SET_TableData(1, index, 6, str('{0:,}'.format(int(hoga_buy))), 0)
+            if self.cnt_call_hoga > self.data_cnt :
+                self.cnt_call_hoga = 0
+                self.func_JUDGE()
+                
+            else :
+                self.func_SET_TableData(1, index, 5, str(int(hoga_sell)), 0)
+                self.func_SET_TableData(1, index, 6, str(int(hoga_buy)), 0)
 
     def func_GET_Deposit(self) :
         acc_no = ACCOUNT
@@ -661,6 +599,65 @@ class Kiwoom(QMainWindow, form_class):
         else:
             print("Login Failed")
     ## [END] login ##
+    def func_SET_tableSUMMARY(self):
+        row_count = 5
+        col_count = 14
+        self.table_summary.setRowCount(row_count)
+        self.table_summary.setColumnCount(col_count)
+        self.table_summary.resizeRowsToContents()
+
+        for i in range(col_count):
+            self.table_summary.setColumnWidth(i, 100)
+        
+        self.table_summary.verticalHeader().setVisible(False)
+        self.table_summary.verticalHeader().setDefaultSectionSize(1)
+        
+        self.table_summary.setHorizontalHeaderItem(0, QTableWidgetItem("코드"))
+        self.table_summary.setHorizontalHeaderItem(1, QTableWidgetItem("종목"))
+        self.table_summary.setHorizontalHeaderItem(2, QTableWidgetItem("수량"))
+        self.table_summary.setHorizontalHeaderItem(3, QTableWidgetItem("단가"))
+        self.table_summary.setHorizontalHeaderItem(4, QTableWidgetItem("현재가"))
+        self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("매도최"))
+        self.table_summary.setHorizontalHeaderItem(6, QTableWidgetItem("매수최"))
+        self.table_summary.setHorizontalHeaderItem(7, QTableWidgetItem("매입금액"))
+        self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("평가금액"))
+        self.table_summary.setHorizontalHeaderItem(9, QTableWidgetItem("합계"))
+        self.table_summary.setHorizontalHeaderItem(10, QTableWidgetItem("수수료"))
+        self.table_summary.setHorizontalHeaderItem(11, QTableWidgetItem("손익"))
+        self.table_summary.setHorizontalHeaderItem(12, QTableWidgetItem("%"))
+        self.table_summary.setHorizontalHeaderItem(13, QTableWidgetItem("단계"))
+        
+
+        self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)
+    def func_SET_tableHISTORY(self):
+        row_count = 0
+        col_count = 9
+        # self.table_history.resize(722, 250)
+        
+        self.table_history.setRowCount(row_count)
+        self.table_history.setColumnCount(col_count)
+        self.table_history.resizeRowsToContents()
+        # self.table_history.resizeColumnsToContents()
+
+        for i in range(col_count):
+            self.table_history.setColumnWidth(i, 80)
+        self.table_history.verticalHeader().setVisible(False)
+        self.table_history.verticalHeader().setDefaultSectionSize(1)
+
+        # header_item = QTableWidgetItem("추가") 
+        # header_item.setBackground(Qt.red) # 헤더 배경색 설정 --> app.setStyle() 설정해야만 작동한다. 
+        # self.table_history.setHorizontalHeaderItem(0, header_item)
+
+        self.table_history.setHorizontalHeaderItem(0, QTableWidgetItem("날짜"))
+        self.table_history.setHorizontalHeaderItem(1, QTableWidgetItem("체결시간"))
+        self.table_history.setHorizontalHeaderItem(2, QTableWidgetItem("구분"))
+        self.table_history.setHorizontalHeaderItem(3, QTableWidgetItem("체결번호"))
+        self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("종목번호"))
+        self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("종 목 명"))
+        self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("체결수량"))
+        self.table_history.setHorizontalHeaderItem(7, QTableWidgetItem("체결단가"))
+        self.table_history.setHorizontalHeaderItem(8, QTableWidgetItem("주문번호"))
+
 if __name__=="__main__":
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create('Fusion')) # --> 없으면, 헤더색 변경 안됨.
