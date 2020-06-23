@@ -126,9 +126,10 @@ class Kiwoom(QMainWindow, form_class):
         conn.commit()
         conn.close()
         print("INSERTED")
-    def func_UPDATE_db_item(self, code, col, data) :
+    def func_UPDATE_db_item(self, code, step) :
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
+        # sql = "update STATUS set step = :STEP where code = :CODE"
         sql = "update STATUS set step = :STEP where code = :CODE"
         # sql = "update STATUS set " + col + step = :STEP where code = :CODE"
         cur.execute(sql, {"STEP" : step, "CODE" : code})
