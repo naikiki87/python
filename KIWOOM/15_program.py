@@ -52,15 +52,16 @@ class Kiwoom(QMainWindow, form_class):
         self.cnt_call_hoga = 0
         self.cnt_tab_history = 0
         self.flag_ordered = [0,0,0,0,0]
-        self.conn = sqlite3.connect("test.db")
-        sql = "create table if not exists status (id integer, status integer)"
-        cur = self.conn.cursor()
+
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "create table if not exists STATUS (code text, step integer, ordered integer)"
         cur.execute(sql)
-        self.conn.close()
+        conn.commit()
+        conn.close()
 
         self.df_history = pd.DataFrame(columns = ['day', 'time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
         self.btn_ITEM_LOOKUP.clicked.connect(self.func_GET_ItemInfo)
-        # self.btn_BUY.clicked.connect(lambda : self.func_ORDER_BUY_click(0))
         self.btn_BUY.clicked.connect(self.func_ORDER_BUY_click)
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL_1)
         self.btn_TEST.clicked.connect(self.btn_test)
@@ -96,6 +97,27 @@ class Kiwoom(QMainWindow, form_class):
             return "none"
         else:
             return row[0]
+    def func_GET_db_item(self, code):
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "select * from STATUS where code = ?"
+        cur.execute(sql, [code])
+
+        row = cur.fetchone()
+        conn.close()
+
+        if row is None:
+            return "none"
+        else:
+            return row
+    def func_INS_db_item(self, code, step, ordered):
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "insert into STATUS (code, step, ordered) values(:CODE, :STEP, :ORDERED)"
+        cur.execute(sql, {"CODE" : code, "STEP" : step, "ORDERED" : ordered})
+        conn.commit()
+        conn.close()
+        print("data INSERTED")
     def func_INSERT_ItemStep(self, code, step):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
@@ -104,6 +126,16 @@ class Kiwoom(QMainWindow, form_class):
         conn.commit()
         conn.close()
         print("INSERTED")
+    def func_UPDATE_db_item(self, code, col, data) :
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "update STATUS set step = :STEP where code = :CODE"
+        # sql = "update STATUS set " + col + step = :STEP where code = :CODE"
+        cur.execute(sql, {"STEP" : step, "CODE" : code})
+        
+        conn.commit()
+        conn.close()
+        print("UPDATED")
     def func_UPDATE_ItemStep(self, code, step) :
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
@@ -116,12 +148,15 @@ class Kiwoom(QMainWindow, form_class):
         print("UPDATED")
 
     def btn_test(self) :
-        if self.flag_ordered[0] == 0 :
-            self.flag_ordered[0] = 1
-            self.text_edit.append("flag changed to 1")
-        else :
-            self.flag_ordered[0] = 0
-            self.text_edit.append("flag changed to 0")
+        print("test")
+        code = "005930"
+        self.func_UPDATE_db_item(code, step, 1)
+        # if self.flag_ordered[0] == 0 :
+        #     self.flag_ordered[0] = 1
+        #     self.text_edit.append("flag changed to 1")
+        # else :
+        #     self.flag_ordered[0] = 0
+        #     self.text_edit.append("flag changed to 0")
 
     def btn_test_2(self):
         code = "000001"
@@ -280,12 +315,6 @@ class Kiwoom(QMainWindow, form_class):
         self.request_times = 0
         self.flag_HistoryData_Auto = 1
 
-        conn = sqlite3.connect("item_status.db")
-        cur = conn.cursor()
-        sql = "create table if not exists STATUS (code text, status integer)"
-        cur.execute(sql)
-        conn.close()
-
         acc_no = ACCOUNT
         acc_pw = PASSWORD
         if acc_pw != "6458":
@@ -322,92 +351,101 @@ class Kiwoom(QMainWindow, form_class):
         self.wid_total_purchase.setText(str('{0:,}'.format(int(total_purchase))))
         self.wid_total_evaluation.setText(str('{0:,}'.format(int(total_evaluation))))
 
-        for i in range(self.cnt_own_item) :
-            item_code = item_name = owncount = unit_price = cur_price = total_pur_price = total_eval_price = added_fee = tax = eval_pl = 0
+        for i in range(self.cnt_own_item):      ## db initialize
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
             item_code = item_code.replace("A", "")
-            item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
 
-            if self.flag_ordered[i] == 1:
-                self.func_SET_TableData(1, i, 0, item_code, 0)
-                self.func_SET_TableData(1, i, 1, item_name, 0)
-                notice = "Trading"
-                self.func_SET_TableData(1, i, 2, notice, 1)
-                for j in range(3, 14) :
-                    self.func_SET_TableData(1, i, j, "", 0)    
+            res = self.func_GET_db_item(item_code)
+            if res == "none" :
+                self.func_INS_db_item(item_code, 0, 0)
+
+
+        # for i in range(self.cnt_own_item) :
+        #     item_code = item_name = owncount = unit_price = cur_price = total_pur_price = total_eval_price = added_fee = tax = eval_pl = 0
+        #     item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
+        #     item_code = item_code.replace("A", "")
+        #     item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
+
+        #     if self.flag_ordered[i] == 1:
+        #         self.func_SET_TableData(1, i, 0, item_code, 0)
+        #         self.func_SET_TableData(1, i, 1, item_name, 0)
+        #         notice = "Trading"
+        #         self.func_SET_TableData(1, i, 2, notice, 1)
+        #         for j in range(3, 14) :
+        #             self.func_SET_TableData(1, i, j, "", 0)    
             
-            else :
-                self.func_GET_Hoga_1(item_code.strip(), str(i))
+        #     else :
+        #         self.func_GET_Hoga_1(item_code.strip(), str(i))
 
-                total_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
-                capital = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "추정예탁자산")
+        #         total_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
+        #         capital = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "추정예탁자산")
                 
-                percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수익률(%)")
-                cur_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가")
-                unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
-                total_pur_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입금액")
-                total_eval_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가금액")
-                owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
-                added_fee = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수수료합")
-                tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
-                eval_pl = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
+        #         percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수익률(%)")
+        #         cur_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가")
+        #         unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
+        #         total_pur_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입금액")
+        #         total_eval_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가금액")
+        #         owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
+        #         added_fee = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수수료합")
+        #         tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
+        #         eval_pl = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
 
-                if globals()['save_times{}'.format(i)] == 3:
-                    globals()['save_times{}'.format(i)] = 0
-                    m_1 = globals()['DF_item{}'.format(i)]['%'].mean()
-                    m_2 = globals()['DF_item{}'.format(i)].loc[0]['m_1']
-                    m_3 = globals()['DF_item{}'.format(i)].loc[0]['m_2']
-                    m_4 = globals()['DF_item{}'.format(i)].loc[0]['m_3']
-                    m_5 = globals()['DF_item{}'.format(i)].loc[0]['m_4']
-                    m_6 = globals()['DF_item{}'.format(i)].loc[0]['m_5']
-                    m_7 = globals()['DF_item{}'.format(i)].loc[0]['m_6']
-                    m_8 = globals()['DF_item{}'.format(i)].loc[0]['m_7']
-                    m_9 = globals()['DF_item{}'.format(i)].loc[0]['m_8']
-                    m_10 = globals()['DF_item{}'.format(i)].loc[0]['m_9']
+        #         if globals()['save_times{}'.format(i)] == 3:
+        #             globals()['save_times{}'.format(i)] = 0
+        #             m_1 = globals()['DF_item{}'.format(i)]['%'].mean()
+        #             m_2 = globals()['DF_item{}'.format(i)].loc[0]['m_1']
+        #             m_3 = globals()['DF_item{}'.format(i)].loc[0]['m_2']
+        #             m_4 = globals()['DF_item{}'.format(i)].loc[0]['m_3']
+        #             m_5 = globals()['DF_item{}'.format(i)].loc[0]['m_4']
+        #             m_6 = globals()['DF_item{}'.format(i)].loc[0]['m_5']
+        #             m_7 = globals()['DF_item{}'.format(i)].loc[0]['m_6']
+        #             m_8 = globals()['DF_item{}'.format(i)].loc[0]['m_7']
+        #             m_9 = globals()['DF_item{}'.format(i)].loc[0]['m_8']
+        #             m_10 = globals()['DF_item{}'.format(i)].loc[0]['m_9']
 
-                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, round(float(percent), 2), m_1, m_2, m_3, m_4, m_5, m_6, m_7, m_8, m_9, m_10]
-                    globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
-                else:
-                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, round(float(percent), 2), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
+        #             globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, round(float(percent), 2), m_1, m_2, m_3, m_4, m_5, m_6, m_7, m_8, m_9, m_10]
+        #             globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
+        #         else:
+        #             globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, round(float(percent), 2), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        #             globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
 
-                # '{0:,}'.format()
-                # str('{0:,}'.format())
+        #         # '{0:,}'.format()
+        #         # str('{0:,}'.format())
 
-                try:
-                    self.func_SET_TableData(1, i, 0, item_code, 0)
-                    self.func_SET_TableData(1, i, 1, item_name, 0)
-                    self.func_SET_TableData(1, i, 2, str('{0:,}'.format(int(owncount))), 0)
-                    self.func_SET_TableData(1, i, 3, str('{0:,}'.format(int(unit_price))), 0)
+        #         try:
+        #             self.func_SET_TableData(1, i, 0, item_code, 0)
+        #             self.func_SET_TableData(1, i, 1, item_name, 0)
+        #             self.func_SET_TableData(1, i, 2, str('{0:,}'.format(int(owncount))), 0)
+        #             self.func_SET_TableData(1, i, 3, str('{0:,}'.format(int(unit_price))), 0)
 
-                    if int(cur_price) > int(unit_price) :
-                        self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 1)
-                    else:
-                        self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 2)
+        #             if int(cur_price) > int(unit_price) :
+        #                 self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 1)
+        #             else:
+        #                 self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 2)
 
-                    self.func_SET_TableData(1, i, 7, str('{0:,}'.format(int(total_pur_price))), 0)
+        #             self.func_SET_TableData(1, i, 7, str('{0:,}'.format(int(total_pur_price))), 0)
                     
-                    if int(total_eval_price) > int(total_pur_price) :
-                        self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 1)
-                    else:
-                        self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 2)
+        #             if int(total_eval_price) > int(total_pur_price) :
+        #                 self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 1)
+        #             else:
+        #                 self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 2)
 
-                    self.func_SET_TableData(1, i, 9, str('{0:,}'.format(int(total_eval_price) - int(total_pur_price))), 0)
-                    self.func_SET_TableData(1, i, 10, str('{0:,}'.format(int(float(added_fee) + float(tax)))), 0)
-                    self.func_SET_TableData(1, i, 11, str('{0:,}'.format(int(eval_pl))), 0)
+        #             self.func_SET_TableData(1, i, 9, str('{0:,}'.format(int(total_eval_price) - int(total_pur_price))), 0)
+        #             self.func_SET_TableData(1, i, 10, str('{0:,}'.format(int(float(added_fee) + float(tax)))), 0)
+        #             self.func_SET_TableData(1, i, 11, str('{0:,}'.format(int(eval_pl))), 0)
                     
-                    if float(percent) == 0:
-                        self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 0)
-                    elif float(percent) > 0:
-                        self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 1)
-                    else :
-                        self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 2)
+        #             if float(percent) == 0:
+        #                 self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 0)
+        #             elif float(percent) > 0:
+        #                 self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 1)
+        #             else :
+        #                 self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 2)
 
-                    step = self.func_GET_ItemStep(item_code.strip())
-                    self.func_SET_TableData(1, i, 13, str(step), 0)
+        #             step = self.func_GET_ItemStep(item_code.strip())
+        #             self.func_SET_TableData(1, i, 13, str(step), 0)
 
-                except:
-                    pass
+        #         except:
+        #             pass
 
         # print("SHOW DB LoOp out")
 
