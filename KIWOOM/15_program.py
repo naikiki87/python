@@ -247,6 +247,7 @@ class Kiwoom(QMainWindow, form_class):
             self.text_edit.append("체결가 : " + self.func_GET_Chejan_data(910))
             self.text_edit.append("체결량 : " + self.func_GET_Chejan_data(911))
             self.text_edit.append("체결단가 : " + self.func_GET_Chejan_data(931))
+            self.text_edit.append("미체결 : " + self.func_GET_Chejan_data(902))
             self.text_edit.append("")
 
             ##### 체결시 history table 갱신 수행
