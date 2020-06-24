@@ -137,8 +137,10 @@ class Kiwoom(QMainWindow, form_class):
 
         code = "005930"
 
-        val = self.func_GET_db_item(code, 2)
-        print(val)
+        self.func_UPDATE_db_item(code, 2, 0)
+
+        # val = self.func_GET_db_item(code, 2)
+        # print(val)
 
 
     def btn_test_2(self, code, step, ordered):
@@ -199,17 +201,21 @@ class Kiwoom(QMainWindow, form_class):
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Auto : BUY")
 
+        item_code = item_code.replace('A', '').strip()
+
         print("order buy")
         print("code : ", item_code)
         print("qty : ", qty)
         print("price : ", price)
         print("")
 
-        # try:
-        #     self.func_ORDER_BUY_2(item_code, qty, price)
-        # except Exception as e:
-        #     timestamp = self.func_GET_CurrentTime()
-        #     self.text_edit.append(timestamp + str(e))
+        try:
+            self.func_UPDATE_db_item(item_code, 2, 1)       # update ordered state to 1
+            # self.func_ORDER_BUY_2(item_code, qty, price)
+            
+        except Exception as e:
+            timestamp = self.func_GET_CurrentTime()
+            self.text_edit.append(timestamp + str(e))
 
     def func_ORDER_BUY_2(self, item_code, qty, price) :
         self.text_edit.append("Send Order : BUY")
@@ -255,32 +261,54 @@ class Kiwoom(QMainWindow, form_class):
         return ret
     def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
         if gubun == "0" :
-            self.text_edit.append("-- 체결완료 --")
-            item_code = self.func_GET_Chejan_data(9001)
-            self.text_edit.append("주문번호 : " + self.func_GET_Chejan_data(9203))
-            self.text_edit.append("종목코드 : " + item_code)
-            self.text_edit.append("종목명 : " + self.func_GET_Chejan_data(302))
-            self.text_edit.append("체결가 : " + self.func_GET_Chejan_data(910))
-            self.text_edit.append("체결량 : " + self.func_GET_Chejan_data(911))
-            self.text_edit.append("체결단가 : " + self.func_GET_Chejan_data(931))
-            self.text_edit.append("미체결 : " + self.func_GET_Chejan_data(902))
-            self.text_edit.append("")
+            order_id = item_code = item_name = trade_price = trade_amount = remained = -1
 
-            ##### 체결시 history table 갱신 수행
-            year = strftime("%Y", localtime())
-            month = strftime("%m", localtime())
-            day = strftime("%d", localtime())
-            today = year + month + day
+            order_id = self.func_GET_Chejan_data(9203)      # 주문번호
+            item_code = self.func_GET_Chejan_data(9001)     # 종목코드
+            item_name = self.func_GET_Chejan_data(302)      # 종목명
+            trade_price = self.func_GET_Chejan_data(931)    # 체결단가
+            trade_amount = self.func_GET_Chejan_data(911)   # 체결량
+            remained = self.func_GET_Chejan_data(902)       # 미체결
+            percent = self.func_GET_Chejan_data(8019)       # 손익률
 
-            self.flag_HistoryData_Auto = 1
-            self.func_GET_TradeHistory(today)
+            # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
+            if order_id != -1 and item_code != -1 and item_name != -1 and trade_price != -1 and trade_amount != -1 and remained != -1:
+                self.text_edit.append("-- 체결완료 --")
+                self.text_edit.append("주문번호 : " + order_id)
+                self.text_edit.append("종목코드 : " + item_code)
+                self.text_edit.append("종목명 : " + item_name)
+                self.text_edit.append("체결단가 : " + trade_price)
+                self.text_edit.append("체결량 : " + trade_amount)
+                self.text_edit.append("미체결 : " + remained)
+                self.text_edit.append("")
 
-            item_code = item_code.replace("A", "").strip()
-            step = self.func_GET_db_item(item_code, 1)
-            if step == "none":
-                self.func_INSERT_db_item(item_code, 0, 0)
-            else :
-                print(step)
+                ## 체결시 history table 갱신 수행
+                year = strftime("%Y", localtime())
+                month = strftime("%m", localtime())
+                day = strftime("%d", localtime())
+                today = year + month + day
+
+                self.flag_HistoryData_Auto = 1
+                self.func_GET_TradeHistory(today)
+
+                ## 체결시 db 갱신 수행
+                item_code = item_code.replace("A", "").strip()
+                step = self.func_GET_db_item(item_code, 1)
+
+                ### db에 저장안된 item 일 경우 item 초기화
+                if step == "none":
+                    self.func_INSERT_db_item(item_code, 0, 0)
+
+                ### db에 이미 저장되어 있는 item 일 경우
+                else :
+                    #### 미체결 없이 주문한 수량이 모듀 체결 완료된 경우
+                    if int(remained) == 0:
+                        self.func_UPDATE_db_item(item_code, 2, 0)   # ordered를 0으로 변경
+                    
+                        ##### db상의 step 값 조정
+                        if int(percent) < 0 and step < 5:
+                            new_step = step + 1
+                            self.func_UPDATE_db_item(item_code, 1, new_step)
 
 
     def func_START_CheckBalance(self):
@@ -340,7 +368,9 @@ class Kiwoom(QMainWindow, form_class):
             item_code = item_code.replace("A", "")
             item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
 
-            if self.flag_ordered[i] == 1:
+            ordered = self.func_GET_db_item(item_code.strip(), 2)
+            
+            if ordered == 1:
                 self.func_SET_TableData(1, i, 0, item_code, 0)
                 self.func_SET_TableData(1, i, 1, item_name, 0)
                 notice = "Trading"
@@ -427,6 +457,12 @@ class Kiwoom(QMainWindow, form_class):
     def func_JUDGE(self):
         for i in range(self.cnt_own_item) :
             try:
+                owncount = self.table_summary.item(i, 2).text()
+                print("owncount : ", owncount)
+
+                if owncount == "Trading":
+                    continue
+                
                 percent = float(self.table_summary.item(i, 12).text())
                 step = int(self.table_summary.item(i, 13).text())
                 ordered = self.flag_ordered[i]
