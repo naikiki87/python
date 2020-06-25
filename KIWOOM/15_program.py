@@ -63,7 +63,7 @@ class Kiwoom(QMainWindow, form_class):
         self.df_history = pd.DataFrame(columns = ['day', 'time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
         self.btn_ITEM_LOOKUP.clicked.connect(self.func_GET_ItemInfo)
         self.btn_BUY.clicked.connect(self.func_ORDER_BUY_click)
-        self.btn_SELL.clicked.connect(self.func_ORDER_SELL_1)
+        self.btn_SELL.clicked.connect(self.func_ORDER_SELL_click)
         self.btn_TEST.clicked.connect(self.btn_test)
         # self.btn_TEST_2.clicked.connect(self.btn_test_2)
         self.btn_START.clicked.connect(self.func_START_CheckBalance)
@@ -110,7 +110,7 @@ class Kiwoom(QMainWindow, form_class):
         conn.close()
         print("data INSERTED")
     def func_UPDATE_db_item(self, code, col, data) :
-        print("code : ", code, col, data)
+        # print("code : ", code, col, data)
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
         if col == 1:    # update step
@@ -140,9 +140,6 @@ class Kiwoom(QMainWindow, form_class):
         self.func_UPDATE_db_item(code, 2, 0)
 
         # val = self.func_GET_db_item(code, 2)
-        # print(val)
-
-
     def btn_test_2(self, code, step, ordered):
         print("TEST 2")
 
@@ -179,7 +176,7 @@ class Kiwoom(QMainWindow, form_class):
             
         if table_no == 2:
             item = QTableWidgetItem(content)
-            item.setTextAlignment(QtCore.Qt.AlignVCenter | QtCore.Qt.AlignHCenter)
+            item.setTextAlignment(QtCore.Qt.AlignHCenter)
             self.table_history.setItem(row, col, item)
 
     ## 매수 ##
@@ -210,7 +207,7 @@ class Kiwoom(QMainWindow, form_class):
         print("")
 
         try:
-            self.func_UPDATE_db_item(item_code, 2, 1)       # update ordered state to 1
+            a = 0
             # self.func_ORDER_BUY_2(item_code, qty, price)
             
         except Exception as e:
@@ -218,7 +215,9 @@ class Kiwoom(QMainWindow, form_class):
             self.text_edit.append(timestamp + str(e))
 
     def func_ORDER_BUY_2(self, item_code, qty, price) :
-        self.text_edit.append("Send Order : BUY")
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "ORDER : BUY")
+
         rqname = "RQ_TEST"
         screen_no = "0101"
         acc_no = ACCOUNT
@@ -227,9 +226,10 @@ class Kiwoom(QMainWindow, form_class):
         orgorderno = ""
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
+        self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
 
     ## 매도 ##
-    def func_ORDER_SELL_1(self) :
+    def func_ORDER_SELL_click(self) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Clicked : SELL")
 
@@ -244,8 +244,30 @@ class Kiwoom(QMainWindow, form_class):
 
         self.func_ORDER_SELL_2(item_code, qty, price)
 
+    # def func_ORDER_SELL_auto(self, item_code, qty, price) :
+    #     timestamp = self.func_GET_CurrentTime()
+    #     self.text_edit.append(timestamp + "Auto : SELL")
+
+    #     item_code = item_code.replace('A', '').strip()
+
+    #     print("order sell")
+    #     print("code : ", item_code)
+    #     print("qty : ", qty)
+    #     print("price : ", price)
+    #     print("")
+
+    #     try:
+    #         a = 0
+    #         # self.func_ORDER_SELL_2(item_code, qty, price)
+            
+    #     except Exception as e:
+    #         timestamp = self.func_GET_CurrentTime()
+    #         self.text_edit.append(timestamp + str(e))
+
     def func_ORDER_SELL_2(self, item_code, qty, price) :
-        self.text_edit.append("Send Order : SELL")
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "ORDER : SELL")
+        
         rqname = "RQ_TEST"
         screen_no = "0101"
         acc_no = ACCOUNT
@@ -255,32 +277,46 @@ class Kiwoom(QMainWindow, form_class):
         
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
-        
+        self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
+
     def func_GET_Chejan_data(self, fid):
         ret = self.kiwoom.dynamicCall("GetChejanData(int)", fid)
         return ret
     def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
-        if gubun == "0" :
-            order_id = item_code = item_name = trade_price = trade_amount = remained = -1
-
+        order_id = item_code = item_name = trade_price = trade_amount = remained = trade_time = 'n'
+        if gubun == "0" :       # 체결시
             order_id = self.func_GET_Chejan_data(9203)      # 주문번호
             item_code = self.func_GET_Chejan_data(9001)     # 종목코드
             item_name = self.func_GET_Chejan_data(302)      # 종목명
-            trade_price = self.func_GET_Chejan_data(931)    # 체결단가
+            # trade_price = self.func_GET_Chejan_data(931)    # 체결단가
             trade_amount = self.func_GET_Chejan_data(911)   # 체결량
             remained = self.func_GET_Chejan_data(902)       # 미체결
-            percent = self.func_GET_Chejan_data(8019)       # 손익률
+            trade_time = self.func_GET_Chejan_data(908)      # 주문체결시간
+            # percent = self.func_GET_Chejan_data(8019)       # 손익률
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
-            if order_id != -1 and item_code != -1 and item_name != -1 and trade_price != -1 and trade_amount != -1 and remained != -1:
+            if remained == '0':
+                print("-- 체결완료 --")
+                print("체결시간 : " + trade_time)
+                print("주문번호 : " + order_id)
+                print("종목코드 : " + item_code)
+                print("종목명 : " + item_name)
+                # print("체결단가 : " + trade_price)
+                print("체결량 : " + trade_amount)
+                print("미체결 : " + remained)
+                print("")
+
                 self.text_edit.append("-- 체결완료 --")
+                self.text_edit.append("체결시간 : " + trade_time)
                 self.text_edit.append("주문번호 : " + order_id)
                 self.text_edit.append("종목코드 : " + item_code)
                 self.text_edit.append("종목명 : " + item_name)
-                self.text_edit.append("체결단가 : " + trade_price)
+                # self.text_edit.append("체결단가 : " + trade_price)
                 self.text_edit.append("체결량 : " + trade_amount)
                 self.text_edit.append("미체결 : " + remained)
                 self.text_edit.append("")
+
+                # print(percent, " : ", type(percent))
 
                 ## 체결시 history table 갱신 수행
                 year = strftime("%Y", localtime())
@@ -301,14 +337,13 @@ class Kiwoom(QMainWindow, form_class):
 
                 ### db에 이미 저장되어 있는 item 일 경우
                 else :
-                    #### 미체결 없이 주문한 수량이 모듀 체결 완료된 경우
-                    if int(remained) == 0:
-                        self.func_UPDATE_db_item(item_code, 2, 0)   # ordered를 0으로 변경
+                    #### 미체결 없이 주문한 수량이 모듀 체결 완료된 경우 ordered를 0으로 변경
+                    self.func_UPDATE_db_item(item_code, 2, 0)
                     
                         ##### db상의 step 값 조정
-                        if int(percent) < 0 and step < 5:
-                            new_step = step + 1
-                            self.func_UPDATE_db_item(item_code, 1, new_step)
+                        # if int(percent) < 0 and step < 5:
+                        #     new_step = step + 1
+                        #     self.func_UPDATE_db_item(item_code, 1, new_step)
 
 
     def func_START_CheckBalance(self):
@@ -578,20 +613,20 @@ class Kiwoom(QMainWindow, form_class):
 
             self.df_history = self.df_history.sort_values(by=['time'], axis=0, ascending=False)
             self.df_history = self.df_history.reset_index(drop=True, inplace=False)
-            print(self.df_history)
+            # print(self.df_history)
 
             data_cnt = len(self.df_history)
 
             for i in range(data_cnt):
-                self.func_SET_TableData(2, i, 0, self.df_history.day[i])
-                self.func_SET_TableData(2, i, 1, self.df_history.time[i])
-                self.func_SET_TableData(2, i, 2, self.df_history.type[i])
-                self.func_SET_TableData(2, i, 3, self.df_history.T_ID[i])
-                self.func_SET_TableData(2, i, 4, self.df_history.Code[i])
-                self.func_SET_TableData(2, i, 5, self.df_history.Name[i])
-                self.func_SET_TableData(2, i, 6, str(self.df_history.Qty[i]))
-                self.func_SET_TableData(2, i, 7, str(self.df_history.Price[i]))
-                self.func_SET_TableData(2, i, 8, str(self.df_history.Req_ID[i]))
+                self.func_SET_TableData(2, i, 0, self.df_history.day[i], 0)
+                self.func_SET_TableData(2, i, 1, self.df_history.time[i], 0)
+                self.func_SET_TableData(2, i, 2, self.df_history.type[i], 0)
+                self.func_SET_TableData(2, i, 3, self.df_history.T_ID[i], 0)
+                self.func_SET_TableData(2, i, 4, self.df_history.Code[i], 0)
+                self.func_SET_TableData(2, i, 5, self.df_history.Name[i], 0)
+                self.func_SET_TableData(2, i, 6, str(self.df_history.Qty[i]), 0)
+                self.func_SET_TableData(2, i, 7, str(self.df_history.Price[i]), 0)
+                self.func_SET_TableData(2, i, 8, str(self.df_history.Req_ID[i]), 0)
 
     def func_GET_ItemInfo(self, code):
         if self.flag_ItemInfo_click == 0:
