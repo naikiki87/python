@@ -60,7 +60,8 @@ class Kiwoom(QMainWindow, form_class):
         conn.commit()
         conn.close()
 
-        self.df_history = pd.DataFrame(columns = ['day', 'time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
+        # self.df_history = pd.DataFrame(columns = ['day', 'time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
+        self.df_history = pd.DataFrame(columns = ['time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
         self.btn_ITEM_LOOKUP.clicked.connect(self.func_GET_ItemInfo)
         self.btn_BUY.clicked.connect(self.func_ORDER_BUY_click)
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL_click)
@@ -70,8 +71,9 @@ class Kiwoom(QMainWindow, form_class):
         self.btn_STOP.clicked.connect(self.func_STOP_CheckBalance)
         self.btn_HISTORY.clicked.connect(self.func_GET_TradeHistory)
 
-        self.func_SET_tableSUMMARY()
-        self.func_SET_tableHISTORY()
+        self.func_SET_tableSUMMARY()        # main table setting
+        self.func_SET_tableHISTORY()        # 내역 table setting
+        self.func_SET_tableORDER()          # 주문현황 table setting
 
     @pyqtSlot(str)
     def update_times(self, data) :
@@ -132,18 +134,12 @@ class Kiwoom(QMainWindow, form_class):
         conn.close()
         print("data DELETED")
     
-    def func_GET_Ordering(self):
+    def func_GET_Ordering(self, today):
         print("GET Ordering")
-        year = strftime("%Y", localtime())
-        month = strftime("%m", localtime())
-        day = strftime("%d", localtime())
-        today = year + month + day
         acc_no = ACCOUNT
         acc_pw = PASSWORD
 
         # today = "20200625"
-
-        print("today : ", today)
 
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", today)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
@@ -152,79 +148,64 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "조회구분", '1')
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", 0)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Ordering", "OPW00007", 0, "0101")
-
     def func_SHOW_Ordering(self, rqname, trcode, recordname) :
         data_cnt = self.func_GET_RepeatCount(trcode, rqname)
+        print("data cnt : ", data_cnt)
 
+        data_cnt2 = 0
+        
+        # 미체결만 표시하기 위해 미체결인 데이터 counting
         for i in range(int(data_cnt)):
-            order_id = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
-            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-            item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
-            deal_type = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문구분")
-            order_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문시간")
-            order_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문수량")
-            trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
-            remained = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문잔량")
+            try:
+                remained = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문잔량")
+                # print("remain : ", remained)
+                if int(remained) > 0:
+                    data_cnt2 = data_cnt2 + 1
+            except:
+                pass
 
-            print(i)
-            print("order_id : ", order_id)
-            print("item_code : ", item_code)
-            print("item_name : ", item_name)
-            print("deal_type : ", deal_type)
-            print("order_time : ", order_time)
-            print("order_amount : ", order_amount)
-            print("trade_amount : ", trade_amount)
-            print("remained : ", remained)
-            print("")
+        if data_cnt2 == 0:
+            self.table_order.clearContents()
+            self.table_order.setRowCount(1)
+            self.table_order.setSpan(0,0,1,8)
+            self.func_SET_TableData(3, 0, 0, "미체결내역 없음", 0)
 
+        else :
+            self.table_order.clearContents()
+            self.table_order.setRowCount(0)
+            self.table_order.setRowCount(data_cnt2)
+
+            for i in range(data_cnt2):
+                try:
+                    order_id = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
+                    item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
+                    item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
+                    deal_type = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문구분")
+                    order_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문시간")
+                    order_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문수량")
+                    trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
+                    remained = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문잔량")
+
+                    self.func_SET_TableData(3, i, 0, deal_type.strip(), 0)
+                    self.func_SET_TableData(3, i, 1, order_id, 0)
+                    self.func_SET_TableData(3, i, 2, order_time, 0)
+                    self.func_SET_TableData(3, i, 3, item_code.replace('A', '').strip(), 0)
+                    self.func_SET_TableData(3, i, 4, item_name.strip(), 0)
+                    self.func_SET_TableData(3, i, 5, str(int(order_amount)), 0)
+                    self.func_SET_TableData(3, i, 6, str(int(trade_amount)), 0)
+                    self.func_SET_TableData(3, i, 7, str(int(remained)), 0)
+
+                except:
+                    pass
             
     def btn_test(self) :
         print("test")
 
-        self.func_GET_Ordering()
+        today = "20200626"
 
-
+        self.func_GET_Ordering(today)
     def btn_test_2(self, code, step, ordered):
         print("TEST 2")
-
-    def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        # print("data received")
-        comp_str = "GET_Item_Price"
-
-        if comp_str in rqname:
-            # print("DATA : HOGA")
-            self.func_GET_Hoga_2(rqname, trcode, recordname)
-
-        if rqname == "GET_Deposit":
-            self.func_SHOW_Deposit(rqname, trcode, recordname)
-
-        if rqname == "GET_ItemInfo":
-            self.func_SHOW_ItemInfo(rqname, trcode, recordname)
-
-        if rqname == "GET_Ordering":
-            self.func_SHOW_Ordering(rqname, trcode, recordname)
-
-        if rqname == "opw00018_req":
-            # print("DATA : CHECK BALANCE")
-            self.func_SHOW_CheckBalance(rqname, trcode, recordname)
-
-        if rqname == "opw00009_man":
-            self.func_SHOW_TradeHistory(rqname, trcode, recordname)
-
-    def func_SET_TableData(self, table_no, row, col, content, color):
-        if table_no == 1:
-            item = QTableWidgetItem(content)
-            item.setTextAlignment(QtCore.Qt.AlignHCenter)
-            if color == 1:
-                item.setForeground(QBrush(Qt.red)) # 글자색
-            elif color == 2:
-                item.setForeground(QBrush(Qt.blue)) # 글자색
-            self.table_summary.setItem(row, col, item)
-            
-        if table_no == 2:
-            item = QTableWidgetItem(content)
-            item.setTextAlignment(QtCore.Qt.AlignHCenter)
-            self.table_history.setItem(row, col, item)
 
     ## 매수 ##
     def func_ORDER_BUY_click(self) :
@@ -240,7 +221,6 @@ class Kiwoom(QMainWindow, form_class):
             self.text_edit.append(timestamp + str(e))
 
         self.func_ORDER_BUY_2(item_code, qty, price)
-    
     def func_ORDER_BUY_auto(self, item_code, qty, price) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Auto : BUY " + item_code)
@@ -260,7 +240,6 @@ class Kiwoom(QMainWindow, form_class):
         except Exception as e:
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + str(e))
-
     def func_ORDER_BUY_2(self, item_code, qty, price) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "ORDER : BUY")
@@ -290,7 +269,6 @@ class Kiwoom(QMainWindow, form_class):
             self.text_edit.append(timestamp + str(e))
 
         self.func_ORDER_SELL_2(item_code, qty, price)
-
     def func_ORDER_SELL_auto(self, item_code, qty, price) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Auto : SELL")
@@ -391,12 +369,10 @@ class Kiwoom(QMainWindow, form_class):
                         #     new_step = step + 1
                         #     self.func_UPDATE_db_item(item_code, 1, new_step)
 
-
     def func_START_CheckBalance(self):
         self.buy_cnt = 0
         self.auto_buy = 0
         self.request_times = 0
-        self.flag_HistoryData_Auto = 1
 
         acc_no = ACCOUNT
         acc_pw = PASSWORD
@@ -409,8 +385,10 @@ class Kiwoom(QMainWindow, form_class):
             month = strftime("%m", localtime())
             day = strftime("%d", localtime())
             today = year + month + day
-            self.flag_HistoryData_Auto == 1
-            self.func_GET_TradeHistory(today)     # problem
+            self.flag_HistoryData_Auto = 1
+            print("DATE1 : ", today)
+            self.func_GET_TradeHistory(str(today))
+            self.func_GET_Ordering(today)
 
             while self.flag_cont_CheckBalance:
                 if self.buy_cnt == 2:
@@ -426,8 +404,6 @@ class Kiwoom(QMainWindow, form_class):
                 QtTest.QTest.qWait(3000)
     def func_STOP_CheckBalance(self):
         self.flag_cont_CheckBalance = 0
-
-    
     def func_SHOW_CheckBalance(self, rqname, trcode, recordname):
         self.cnt_own_item = self.func_GET_RepeatCount(trcode, rqname)
         total_purchase = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
@@ -640,11 +616,14 @@ class Kiwoom(QMainWindow, form_class):
 
     def func_GET_TradeHistory(self, date) :       # search history data manually
         if self.flag_HistoryData_Auto == 1:
+            print("auto here")
             self.search_date = date
             self.flag_HistoryData_Auto = 0
         else :
             self.search_date = self.input_history_date.text()
 
+        # print("DATE : ", self.search_date)
+        print("DATE : ", date)
         acc_no = ACCOUNT
         acc_pw = PASSWORD
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", self.search_date)
@@ -658,40 +637,54 @@ class Kiwoom(QMainWindow, form_class):
 
         if data_cnt == "":
             self.table_history.clearContents()
-            self.table_history.setRowCount(0)
+            self.table_history.setRowCount(1)
+            self.table_history.setSpan(0,0,1,9)
+            self.func_SET_TableData(2, 0, 0, "체결내역 없음", 0)
         else :
             data_cnt = int(data_cnt)
             self.table_history.clearContents()
+            self.table_history.setRowCount(0)
             self.table_history.setRowCount(data_cnt)
 
             for i in range(data_cnt) :
-                deal_type = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문유형구분")
-                trade_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결번호")
-                trade_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결시간")
-                itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-                item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
-                trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
-                trade_unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결단가")
-                req_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
+                try:
+                    deal_type = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문유형구분")
+                    trade_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결번호")
+                    trade_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결시간")
+                    itemcode = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
+                    item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
+                    trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
+                    trade_unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결단가")
+                    req_no = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
 
-                self.df_history.loc[i] = [self.search_date, trade_time, deal_type, trade_no, itemcode, item_name, int(trade_amount), round(float(trade_unit_price), 1), req_no]
+                    # self.df_history.loc[i] = [self.search_date, trade_time, deal_type, trade_no, itemcode, item_name, int(trade_amount), round(float(trade_unit_price), 1), req_no]
+                    self.df_history.loc[i] = [trade_time, deal_type, trade_no, itemcode, item_name, int(trade_amount), int(trade_unit_price), req_no]
+                except:
+                    pass
 
             self.df_history = self.df_history.sort_values(by=['time'], axis=0, ascending=False)
             self.df_history = self.df_history.reset_index(drop=True, inplace=False)
-            # print(self.df_history)
 
             data_cnt = len(self.df_history)
 
             for i in range(data_cnt):
-                self.func_SET_TableData(2, i, 0, self.df_history.day[i], 0)
-                self.func_SET_TableData(2, i, 1, self.df_history.time[i], 0)
-                self.func_SET_TableData(2, i, 2, self.df_history.type[i], 0)
-                self.func_SET_TableData(2, i, 3, self.df_history.T_ID[i], 0)
-                self.func_SET_TableData(2, i, 4, self.df_history.Code[i], 0)
-                self.func_SET_TableData(2, i, 5, self.df_history.Name[i], 0)
-                self.func_SET_TableData(2, i, 6, str(self.df_history.Qty[i]), 0)
-                self.func_SET_TableData(2, i, 7, str(self.df_history.Price[i]), 0)
-                self.func_SET_TableData(2, i, 8, str(self.df_history.Req_ID[i]), 0)
+                try:
+                    # self.func_SET_TableData(2, i, 0, self.df_history.day[i], 0)
+                    self.func_SET_TableData(2, i, 0, self.df_history.time[i], 0)
+                    self.func_SET_TableData(2, i, 1, self.df_history.type[i], 0)
+                    self.func_SET_TableData(2, i, 2, self.df_history.T_ID[i], 0)
+                    self.func_SET_TableData(2, i, 3, self.df_history.Code[i].replace('A', '').strip(), 0)
+                    self.func_SET_TableData(2, i, 4, self.df_history.Name[i].strip(), 0)
+                    self.func_SET_TableData(2, i, 5, str(self.df_history.Qty[i]), 0)
+                    self.func_SET_TableData(2, i, 6, str(self.df_history.Price[i]), 0)
+                    self.func_SET_TableData(2, i, 7, str(self.df_history.Req_ID[i]), 0)
+                except:
+                    pass
+
+        try:
+            self.wid_history_day.setText(self.search_date)
+        except:
+            pass
 
     def func_GET_ItemInfo(self, code):
         if self.flag_ItemInfo_click == 0:
@@ -812,7 +805,7 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)
     def func_SET_tableHISTORY(self):
         row_count = 0
-        col_count = 9
+        col_count = 8
         # self.table_history.resize(722, 250)
         
         self.table_history.setRowCount(row_count)
@@ -821,24 +814,87 @@ class Kiwoom(QMainWindow, form_class):
         # self.table_history.resizeColumnsToContents()
 
         for i in range(col_count):
-            self.table_history.setColumnWidth(i, 80)
+            self.table_history.setColumnWidth(i, 100)
+
         self.table_history.verticalHeader().setVisible(False)
         self.table_history.verticalHeader().setDefaultSectionSize(1)
+        self.table_history.setHorizontalHeaderItem(0, QTableWidgetItem("체결시간"))
+        self.table_history.setHorizontalHeaderItem(1, QTableWidgetItem("구분"))
+        self.table_history.setHorizontalHeaderItem(2, QTableWidgetItem("체결번호"))
+        self.table_history.setHorizontalHeaderItem(3, QTableWidgetItem("종목번호"))
+        self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("종 목 명"))
+        self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("체결수량"))
+        self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("체결단가"))
+        self.table_history.setHorizontalHeaderItem(7, QTableWidgetItem("주문번호"))
+    def func_SET_tableORDER(self):
+        row_count = 0
+        col_count = 8
 
-        # header_item = QTableWidgetItem("추가") 
-        # header_item.setBackground(Qt.red) # 헤더 배경색 설정 --> app.setStyle() 설정해야만 작동한다. 
-        # self.table_history.setHorizontalHeaderItem(0, header_item)
+        self.table_order.setRowCount(row_count)
+        self.table_order.setColumnCount(col_count)
+        self.table_order.resizeRowsToContents()
 
-        self.table_history.setHorizontalHeaderItem(0, QTableWidgetItem("날짜"))
-        self.table_history.setHorizontalHeaderItem(1, QTableWidgetItem("체결시간"))
-        self.table_history.setHorizontalHeaderItem(2, QTableWidgetItem("구분"))
-        self.table_history.setHorizontalHeaderItem(3, QTableWidgetItem("체결번호"))
-        self.table_history.setHorizontalHeaderItem(4, QTableWidgetItem("종목번호"))
-        self.table_history.setHorizontalHeaderItem(5, QTableWidgetItem("종 목 명"))
-        self.table_history.setHorizontalHeaderItem(6, QTableWidgetItem("체결수량"))
-        self.table_history.setHorizontalHeaderItem(7, QTableWidgetItem("체결단가"))
-        self.table_history.setHorizontalHeaderItem(8, QTableWidgetItem("주문번호"))
+        for i in range(col_count):
+            self.table_order.setColumnWidth(i, 100)
 
+        self.table_order.verticalHeader().setVisible(False)
+        self.table_order.verticalHeader().setDefaultSectionSize(1)
+        self.table_order.setHorizontalHeaderItem(0, QTableWidgetItem("구분"))
+        self.table_order.setHorizontalHeaderItem(1, QTableWidgetItem("주문번호"))
+        self.table_order.setHorizontalHeaderItem(2, QTableWidgetItem("주문시간"))
+        self.table_order.setHorizontalHeaderItem(3, QTableWidgetItem("종목번호"))
+        self.table_order.setHorizontalHeaderItem(4, QTableWidgetItem("종목명"))
+        self.table_order.setHorizontalHeaderItem(5, QTableWidgetItem("주문량"))
+        self.table_order.setHorizontalHeaderItem(6, QTableWidgetItem("체결량"))
+        self.table_order.setHorizontalHeaderItem(7, QTableWidgetItem("미체결"))
+
+    def func_SET_TableData(self, table_no, row, col, content, color):
+        # summary table
+        if table_no == 1:
+            item = QTableWidgetItem(content)
+            # item.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
+            item.setTextAlignment(4)    # 가운데 정렬
+            if color == 1:
+                item.setForeground(QBrush(Qt.red)) # 글자색
+            elif color == 2:
+                item.setForeground(QBrush(Qt.blue)) # 글자색
+            self.table_summary.setItem(row, col, item)
+        
+        # history table
+        if table_no == 2:
+            item = QTableWidgetItem(content)
+            item.setTextAlignment(4)    # 가운데 정렬
+            self.table_history.setItem(row, col, item)
+
+        # order table
+        if table_no == 3:
+            order = 1
+            item = QTableWidgetItem(content)
+            item.setTextAlignment(4)    # 가운데 정렬
+            self.table_order.setItem(row, col, item)
+    def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
+        # print("data received")
+        comp_str = "GET_Item_Price"
+
+        if comp_str in rqname:
+            # print("DATA : HOGA")
+            self.func_GET_Hoga_2(rqname, trcode, recordname)
+
+        if rqname == "GET_Deposit":
+            self.func_SHOW_Deposit(rqname, trcode, recordname)
+
+        if rqname == "GET_ItemInfo":
+            self.func_SHOW_ItemInfo(rqname, trcode, recordname)
+
+        if rqname == "GET_Ordering":
+            self.func_SHOW_Ordering(rqname, trcode, recordname)
+
+        if rqname == "opw00018_req":
+            # print("DATA : CHECK BALANCE")
+            self.func_SHOW_CheckBalance(rqname, trcode, recordname)
+
+        if rqname == "opw00009_man":
+            self.func_SHOW_TradeHistory(rqname, trcode, recordname)
 if __name__=="__main__":
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create('Fusion')) # --> 없으면, 헤더색 변경 안됨.
