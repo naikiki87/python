@@ -30,7 +30,6 @@ for i in range(10) :
 class Kiwoom(QMainWindow, form_class):
     flag_cont_CheckBalance = 0
     init_history = 0
-    flag_HistoryData_Auto = 0
     flag_ItemInfo_click = 0
     auto_buy = 0
 
@@ -52,6 +51,7 @@ class Kiwoom(QMainWindow, form_class):
         self.cnt_call_hoga = 0
         self.cnt_tab_history = 0
         self.flag_ordered = [0,0,0,0,0]
+        self.flag_HistoryData_Auto = 0
 
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
@@ -132,14 +132,58 @@ class Kiwoom(QMainWindow, form_class):
         conn.close()
         print("data DELETED")
     
+    def func_GET_Ordering(self):
+        print("GET Ordering")
+        year = strftime("%Y", localtime())
+        month = strftime("%m", localtime())
+        day = strftime("%d", localtime())
+        today = year + month + day
+        acc_no = ACCOUNT
+        acc_pw = PASSWORD
+
+        # today = "20200625"
+
+        print("today : ", today)
+
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", today)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "조회구분", '1')
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", 0)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Ordering", "OPW00007", 0, "0101")
+
+    def func_SHOW_Ordering(self, rqname, trcode, recordname) :
+        data_cnt = self.func_GET_RepeatCount(trcode, rqname)
+
+        for i in range(int(data_cnt)):
+            order_id = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문번호")
+            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
+            item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
+            deal_type = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문구분")
+            order_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문시간")
+            order_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문수량")
+            trade_amount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "체결수량")
+            remained = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문잔량")
+
+            print(i)
+            print("order_id : ", order_id)
+            print("item_code : ", item_code)
+            print("item_name : ", item_name)
+            print("deal_type : ", deal_type)
+            print("order_time : ", order_time)
+            print("order_amount : ", order_amount)
+            print("trade_amount : ", trade_amount)
+            print("remained : ", remained)
+            print("")
+
+            
     def btn_test(self) :
         print("test")
 
-        code = "005930"
+        self.func_GET_Ordering()
 
-        self.func_UPDATE_db_item(code, 2, 0)
 
-        # val = self.func_GET_db_item(code, 2)
     def btn_test_2(self, code, step, ordered):
         print("TEST 2")
 
@@ -156,6 +200,9 @@ class Kiwoom(QMainWindow, form_class):
 
         if rqname == "GET_ItemInfo":
             self.func_SHOW_ItemInfo(rqname, trcode, recordname)
+
+        if rqname == "GET_Ordering":
+            self.func_SHOW_Ordering(rqname, trcode, recordname)
 
         if rqname == "opw00018_req":
             # print("DATA : CHECK BALANCE")
@@ -207,8 +254,8 @@ class Kiwoom(QMainWindow, form_class):
         print("")
 
         try:
-            a = 0
-            # self.func_ORDER_BUY_2(item_code, qty, price)
+            # a = 0
+            self.func_ORDER_BUY_2(item_code, qty, price)
             
         except Exception as e:
             timestamp = self.func_GET_CurrentTime()
@@ -362,7 +409,8 @@ class Kiwoom(QMainWindow, form_class):
             month = strftime("%m", localtime())
             day = strftime("%d", localtime())
             today = year + month + day
-            self.func_GET_TradeHistory(today)
+            self.flag_HistoryData_Auto == 1
+            self.func_GET_TradeHistory(today)     # problem
 
             while self.flag_cont_CheckBalance:
                 if self.buy_cnt == 2:
@@ -492,19 +540,19 @@ class Kiwoom(QMainWindow, form_class):
         for i in range(self.cnt_own_item) :
             try:
                 owncount = self.table_summary.item(i, 2).text()
-                print("owncount : ", owncount)
 
-                if owncount == "Trading":
+                if owncount == "Trading":       # 현재 상태가 trading 인 경우 pass
                     continue
                 
+                item_code = self.table_summary.item(i, 0).text()
                 percent = float(self.table_summary.item(i, 12).text())
                 step = int(self.table_summary.item(i, 13).text())
-                ordered = self.flag_ordered[i]
+                ordered = self.func_GET_db_item(item_code.strip(), 2)
 
+                # 물타기
                 if percent < -2 and step < 6 and ordered == 0:
                     print(i, " : OK")
-                    item_code = self.table_summary.item(i, 0).text()
-                    V = int(self.table_summary.item(i, 5).text().replace(',', ''))
+                    V = int(self.table_summary.item(i, 5).text().replace(',', ''))      # 매도최우선가
                     A = int(self.table_summary.item(i, 7).text().replace(',', ''))
                     B = int(self.table_summary.item(i, 8).text().replace(',', ''))
                     T = TAX
@@ -515,7 +563,25 @@ class Kiwoom(QMainWindow, form_class):
                     buy_qty = math.ceil((B-A-B*T-A*FB-B*FS-A*P) / (V*P + V*T + FB + FS))
                     
                     self.func_ORDER_BUY_auto(item_code, buy_qty, V)
+                
+                # 존버
+                elif percent < -2 and step >= 6 :
+                    a = 0
 
+                # 분할매도
+                elif percent > 2 and step < 6:
+                    sell_qty = int(int(owncount)/2)
+                    V = int(self.table_summary.item(i, 6).text().replace(',', ''))      # 매수최우선가
+                    self.func_ORDER_SELL_auto(item_code, sell_qty, V)
+
+                    buy_qty = sell_qty
+
+                # 전량매도
+                elif percent > 2 and step >= 6:
+                    sell_qty = int(owncount)
+                    V = int(self.table_summary.item(i, 6).text().replace(',', ''))      # 매수최우선가
+                    self.func_ORDER_SELL_auto(item_code, sell_qty, V)
+                
             except:
                 pass
 
