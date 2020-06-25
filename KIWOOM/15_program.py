@@ -196,7 +196,7 @@ class Kiwoom(QMainWindow, form_class):
     
     def func_ORDER_BUY_auto(self, item_code, qty, price) :
         timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "Auto : BUY")
+        self.text_edit.append(timestamp + "Auto : BUY " + item_code)
 
         item_code = item_code.replace('A', '').strip()
 
@@ -244,26 +244,25 @@ class Kiwoom(QMainWindow, form_class):
 
         self.func_ORDER_SELL_2(item_code, qty, price)
 
-    # def func_ORDER_SELL_auto(self, item_code, qty, price) :
-    #     timestamp = self.func_GET_CurrentTime()
-    #     self.text_edit.append(timestamp + "Auto : SELL")
+    def func_ORDER_SELL_auto(self, item_code, qty, price) :
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "Auto : SELL")
 
-    #     item_code = item_code.replace('A', '').strip()
+        item_code = item_code.replace('A', '').strip()
 
-    #     print("order sell")
-    #     print("code : ", item_code)
-    #     print("qty : ", qty)
-    #     print("price : ", price)
-    #     print("")
+        print("order sell")
+        print("code : ", item_code)
+        print("qty : ", qty)
+        print("price : ", price)
+        print("")
 
-    #     try:
-    #         a = 0
-    #         # self.func_ORDER_SELL_2(item_code, qty, price)
+        try:
+            a = 0
+            # self.func_ORDER_SELL_2(item_code, qty, price)
             
-    #     except Exception as e:
-    #         timestamp = self.func_GET_CurrentTime()
-    #         self.text_edit.append(timestamp + str(e))
-
+        except Exception as e:
+            timestamp = self.func_GET_CurrentTime()
+            self.text_edit.append(timestamp + str(e))
     def func_ORDER_SELL_2(self, item_code, qty, price) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "ORDER : SELL")
