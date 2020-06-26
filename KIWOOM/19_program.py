@@ -21,6 +21,7 @@ TAX = 0.0025
 FEE_BUY = 0.0035
 FEE_SELL = 0.0035
 GOAL_PER = -0.01
+STEP_LIMIT = 5
 
 
 for i in range(10) :
@@ -57,7 +58,7 @@ class Kiwoom(QMainWindow, form_class):
 
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
-        sql = "create table if not exists STATUS (code text, step integer, ordered integer, orderType integer)"
+        sql = "create table if not exists STATUS (code text, step integer, ordered integer, orderType integer, trAmount integer)"
         cur.execute(sql)
         conn.commit()
         conn.close()
@@ -66,12 +67,12 @@ class Kiwoom(QMainWindow, form_class):
         self.btn_ITEM_LOOKUP.clicked.connect(self.func_GET_ItemInfo)
         self.btn_BUY.clicked.connect(self.func_ORDER_BUY_click)
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL_click)
-        self.btn_TEST.clicked.connect(self.func_start_check)
+        self.btn_TEST.clicked.connect(self.btn_test)
         # self.btn_TEST_2.clicked.connect(self.btn_test_2)
-        # self.btn_START.clicked.connect(self.func_start_check)
-        # self.btn_STOP.clicked.connect(self.func_stop_check)
-        self.btn_START.clicked.connect(self.func_START_CheckBalance)
-        self.btn_STOP.clicked.connect(self.func_STOP_CheckBalance)
+        self.btn_START.clicked.connect(self.func_start_check)
+        self.btn_STOP.clicked.connect(self.func_stop_check)
+        # self.btn_START.clicked.connect(self.func_START_CheckBalance)
+        # self.btn_STOP.clicked.connect(self.func_STOP_CheckBalance)
         self.btn_HISTORY.clicked.connect(self.func_GET_TradeHistory)
 
         self.func_SET_tableSUMMARY()        # main table setting
@@ -101,6 +102,9 @@ class Kiwoom(QMainWindow, form_class):
         elif col == 3:      # get ordered
             sql = "select orderType from STATUS where code = ?"
             cur.execute(sql, [code])
+        elif col == 4:      # get trAmount
+            sql = "select trAmount from STATUS where code = ?"
+            cur.execute(sql, [code])
 
         row = cur.fetchone()
         conn.close()
@@ -109,16 +113,15 @@ class Kiwoom(QMainWindow, form_class):
             return "none"
         else:
             return row[0]
-    def func_INSERT_db_item(self, code, step, ordered, orderType):
+    def func_INSERT_db_item(self, code, step, ordered, orderType, trAmount):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
-        sql = "insert into STATUS (code, step, ordered, orderType) values(:CODE, :STEP, :ORDERED, :ORDERTYPE)"
-        cur.execute(sql, {"CODE" : code, "STEP" : step, "ORDERED" : ordered, "ORDERTYPE" : orderType})
+        sql = "insert into STATUS (code, step, ordered, orderType, trAmount) values(:CODE, :STEP, :ORDERED, :ORDERTYPE, :TRAMOUNT)"
+        cur.execute(sql, {"CODE" : code, "STEP" : step, "ORDERED" : ordered, "ORDERTYPE" : orderType, "TRAMOUNT" : trAmount})
         conn.commit()
         conn.close()
         print("data INSERTED")
     def func_UPDATE_db_item(self, code, col, data) :
-        # print("code : ", code, col, data)
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
         if col == 1:    # update step
@@ -130,10 +133,21 @@ class Kiwoom(QMainWindow, form_class):
         elif col == 3:  # update orderType
             sql = "update STATUS set orderType = :DATA where code = :CODE"    
             cur.execute(sql, {"DATA" : data, "CODE" : code})
+            #### type ####
+            # 0 : normai(default)
+            # 1 : 물타기
+            # 2 : 수익실현 및 복구
+            # 3 : full 매도
+        elif col == 4:  # update trAmount
+            sql = "update STATUS set trAmount = :DATA where code = :CODE"    
+            cur.execute(sql, {"DATA" : data, "CODE" : code})
 
         conn.commit()
         conn.close()
+        success = cur.rowcount
         print("UPDATED")
+        return success
+
     def func_DELETE_db_item(self, code):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
@@ -199,7 +213,18 @@ class Kiwoom(QMainWindow, form_class):
                     pass
             
     def btn_test(self) :
-        a = 0
+        code = "005930"
+        self.func_UPDATE_db_item(code, 3, 2)
+        self.func_UPDATE_db_item(code, 2, 3)
+        
+        # success = 0
+
+        # while
+        # success = self.func_UPDATE_db_item(code, 3, 2)
+        # print(success)
+        # if success == 0 :
+        #     success = self.func_UPDATE_db_item(code, 2, 3)
+            
 
     def func_start_check(self) :
         today = self.func_GET_Today()
@@ -227,14 +252,16 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SET_TableData(1, i, 2, str(int(owncount)), 0)
             self.func_SET_TableData(1, i, 3, str(round(float(unit_price), 1)), 0)
 
-            isin_db = self.func_GET_db_item(item_code, 1)
-            if isin_db == "none" :
-                self.func_INSERT_db_item(item_code, 0, 0, 0)       # db initialize
+            step = self.func_GET_db_item(item_code, 1)
+            if step == "none" :
+                self.func_INSERT_db_item(item_code, 0, 0, 0, 0)       # db initialize
+            else :
+                self.func_SET_TableData(1, i, 13, str(step), 0)
 
         self.item_codes = []
         for i in range(self.item_count):
             code = self.table_summary.item(i, 0).text()
-            self.SetRealReg("0101", code, "10", 1)
+            self.SetRealReg("0101", code, "10", 1)      # Real Time Data Registration
             self.item_codes.append(code)
 
     def func_stop_check(self):
@@ -408,145 +435,6 @@ class Kiwoom(QMainWindow, form_class):
                         # if int(percent) < 0 and step < 5:
                         #     new_step = step + 1
                         #     self.func_UPDATE_db_item(item_code, 1, new_step)
-
-    def func_START_CheckBalance(self):
-        self.buy_cnt = 0
-        self.auto_buy = 0
-        self.request_times = 0
-
-        acc_no = ACCOUNT
-        acc_pw = PASSWORD
-        if acc_pw != "6458":
-            self.text_edit.append("Password Incorrect")
-        else :
-            self.flag_cont_CheckBalance = 1
-            self.flag_HistoryData_Auto = 1
-            today = self.func_GET_Today()
-            self.func_GET_TradeHistory(today)
-
-            while self.flag_cont_CheckBalance:
-                self.func_GET_Deposit()         ## 잔고 확인
-                
-                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
-                QtTest.QTest.qWait(3000)
-    def func_STOP_CheckBalance(self):
-        self.flag_cont_CheckBalance = 0
-    def func_SHOW_CheckBalance(self, rqname, trcode, recordname):
-        self.cnt_own_item = self.func_GET_RepeatCount(trcode, rqname)
-        total_purchase = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
-        total_evaluation = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총평가금액")
-        self.wid_total_purchase.setText(str('{0:,}'.format(int(total_purchase))))
-        self.wid_total_evaluation.setText(str('{0:,}'.format(int(total_evaluation))))
-
-        for i in range(self.cnt_own_item):      ## db initialize
-            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-            item_code = item_code.replace("A", "")
-
-            res = self.func_GET_db_item(item_code.strip(), 1)
-            if res == "none" :
-                self.func_INSERT_db_item(item_code.strip(), 0, 0)
-
-
-        for i in range(self.cnt_own_item) :
-            item_code = item_name = owncount = unit_price = cur_price = total_pur_price = total_eval_price = added_fee = tax = eval_pl = 0
-            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-            item_code = item_code.replace("A", "")
-            item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
-
-            ordered = self.func_GET_db_item(item_code.strip(), 2)
-            
-            if ordered == 1:
-                self.func_SET_TableData(1, i, 0, item_code, 0)
-                self.func_SET_TableData(1, i, 1, item_name, 0)
-                notice = "Trading"
-                self.func_SET_TableData(1, i, 2, notice, 1)
-                for j in range(3, 14) :
-                    self.func_SET_TableData(1, i, j, "", 0)    
-            
-            else :
-
-                self.func_GET_Hoga_1(item_code.strip(), str(i))
-
-                total_percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "총수익률(%)")
-                capital = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "추정예탁자산")
-                
-                percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수익률(%)")
-                cur_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가")
-                unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
-                total_pur_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입금액")
-                total_eval_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가금액")
-                owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
-                added_fee = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "수수료합")
-                tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "세금")
-                eval_pl = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "평가손익")
-
-                if globals()['save_times{}'.format(i)] == 3:
-                    globals()['save_times{}'.format(i)] = 0
-                    m_1 = globals()['DF_item{}'.format(i)]['%'].mean()
-                    m_2 = globals()['DF_item{}'.format(i)].loc[0]['m_1']
-                    m_3 = globals()['DF_item{}'.format(i)].loc[0]['m_2']
-                    m_4 = globals()['DF_item{}'.format(i)].loc[0]['m_3']
-                    m_5 = globals()['DF_item{}'.format(i)].loc[0]['m_4']
-                    m_6 = globals()['DF_item{}'.format(i)].loc[0]['m_5']
-                    m_7 = globals()['DF_item{}'.format(i)].loc[0]['m_6']
-                    m_8 = globals()['DF_item{}'.format(i)].loc[0]['m_7']
-                    m_9 = globals()['DF_item{}'.format(i)].loc[0]['m_8']
-                    m_10 = globals()['DF_item{}'.format(i)].loc[0]['m_9']
-
-                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, round(float(percent), 2), m_1, m_2, m_3, m_4, m_5, m_6, m_7, m_8, m_9, m_10]
-                    globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
-                else:
-                    globals()['DF_item{}'.format(i)].loc[globals()['save_times{}'.format(i)]] = [item_code, round(float(percent), 2), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
-                    globals()['save_times{}'.format(i)] = globals()['save_times{}'.format(i)] + 1
-
-                # '{0:,}'.format()
-                # str('{0:,}'.format())
-
-                try:
-                    self.func_SET_TableData(1, i, 0, item_code, 0)
-                    self.func_SET_TableData(1, i, 1, item_name, 0)
-                    self.func_SET_TableData(1, i, 2, str('{0:,}'.format(int(owncount))), 0)
-                    self.func_SET_TableData(1, i, 3, str('{0:,}'.format(int(unit_price))), 0)
-
-                    if int(cur_price) > int(unit_price) :
-                        self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 1)
-                    else:
-                        self.func_SET_TableData(1, i, 4, str('{0:,}'.format(int(cur_price))), 2)
-
-                    self.func_SET_TableData(1, i, 7, str('{0:,}'.format(int(total_pur_price))), 0)
-                    
-                    if int(total_eval_price) > int(total_pur_price) :
-                        self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 1)
-                    else:
-                        self.func_SET_TableData(1, i, 8, str('{0:,}'.format(int(total_eval_price))), 2)
-
-                    self.func_SET_TableData(1, i, 9, str('{0:,}'.format(int(total_eval_price) - int(total_pur_price))), 0)
-                    self.func_SET_TableData(1, i, 10, str('{0:,}'.format(int(float(added_fee) + float(tax)))), 0)
-                    self.func_SET_TableData(1, i, 11, str('{0:,}'.format(int(eval_pl))), 0)
-                    
-                    if float(percent) == 0:
-                        self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 0)
-                    elif float(percent) > 0:
-                        self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 1)
-                    else :
-                        self.func_SET_TableData(1, i, 12, str(round(float(percent), 2)), 2)
-
-                    step = self.func_GET_db_item(item_code.strip(), 1)
-
-                    self.func_SET_TableData(1, i, 13, str(step), 0)
-
-                except:
-                    pass
-
-            QtTest.QTest.qWait(500)
-
-        QtTest.QTest.qWait(500)
-        today = self.func_GET_Today()
-        # self.func_GET_Ordering(today)   ## 주문현황 확인   
-
-        # print("SHOW DB LoOp out")
 
     def func_JUDGE(self):
         for i in range(self.cnt_own_item) :
@@ -727,7 +615,6 @@ class Kiwoom(QMainWindow, form_class):
             code = code
             self.flag_ItemInfo_click = 0
         
-        # self.func_GET_Hoga_1(code)       # 해당 item의 호가 호출
         self.func_GET_Hoga_1(code, '9')       # 해당 item의 호가 호출
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
@@ -946,42 +833,74 @@ class Kiwoom(QMainWindow, form_class):
 
         for i in range(len(self.item_codes)) :
             if code == self.item_codes[i]:
-                val = val.replace('+', '').strip()
-                self.func_SET_TableData(1, i, 4, val, 0)
-                price_buy = price_buy.replace('+', '').strip()
-                self.func_SET_TableData(1, i, 5, price_buy, 0)
-                self.func_SET_TableData(1, i, 6, price_sell.replace('+', '').strip(), 0)
-
-                owncount = int(self.table_summary.item(i, 2).text())
-                unit = float(self.table_summary.item(i, 3).text())
-
-                total_purchase = owncount * unit
-                self.func_SET_TableData(1, i, 7, str(total_purchase), 0)
-                
-                total_evaluation = owncount * float(val)
-                self.func_SET_TableData(1, i, 8, str(total_evaluation), 0)
-
-                temp_total = total_evaluation - total_purchase
-                self.func_SET_TableData(1, i, 9, str(temp_total), 0)
-
-                fee_buy = FEE_BUY * total_purchase
-                fee_sell = FEE_SELL * total_evaluation
-                tax = TAX * total_evaluation
-                total_fee = round((fee_buy + fee_sell + tax), 1)
-                self.func_SET_TableData(1, i, 10, str(total_fee), 0)
-
-                total_sum = total_evaluation - total_purchase - total_fee
-                self.func_SET_TableData(1, i, 11, str(total_sum), 0)
-
-                percent = round((total_sum / total_purchase), 1)
-                # percent = total_sum / total_purchase
-                print("Per : ", percent)
-                if percent > 0:
-                    self.func_SET_TableData(1, i, 12, str(percent), 1)
-                elif percent < 0:
-                    self.func_SET_TableData(1, i, 12, str(percent), 2)
+                if self.func_GET_db_item(code, 2) == 1:     # status : trading
+                    self.func_SET_TableData(1, i, 2, "TRADING", 1)
                 else :
-                    self.func_SET_TableData(1, i, 12, str(percent), 0)
+                    val = val.replace('+', '').strip()
+                    self.func_SET_TableData(1, i, 4, val, 0)
+                    price_buy = price_buy.replace('+', '').strip()
+                    self.func_SET_TableData(1, i, 5, price_buy, 0)
+                    self.func_SET_TableData(1, i, 6, price_sell.replace('+', '').strip(), 0)
+
+                    owncount = int(self.table_summary.item(i, 2).text())
+                    unit = float(self.table_summary.item(i, 3).text())
+
+                    total_purchase = owncount * unit
+                    self.func_SET_TableData(1, i, 7, str(total_purchase), 0)
+                    
+                    total_evaluation = owncount * float(val)
+                    self.func_SET_TableData(1, i, 8, str(total_evaluation), 0)
+
+                    temp_total = total_evaluation - total_purchase
+                    self.func_SET_TableData(1, i, 9, str(temp_total), 0)
+
+                    fee_buy = FEE_BUY * total_purchase
+                    fee_sell = FEE_SELL * total_evaluation
+                    tax = TAX * total_evaluation
+                    total_fee = round((fee_buy + fee_sell + tax), 1)
+                    self.func_SET_TableData(1, i, 10, str(total_fee), 0)
+
+                    total_sum = total_evaluation - total_purchase - total_fee
+                    self.func_SET_TableData(1, i, 11, str(total_sum), 0)
+
+                    percent = round((total_sum / total_purchase) * 100, 1)
+                    if percent > 0:
+                        self.func_SET_TableData(1, i, 12, str(percent), 1)
+                    elif percent < 0:
+                        self.func_SET_TableData(1, i, 12, str(percent), 2)
+                    else :
+                        self.func_SET_TableData(1, i, 12, str(percent), 0)
+
+                    ################## judgement ###################
+                    step = int(self.table_summary.item(i, 13))
+                    
+                    # full 매도
+                    if percent > 2 and step == STEP_LIMIT :
+                        item_code = code
+                        sell_cnt = owncount
+                        price = int(price_sell)
+                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
+                        self.func_UPDATE_db_item(item_code, 3, 3)
+
+                        # self.func_ORDER_SELL_auto(item_code, sell_cnt, price)
+                    
+                    # 수익실현 및 복구
+                    elif percent > 2 and step < STEP_LIMIT :
+                        item_code = code
+                        sell_cnt = int(owncount / 2)
+                        price = int(price_sell)
+                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
+                        self.func_UPDATE_db_item(item_code, 3, 2)       ## orderType을 수익실현 및 복구(2) 로 변경
+                        self.func_UPDATE_db_item(item_code, 4, sell_cnt)    ## 복구를 위해 판매한 수량을 trAmount에 기입
+                        
+                        # self.func_ORDER_SELL_auto(item_code, sell_cnt, price)
+
+                    # elif percent < -2 and step < STEP_LIMIT :
+                    #     item_code = code
+                    #     sell_cnt = 
+                    
+
+
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
