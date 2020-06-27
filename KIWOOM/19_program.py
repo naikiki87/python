@@ -55,6 +55,7 @@ class Kiwoom(QMainWindow, form_class):
         self.cnt_tab_history = 0
         self.flag_ordered = [0,0,0,0,0]
         self.flag_HistoryData_Auto = 0
+        self.jonbeo_print_time = 0
 
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
@@ -138,6 +139,7 @@ class Kiwoom(QMainWindow, form_class):
             # 1 : 물타기
             # 2 : 수익실현 및 복구
             # 3 : full 매도
+            # 4 : 존버
         elif col == 4:  # update trAmount
             sql = "update STATUS set trAmount = :DATA where code = :CODE"    
             cur.execute(sql, {"DATA" : data, "CODE" : code})
@@ -873,33 +875,66 @@ class Kiwoom(QMainWindow, form_class):
 
                     ################## judgement ###################
                     step = int(self.table_summary.item(i, 13))
+                    item_code = code
                     
                     # full 매도
                     if percent > 2 and step == STEP_LIMIT :
-                        item_code = code
-                        sell_cnt = owncount
+                        timestamp = self.func_GET_CurrentTime()
+                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : FULL 매도")
+                        sell_qty = owncount
                         price = int(price_sell)
                         self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
                         self.func_UPDATE_db_item(item_code, 3, 3)
 
-                        # self.func_ORDER_SELL_auto(item_code, sell_cnt, price)
+                        # self.func_ORDER_SELL_auto(item_code, sell_qty, price)
                     
                     # 수익실현 및 복구
                     elif percent > 2 and step < STEP_LIMIT :
-                        item_code = code
-                        sell_cnt = int(owncount / 2)
+                        timestamp = self.func_GET_CurrentTime()
+                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : 수익실현 및 복구")
+                        sell_qty = int(owncount / 2)
                         price = int(price_sell)
                         self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
                         self.func_UPDATE_db_item(item_code, 3, 2)       ## orderType을 수익실현 및 복구(2) 로 변경
-                        self.func_UPDATE_db_item(item_code, 4, sell_cnt)    ## 복구를 위해 판매한 수량을 trAmount에 기입
+                        self.func_UPDATE_db_item(item_code, 4, sell_qty)    ## 복구를 위해 판매한 수량을 trAmount에 기입
                         
-                        # self.func_ORDER_SELL_auto(item_code, sell_cnt, price)
+                        # self.func_ORDER_SELL_auto(item_code, sell_qty, price)
 
-                    # elif percent < -2 and step < STEP_LIMIT :
-                    #     item_code = code
-                    #     sell_cnt = 
-                    
+                        ## ! chejan에서 복구 코드 추가 필요
 
+                    elif percent < -2 and step < STEP_LIMIT :
+                        timestamp = self.func_GET_CurrentTime()
+                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : 물타기")
+                        
+                        V = int(price_buy)          # 매도 최우선가
+                        A = total_purchase          # 총 매입금액
+                        B = total_evaluation        # 총 평가금액
+                        T = TAX
+                        FB = FEE_BUY
+                        FS = FEE_SELL
+                        P = GOAL_PER
+
+                        buy_qty = math.ceil((B-A-B*T-A*FB-B*FS-A*P) / (V*P + V*T + FB + FS))
+                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
+                        self.func_UPDATE_db_item(item_code, 3, 1)       ## orderType을 물타기(1) 로 변경
+                        new_step = step + 1
+                        self.func_UPDATE_db_item(item_code, 1, new_step)       ## step 증가
+
+                        # self.func_ORDER_BUY_auto(item_code, buy_qty, V)
+
+                    elif percent < -2 and step == STEP_LIMIT :
+                        time = time.time()
+
+                        if self.jonbeo_print_time == 0 :
+                            timestamp = self.func_GET_CurrentTime()
+                            self.text_edit.append(timestamp + " " + item_code + " JUDGE : 존버")
+                            self.jonbeo_print_time = time
+                        else :
+                            dur = int(time - self.jonbeo_print_time)
+                            if dur > 60 :
+                                timestamp = self.func_GET_CurrentTime()
+                                self.text_edit.append(timestamp + " " + item_code + " JUDGE : 존버")
+                                self.jonbeo_print_time = time
 
 
 if __name__=="__main__":
