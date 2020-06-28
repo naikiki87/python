@@ -389,7 +389,6 @@ class Kiwoom(QMainWindow, form_class):
             trade_amount = self.func_GET_Chejan_data(911)   # 체결량
             remained = self.func_GET_Chejan_data(902)       # 미체결
             trade_time = self.func_GET_Chejan_data(908)      # 주문체결시간
-            # percent = self.func_GET_Chejan_data(8019)       # 손익률
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
             if remained == '0':
@@ -413,8 +412,6 @@ class Kiwoom(QMainWindow, form_class):
                 self.text_edit.append("미체결 : " + remained)
                 self.text_edit.append("")
 
-                # print(percent, " : ", type(percent))
-
                 ## 체결시 history table 갱신 수행
                 today = self.func_GET_Today()
                 self.flag_HistoryData_Auto = 1
@@ -431,12 +428,29 @@ class Kiwoom(QMainWindow, form_class):
                 ### db에 이미 저장되어 있는 item 일 경우
                 else :
                     #### 미체결 없이 주문한 수량이 모듀 체결 완료된 경우 ordered를 0으로 변경
-                    self.func_UPDATE_db_item(item_code, 2, 0)
                     
-                        ##### db상의 step 값 조정
-                        # if int(percent) < 0 and step < 5:
-                        #     new_step = step + 1
-                        #     self.func_UPDATE_db_item(item_code, 1, new_step)
+                    #### orderType 검사
+                    orderType = self.func_GET_db_item(item_code, 3)
+
+                    if orderType == 1 :         # add water
+                        self.func_UPDATE_db_item(item_code, 2, 0)       # ordered -> 0
+                        self.func_UPDATE_db_item(item_code, 3, 0)       # ordered -> 0
+                        step = self.func_GET_db_item(item_code, 1)
+                        new_step = step + 1
+                        self.func_UPDATE_db_item(item_code, 1, new_step)
+
+                    elif orderType == 2 :       # sell & buy 중 sell 완료
+                        self.func_UPDATE_db_item(item_code, 3, 4)
+                        # trAmount = self.func_GET_db_item(item_code, 4)
+
+                    elif orderType == 3 :       # full sell
+                        self.func_DELETE_db_item(item_code)
+
+                    elif orderType == 4 :       # sellf & buy 중 buy 완료
+                        self.func_UPDATE_db_item(item_code, 2, 0)       # ordered -> 0
+                        self.func_UPDATE_db_item(item_code, 3, 0)       # orderType -> 0
+                        self.func_UPDATE_db_item(item_code, 4, 0)       # trAmount -> 0
+
 
     def func_JUDGE(self):
         for i in range(self.cnt_own_item) :
@@ -836,7 +850,15 @@ class Kiwoom(QMainWindow, form_class):
         for i in range(len(self.item_codes)) :
             if code == self.item_codes[i]:
                 if self.func_GET_db_item(code, 2) == 1:     # status : trading
-                    self.func_SET_TableData(1, i, 2, "TRADING", 1)
+                    if self.func_GET_db_item(code, 3) == 4:
+                        self.func_SET_TableData(1, i, 2, "TRADING - SELL & BUY", 1)
+                        buy_qty = self.func_GET_db_item(code, 4)
+
+                        self.func_UPDATE_db_item(item_code, 3, 0)       # orderType -> 0
+
+                        # self.func_ORDER_BUY_auto(code, buy_qty, price_buy)
+                    else:
+                        self.func_SET_TableData(1, i, 2, "TRADING", 1)
                 else :
                     val = val.replace('+', '').strip()
                     self.func_SET_TableData(1, i, 4, val, 0)
@@ -876,33 +898,9 @@ class Kiwoom(QMainWindow, form_class):
                     ################## judgement ###################
                     step = int(self.table_summary.item(i, 13))
                     item_code = code
-                    
-                    # full 매도
-                    if percent > 2 and step == STEP_LIMIT :
-                        timestamp = self.func_GET_CurrentTime()
-                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : FULL 매도")
-                        sell_qty = owncount
-                        price = int(price_sell)
-                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
-                        self.func_UPDATE_db_item(item_code, 3, 3)
 
-                        # self.func_ORDER_SELL_auto(item_code, sell_qty, price)
-                    
-                    # 수익실현 및 복구
-                    elif percent > 2 and step < STEP_LIMIT :
-                        timestamp = self.func_GET_CurrentTime()
-                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : 수익실현 및 복구")
-                        sell_qty = int(owncount / 2)
-                        price = int(price_sell)
-                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
-                        self.func_UPDATE_db_item(item_code, 3, 2)       ## orderType을 수익실현 및 복구(2) 로 변경
-                        self.func_UPDATE_db_item(item_code, 4, sell_qty)    ## 복구를 위해 판매한 수량을 trAmount에 기입
-                        
-                        # self.func_ORDER_SELL_auto(item_code, sell_qty, price)
-
-                        ## ! chejan에서 복구 코드 추가 필요
-
-                    elif percent < -2 and step < STEP_LIMIT :
+                    # 물타기
+                    if percent < -2 and step < STEP_LIMIT :
                         timestamp = self.func_GET_CurrentTime()
                         self.text_edit.append(timestamp + " " + item_code + " JUDGE : 물타기")
                         
@@ -918,11 +916,36 @@ class Kiwoom(QMainWindow, form_class):
                         self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
                         self.func_UPDATE_db_item(item_code, 3, 1)       ## orderType을 물타기(1) 로 변경
                         new_step = step + 1
-                        self.func_UPDATE_db_item(item_code, 1, new_step)       ## step 증가
+                        # self.func_UPDATE_db_item(item_code, 1, new_step)       ## step 증가
 
                         # self.func_ORDER_BUY_auto(item_code, buy_qty, V)
 
-                    elif percent < -2 and step == STEP_LIMIT :
+                    # 수익실현 및 복구
+                    if percent > 2 and step < STEP_LIMIT :
+                        timestamp = self.func_GET_CurrentTime()
+                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : 수익실현 및 복구")
+                        sell_qty = int(owncount / 2)
+                        price = int(price_sell)
+                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
+                        self.func_UPDATE_db_item(item_code, 3, 2)       ## orderType을 수익실현 및 복구(2) 로 변경
+                        self.func_UPDATE_db_item(item_code, 4, sell_qty)    ## 복구를 위해 판매한 수량을 trAmount에 기입
+                        
+                        # self.func_ORDER_SELL_auto(item_code, sell_qty, price)
+
+                        ## ! chejan에서 복구 코드 추가 필요
+                    
+                    # full 매도
+                    if percent > 2 and step == STEP_LIMIT :
+                        timestamp = self.func_GET_CurrentTime()
+                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : FULL 매도")
+                        sell_qty = owncount
+                        price = int(price_sell)
+                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
+                        self.func_UPDATE_db_item(item_code, 3, 3)
+
+                        # self.func_ORDER_SELL_auto(item_code, sell_qty, price)
+
+                    if percent < -2 and step == STEP_LIMIT :
                         time = time.time()
 
                         if self.jonbeo_print_time == 0 :
