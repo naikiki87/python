@@ -30,11 +30,6 @@ for i in range(10) :
     globals()['elapsed_min{}'.format(i)] = 0
 
 class Kiwoom(QMainWindow, form_class):
-    flag_cont_CheckBalance = 0
-    init_history = 0
-    flag_ItemInfo_click = 0
-    auto_buy = 0
-
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -51,20 +46,17 @@ class Kiwoom(QMainWindow, form_class):
         self.init_ENV()
 
     def init_ENV(self) :
+        ## flag setting
         self.cnt_call_hoga = 0
         self.cnt_tab_history = 0
-        self.flag_ordered = [0,0,0,0,0]
+        self.flag_ItemInfo_click = 0
         self.flag_HistoryData_Auto = 0
         self.jonbeo_print_time = 0
 
-        conn = sqlite3.connect("item_status.db")
-        cur = conn.cursor()
-        sql = "create table if not exists STATUS (code text, step integer, ordered integer, orderType integer, trAmount integer)"
-        cur.execute(sql)
-        conn.commit()
-        conn.close()
-
+        self.func_SET_db_table()        # db table 생성
         self.df_history = pd.DataFrame(columns = ['time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
+
+        ## button 동작 binding
         self.btn_ITEM_LOOKUP.clicked.connect(self.func_GET_ItemInfo)
         self.btn_BUY.clicked.connect(self.func_ORDER_BUY_click)
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL_click)
@@ -72,13 +64,13 @@ class Kiwoom(QMainWindow, form_class):
         # self.btn_TEST_2.clicked.connect(self.btn_test_2)
         self.btn_START.clicked.connect(self.func_start_check)
         self.btn_STOP.clicked.connect(self.func_stop_check)
-        # self.btn_START.clicked.connect(self.func_START_CheckBalance)
-        # self.btn_STOP.clicked.connect(self.func_STOP_CheckBalance)
         self.btn_HISTORY.clicked.connect(self.func_GET_TradeHistory)
 
-        self.func_SET_tableSUMMARY()        # main table setting
-        self.func_SET_tableHISTORY()        # 내역 table setting
-        self.func_SET_tableORDER()          # 주문현황 table setting
+        ## table setting
+        self.func_SET_tableSUMMARY()        # monitoring table
+        self.func_SET_tableHISTORY()        # history table
+        self.func_SET_tableORDER()          # order 현황 table
+        self.func_SET_tableDAILYSUMMARY()          # order 현황 table
 
     @pyqtSlot(str)
     def update_times(self, data) :
@@ -91,6 +83,13 @@ class Kiwoom(QMainWindow, form_class):
         new_items = pd.DataFrame.from_dict(data)
         print(new_items)
 
+    def func_SET_db_table(self) :
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "create table if not exists STATUS (code text, step integer, ordered integer, orderType integer, trAmount integer)"
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
     def func_GET_db_item(self, code, col):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
@@ -149,7 +148,6 @@ class Kiwoom(QMainWindow, form_class):
         success = cur.rowcount
         print("UPDATED")
         return success
-
     def func_DELETE_db_item(self, code):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
@@ -265,13 +263,18 @@ class Kiwoom(QMainWindow, form_class):
             code = self.table_summary.item(i, 0).text()
             self.SetRealReg("0101", code, "10", 1)      # Real Time Data Registration
             self.item_codes.append(code)
+        
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "Monitoring START")
 
     def func_stop_check(self):
-        print("self : ", self.item_count, type(self.item_count))
+        # print("self : ", self.item_count, type(self.item_count))
         for i in range(self.item_count) :
             code = self.table_summary.item(i, 0).text()
             self.SetRealRemove("0101", code)
 
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "Monitoring STOP")
     def btn_test_2(self, code, step, ordered):
         print("TEST 2")
 
@@ -554,14 +557,14 @@ class Kiwoom(QMainWindow, form_class):
 
     def func_GET_TradeHistory(self, date) :       # search history data manually
         if self.flag_HistoryData_Auto == 1:
-            print("auto here")
+            # print("auto here")
             self.search_date = date
             self.flag_HistoryData_Auto = 0
         else :
             self.search_date = self.input_history_date.text()
 
         # print("DATE : ", self.search_date)
-        print("DATE : ", date)
+        # print("DATE : ", date)
         acc_no = ACCOUNT
         acc_pw = PASSWORD
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", self.search_date)
@@ -664,14 +667,6 @@ class Kiwoom(QMainWindow, form_class):
         self.te_iteminfo_price.setText(str(current_price))
         self.te_iteminfo_vol.setText(volume.strip())
         self.te_iteminfo_percent.setText(percent.strip() + " %")
-
-        if self.auto_buy == 1:
-            self.text_edit.append("BUY")
-            self.text_edit.append("종목 : " + name.strip())
-            self.text_edit.append("현재가 : " + str(current_price))
-
-            # self.func_ORDER_BUY_2(itemcode.strip(), 1, current_price + 50)                   ## auto buy
-            self.auto_buy = 0
 
     def func_GET_CurrentTime(self) :
         year = strftime("%Y", localtime())
@@ -791,6 +786,26 @@ class Kiwoom(QMainWindow, form_class):
         self.table_order.setHorizontalHeaderItem(5, QTableWidgetItem("주문량"))
         self.table_order.setHorizontalHeaderItem(6, QTableWidgetItem("체결량"))
         self.table_order.setHorizontalHeaderItem(7, QTableWidgetItem("미체결"))
+
+    def func_SET_tableDAILYSUMMARY(self):
+        row_count = 0
+        col_count = 6
+
+        self.table_daily_summary.setRowCount(row_count)
+        self.table_daily_summary.setColumnCount(col_count)
+        self.table_daily_summary.resizeRowsToContents()
+
+        for i in range(col_count):
+            self.table_daily_summary.setColumnWidth(i, 100)
+
+        self.table_daily_summary.verticalHeader().setVisible(False)
+        self.table_daily_summary.verticalHeader().setDefaultSectionSize(1)
+        self.table_daily_summary.setHorizontalHeaderItem(0, QTableWidgetItem("일자"))
+        self.table_daily_summary.setHorizontalHeaderItem(1, QTableWidgetItem("매수금액"))
+        self.table_daily_summary.setHorizontalHeaderItem(2, QTableWidgetItem("매도금액"))
+        self.table_daily_summary.setHorizontalHeaderItem(3, QTableWidgetItem("매도손익"))
+        self.table_daily_summary.setHorizontalHeaderItem(4, QTableWidgetItem("수수료"))
+        self.table_daily_summary.setHorizontalHeaderItem(5, QTableWidgetItem("세금"))
 
     def func_SET_TableData(self, table_no, row, col, content, color):
         # summary table
