@@ -9,7 +9,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from PyQt5 import QtTest, QtCore, QtWidgets, uic
+from PyQt5 import QtTest, QtCore, QtWidgets, uic, QtGui
 import module_timer
 import module_get_summary
 import module_item_finder
@@ -62,7 +62,7 @@ class Kiwoom(QMainWindow, form_class):
         self.btn_BUY.clicked.connect(self.func_ORDER_BUY_click)
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL_click)
         self.btn_TEST.clicked.connect(self.btn_test)
-        # self.btn_TEST_2.clicked.connect(self.btn_test_2)
+        self.btn_TEST_2.clicked.connect(self.btn_test_2)
         self.btn_START.clicked.connect(self.func_start_check)
         self.btn_STOP.clicked.connect(self.func_stop_check)
         self.btn_HISTORY.clicked.connect(self.func_GET_TradeHistory)
@@ -215,7 +215,14 @@ class Kiwoom(QMainWindow, form_class):
             
     def btn_test(self) :
         print("btn test")
-        print(self.status_print_time)
+        self.table_summary.item(0, 0).setBackground(QtGui.QColor(0,255,0))
+        
+
+    def btn_test_2(self):
+        print("btn Test2 clicked")
+        code = "015760"
+        self.SetRealRemove("0101", code)
+        
             
 
     def func_start_check(self) :
@@ -272,8 +279,6 @@ class Kiwoom(QMainWindow, form_class):
 
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Monitoring STOP")
-    def btn_test_2(self, code, step, ordered):
-        print("TEST 2")
 
     def SetRealReg(self, screenNo, item_code, fid, realtype):
         self.kiwoom.dynamicCall("SetRealReg(QString, QString, QString, QString)", screenNo, item_code, fid, realtype)
@@ -292,6 +297,7 @@ class Kiwoom(QMainWindow, form_class):
         except Exception as e:
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + str(e))
+            pass
 
         self.func_ORDER_BUY_2(item_code, qty, price)
     def func_ORDER_BUY_auto(self, item_code, qty, price) :
@@ -392,22 +398,11 @@ class Kiwoom(QMainWindow, form_class):
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
             if remained == '0':
-                print("-- 체결완료 --")
-                print("체결시간 : " + trade_time)
-                print("주문번호 : " + order_id)
-                print("종목코드 : " + item_code)
-                print("종목명 : " + item_name)
-                # print("체결단가 : " + trade_price)
-                print("체결량 : " + trade_amount)
-                print("미체결 : " + remained)
-                print("")
-
                 self.text_edit.append("-- 체결완료 --")
                 self.text_edit.append("체결시간 : " + trade_time)
                 self.text_edit.append("주문번호 : " + order_id)
                 self.text_edit.append("종목코드 : " + item_code)
                 self.text_edit.append("종목명 : " + item_name)
-                # self.text_edit.append("체결단가 : " + trade_price)
                 self.text_edit.append("체결량 : " + trade_amount)
                 self.text_edit.append("미체결 : " + remained)
                 self.text_edit.append("")
@@ -432,7 +427,10 @@ class Kiwoom(QMainWindow, form_class):
                     #### orderType 검사
                     orderType = self.func_GET_db_item(item_code, 3)
 
-                    if orderType == 1 :         # add water
+                    if orderType == 0 :             # normal trade
+                        self.func_UPDATE_db_item(item_code, 2, 0)       # ordered -> 0
+
+                    elif orderType == 1 :         # add water
                         self.func_UPDATE_db_item(item_code, 2, 0)       # ordered -> 0
                         self.func_UPDATE_db_item(item_code, 3, 0)       # ordered -> 0
                         step = self.func_GET_db_item(item_code, 1)
@@ -450,6 +448,15 @@ class Kiwoom(QMainWindow, form_class):
                         self.func_UPDATE_db_item(item_code, 2, 0)       # ordered -> 0
                         self.func_UPDATE_db_item(item_code, 3, 0)       # orderType -> 0
                         self.func_UPDATE_db_item(item_code, 4, 0)       # trAmount -> 0
+
+                    for i in range(self.item_count) :
+                        code = self.table_summary.item(i, 0).text()
+                        self.SetRealRemove("0101", code)
+
+                    timestamp = self.func_GET_CurrentTime()
+                    self.text_edit.append(timestamp + "Monitoring STOP")
+
+                    self.func_start_check()
 
 
     def func_JUDGE(self):
@@ -644,11 +651,13 @@ class Kiwoom(QMainWindow, form_class):
         row = index.row()
         print("click", row)
         try:
-            item_code = self.table_summary.item(row, 0).text()
-            item_code = item_code.replace("A", "")
-            self.flag_ItemInfo_click = 1
+            item_code = self.table_summary.item(row, 0).text().replace('A', '')
+            price_buy = self.table_summary.item(row, 5).text()
+            price_sell = self.table_summary.item(row, 6).text()
+
             self.code_edit.setText(item_code.strip())
-            self.func_GET_ItemInfo(item_code.strip())
+            self.wid_buy_price.setText(price_buy)
+            self.wid_sell_price.setText(str(price_sell))
         except:
             pass
     def func_SHOW_ItemInfo(self, rqname, trcode, recordname):
@@ -710,8 +719,7 @@ class Kiwoom(QMainWindow, form_class):
             self.text_edit.append(timestamp + "Timer Thread Started")
             self.login_event_loop.terminate()
 
-            # self.func_START_CheckBalance()          # Aloha
-            # self.func_GET_CurrentTime()
+            self.func_start_check()          # Aloha
             
         else:
             print("Login Failed")
@@ -790,7 +798,6 @@ class Kiwoom(QMainWindow, form_class):
         self.table_order.setHorizontalHeaderItem(5, QTableWidgetItem("주문량"))
         self.table_order.setHorizontalHeaderItem(6, QTableWidgetItem("체결량"))
         self.table_order.setHorizontalHeaderItem(7, QTableWidgetItem("미체결"))
-
     def func_SET_tableDAILYSUMMARY(self):
         row_count = 0
         col_count = 6
@@ -863,8 +870,7 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
         print("receive REAL DATA")
-        # print(code, " : ", real_data)
-        # print("")
+        print(code)
         val = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10)
         price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27)
         price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28)
@@ -872,16 +878,16 @@ class Kiwoom(QMainWindow, form_class):
         for i in range(len(self.item_codes)) :
             if code == self.item_codes[i]:
                 if self.func_GET_db_item(code, 2) == 1:     # status : trading
+                    self.table_summary.item(i, 0).setBackground(QtGui.QColor(0,255,0))
                     if self.func_GET_db_item(code, 3) == 4:
-                        self.func_SET_TableData(1, i, 2, "TRADING - SELL & BUY", 1)
                         buy_qty = self.func_GET_db_item(code, 4)
 
                         self.func_UPDATE_db_item(item_code, 3, 0)       # orderType -> 0
 
                         # self.func_ORDER_BUY_auto(code, buy_qty, price_buy)
-                    else:
-                        self.func_SET_TableData(1, i, 2, "TRADING", 1)
+                        
                 else :
+                    self.table_summary.item(i, 0).setBackground(QtGui.QColor(255,255,255))
                     val = val.replace('+', '').replace('-', '').strip()
                     self.func_SET_TableData(1, i, 4, val, 0)
                     price_buy = price_buy.replace('+', '').replace('-', '').strip()
@@ -889,7 +895,6 @@ class Kiwoom(QMainWindow, form_class):
                     self.func_SET_TableData(1, i, 5, price_buy, 0)
                     self.func_SET_TableData(1, i, 6, price_sell, 0)
                     # self.func_SET_TableData(1, i, 6, price_sell.replace('+', '').replace('-', '').strip(), 0)
-
                     owncount = int(self.table_summary.item(i, 2).text())
                     unit = float(self.table_summary.item(i, 3).text())
 
@@ -920,8 +925,10 @@ class Kiwoom(QMainWindow, form_class):
                         self.func_SET_TableData(1, i, 12, str(percent), 0)
 
                     ################## judgement ###################
-                    step = int(self.table_summary.item(i, 13).text())
+                    # step = int(self.table_summary.item(i, 13).text())
                     item_code = code
+                    step = self.func_GET_db_item(item_code, 1)
+                    self.func_SET_TableData(1, i, 13, str(step), 0)
 
 
                     # Add Water
