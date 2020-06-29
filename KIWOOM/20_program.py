@@ -23,6 +23,8 @@ FEE_SELL = 0.0035
 GOAL_PER = -0.01
 STEP_LIMIT = 5
 
+MAKE_ORDER = 0
+
 
 for i in range(10) :
     globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', '%', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5', 'm_6', 'm_7', 'm_8', 'm_9', 'm_10'])
@@ -53,6 +55,8 @@ class Kiwoom(QMainWindow, form_class):
         self.flag_HistoryData_Auto = 0
         self.stay_print_time = {}
         self.status_print_time = {}     # judge 판단 후 이상없을 시 현상황 print를 위한 dict 자료형 init
+        self.item_codes = []
+        self.flag_checking = 0
 
         self.func_SET_db_table()        # db table 생성
         self.df_history = pd.DataFrame(columns = ['time', 'type', 'T_ID', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
@@ -215,7 +219,10 @@ class Kiwoom(QMainWindow, form_class):
             
     def btn_test(self) :
         print("btn test")
-        self.table_summary.item(0, 0).setBackground(QtGui.QColor(0,255,0))
+        item_code = "005930"
+        if self.func_UPDATE_db_item(item_code, 2, 11) == 1:       # ordered -> 0
+            if self.func_UPDATE_db_item(item_code, 3, 11) == 1:       # orderType -> 0
+                self.func_UPDATE_db_item(item_code, 4, 21)       # trAmount -> 0
         
 
     def btn_test_2(self):
@@ -226,9 +233,12 @@ class Kiwoom(QMainWindow, form_class):
             
 
     def func_start_check(self) :
+        self.flag_checking = 1
+        ## history load
         today = self.func_GET_Today()
         self.flag_HistoryData_Auto = 1
         self.func_GET_TradeHistory(today)
+        self.func_GET_Deposit()
 
         acc_no = ACCOUNT
         acc_pw = PASSWORD
@@ -237,17 +247,17 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
 
     def func_SET_Items(self, rqname, trcode, recordname):
+        self.table_summary.clearContents()      ## table clear
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
 
         for i in range(self.item_count):
-            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호")
-            item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
+            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+            item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
             owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
             unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
 
-            item_code = item_code.replace('A', '').strip()
             self.func_SET_TableData(1, i, 0, item_code, 0)
-            self.func_SET_TableData(1, i, 1, item_name.strip(), 0)
+            self.func_SET_TableData(1, i, 1, item_name, 0)
             self.func_SET_TableData(1, i, 2, str(int(owncount)), 0)
             self.func_SET_TableData(1, i, 3, str(round(float(unit_price), 1)), 0)
 
@@ -273,12 +283,16 @@ class Kiwoom(QMainWindow, form_class):
 
     def func_stop_check(self):
         # print("self : ", self.item_count, type(self.item_count))
-        for i in range(self.item_count) :
-            code = self.table_summary.item(i, 0).text()
-            self.SetRealRemove("0101", code)
+        # for i in range(self.item_count) :
+        #     code = self.table_summary.item(i, 0).text()
+        #     self.SetRealRemove("0101", code)
+
+        self.SetRealRemove("ALL", "ALL")
 
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Monitoring STOP")
+
+        return 1
 
     def SetRealReg(self, screenNo, item_code, fid, realtype):
         self.kiwoom.dynamicCall("SetRealReg(QString, QString, QString, QString)", screenNo, item_code, fid, realtype)
@@ -387,7 +401,7 @@ class Kiwoom(QMainWindow, form_class):
         return ret
     def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
         order_id = item_code = item_name = trade_price = trade_amount = remained = trade_time = 'n'
-        if gubun == "0" :       # 체결시
+        if gubun == "0" :       
             order_id = self.func_GET_Chejan_data(9203)      # 주문번호
             item_code = self.func_GET_Chejan_data(9001)     # 종목코드
             item_name = self.func_GET_Chejan_data(302)      # 종목명
@@ -397,7 +411,9 @@ class Kiwoom(QMainWindow, form_class):
             trade_time = self.func_GET_Chejan_data(908)      # 주문체결시간
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
-            if remained == '0':
+            if remained == '0':         # 체결시
+                self.func_stop_check()      ## checking stop
+
                 self.text_edit.append("-- 체결완료 --")
                 self.text_edit.append("체결시간 : " + trade_time)
                 self.text_edit.append("주문번호 : " + order_id)
@@ -413,17 +429,15 @@ class Kiwoom(QMainWindow, form_class):
                 self.func_GET_TradeHistory(today)
 
                 ## 체결시 db 갱신 수행
-                item_code = item_code.replace("A", "").strip()
+                item_code = item_code.replace('A', '').strip()
                 step = self.func_GET_db_item(item_code, 1)
 
                 ### db에 저장안된 item 일 경우 item 초기화
                 if step == "none":
-                    self.func_INSERT_db_item(item_code, 0, 0)
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)
 
                 ### db에 이미 저장되어 있는 item 일 경우
                 else :
-                    #### 미체결 없이 주문한 수량이 모듀 체결 완료된 경우 ordered를 0으로 변경
-                    
                     #### orderType 검사
                     orderType = self.func_GET_db_item(item_code, 3)
 
@@ -431,120 +445,41 @@ class Kiwoom(QMainWindow, form_class):
                         self.func_UPDATE_db_item(item_code, 2, 0)       # ordered -> 0
 
                     elif orderType == 1 :         # add water
-                        self.func_UPDATE_db_item(item_code, 2, 0)       # ordered -> 0
-                        self.func_UPDATE_db_item(item_code, 3, 0)       # ordered -> 0
-                        step = self.func_GET_db_item(item_code, 1)
-                        new_step = step + 1
-                        self.func_UPDATE_db_item(item_code, 1, new_step)
+                        if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
+                            if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       # orderType -> 0
+                                new_step = step + 1
+                                self.func_UPDATE_db_item(item_code, 1, new_step)
 
                     elif orderType == 2 :       # sell & buy 중 sell 완료
-                        self.func_UPDATE_db_item(item_code, 3, 4)
-                        # trAmount = self.func_GET_db_item(item_code, 4)
+                        self.func_UPDATE_db_item(item_code, 3, 4)       # orderType -> 4
 
                     elif orderType == 3 :       # full sell
                         self.func_DELETE_db_item(item_code)
 
                     elif orderType == 4 :       # sellf & buy 중 buy 완료
-                        self.func_UPDATE_db_item(item_code, 2, 0)       # ordered -> 0
-                        self.func_UPDATE_db_item(item_code, 3, 0)       # orderType -> 0
-                        self.func_UPDATE_db_item(item_code, 4, 0)       # trAmount -> 0
-
-                    for i in range(self.item_count) :
-                        code = self.table_summary.item(i, 0).text()
-                        self.SetRealRemove("0101", code)
-
-                    timestamp = self.func_GET_CurrentTime()
-                    self.text_edit.append(timestamp + "Monitoring STOP")
-
-                    self.func_start_check()
+                        if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
+                            if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       # orderType -> 0
+                                self.func_UPDATE_db_item(item_code, 4, 0)       # trAmount -> 0
 
 
-    def func_JUDGE(self):
-        for i in range(self.cnt_own_item) :
-            try:
-                owncount = self.table_summary.item(i, 2).text()
+                # restart checking
+                self.func_start_check()
 
-                if owncount == "Trading":       # 현재 상태가 trading 인 경우 pass
-                    continue
-                
-                item_code = self.table_summary.item(i, 0).text()
-                percent = float(self.table_summary.item(i, 12).text())
-                step = int(self.table_summary.item(i, 13).text())
-                ordered = self.func_GET_db_item(item_code.strip(), 2)
 
-                # 물타기
-                if percent < -2 and step < 6 and ordered == 0:
-                    print(i, " : OK")
-                    V = int(self.table_summary.item(i, 5).text().replace(',', ''))      # 매도최우선가
-                    A = int(self.table_summary.item(i, 7).text().replace(',', ''))
-                    B = int(self.table_summary.item(i, 8).text().replace(',', ''))
-                    T = TAX
-                    FB = FEE_BUY
-                    FS = FEE_SELL
-                    P = GOAL_PER
-
-                    buy_qty = math.ceil((B-A-B*T-A*FB-B*FS-A*P) / (V*P + V*T + FB + FS))
-                    
-                    # self.func_ORDER_BUY_auto(item_code, buy_qty, V)
-                
-                # 존버
-                elif percent < -2 and step >= 6 :
-                    a = 0
-
-                # 분할매도
-                elif percent > 2 and step < 6:
-                    sell_qty = int(int(owncount)/2)
-                    V = int(self.table_summary.item(i, 6).text().replace(',', ''))      # 매수최우선가
-                    # self.func_ORDER_SELL_auto(item_code, sell_qty, V)
-
-                    buy_qty = sell_qty
-
-                # 전량매도
-                elif percent > 2 and step >= 6:
-                    sell_qty = int(owncount)
-                    V = int(self.table_summary.item(i, 6).text().replace(',', ''))      # 매수최우선가
-                    # self.func_ORDER_SELL_auto(item_code, sell_qty, V)
-                
-            except:
-                pass
-
-        self.wid_req_times.setText(str(self.request_times))
-        self.request_times = self.request_times + 1
-    
-    def func_GET_Hoga_1(self, item_code, index):
-        rqname = "GET_Item_Price" + index
-        print("hoga1")
+    def GET_hoga(self, item_code):
+        # hoga 창에 호가 입력
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10004", 0, "0101")
-        print("hoga1 end")
-    def func_GET_Hoga_2(self, rqname, trcode, recordname) :
-        index = int(rqname[-1])
-        print("hoga2 index : ", index)
-        # hoga_buy = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가")
-        # hoga_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가")
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SET_hoga", "opt10004", 0, "0101")
 
-        # hoga_buy = int(hoga_buy)
-        # hoga_sell = int(hoga_sell)
+        # item information 호출
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
+    def SET_hoga(self, rqname, trcode, recordname) :
+        hoga_buy = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', '')
+        hoga_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', '')
 
-        # if hoga_buy < 0 :
-        #     hoga_buy = hoga_buy * -1
-        # if hoga_sell < 0 :
-        #     hoga_sell = hoga_sell * -1
-        
-        # if index == 9:
-        #     self.wid_buy_price.setText(str(hoga_buy))
-        #     self.wid_sell_price.setText(str(hoga_sell))
-        
-        # else :
-        #     self.cnt_call_hoga = self.cnt_call_hoga + 1
-
-        #     if self.cnt_call_hoga > self.cnt_own_item :     # summary table에 호가 입력 완료후 judge 호출
-        #         self.cnt_call_hoga = 0
-        #         self.func_JUDGE()
-            
-        #     else :
-        #         self.func_SET_TableData(1, index, 5, str(int(hoga_sell)), 0)
-        #         self.func_SET_TableData(1, index, 6, str(int(hoga_buy)), 0)
+        self.wid_buy_price.setText(hoga_buy)
+        self.wid_sell_price.setText(hoga_sell)
 
     def func_GET_Deposit(self) :
         acc_no = ACCOUNT
@@ -570,8 +505,6 @@ class Kiwoom(QMainWindow, form_class):
         else :
             self.search_date = self.input_history_date.text()
 
-        # print("DATE : ", self.search_date)
-        # print("DATE : ", date)
         acc_no = ACCOUNT
         acc_pw = PASSWORD
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", self.search_date)
@@ -641,23 +574,16 @@ class Kiwoom(QMainWindow, form_class):
             code = code
             self.flag_ItemInfo_click = 0
 
-        print("2 : ", code)
-        
-        # self.func_GET_Hoga_1(code, '9')       # 해당 item의 호가 호출
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", code)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
+        self.GET_hoga(code)
 
     def func_GET_ItemInfo_by_click(self, index) :
         row = index.row()
-        print("click", row)
         try:
-            item_code = self.table_summary.item(row, 0).text().replace('A', '')
-            price_buy = self.table_summary.item(row, 5).text()
-            price_sell = self.table_summary.item(row, 6).text()
-
+            item_code = self.table_summary.item(row, 0).text()
+            item_code = item_code.replace("A", "")
+            self.flag_ItemInfo_click = 1
             self.code_edit.setText(item_code.strip())
-            self.wid_buy_price.setText(price_buy)
-            self.wid_sell_price.setText(str(price_sell))
+            self.func_GET_ItemInfo(item_code.strip())
         except:
             pass
     def func_SHOW_ItemInfo(self, rqname, trcode, recordname):
@@ -669,17 +595,17 @@ class Kiwoom(QMainWindow, form_class):
         percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
         per = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "PER")
         current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
-        current_price = current_price.strip()
-        current_price = int(current_price)
-
-        if current_price < 0:        
-            current_price = current_price * -1
+        current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가").replace('+', '').replace('-', '').strip()
 
         self.te_iteminfo_code.setText(item_code.strip())
         self.te_iteminfo_name.setText(name.strip())
-        self.te_iteminfo_price.setText(str(current_price))
+        self.te_iteminfo_price.setText(current_price)
         self.te_iteminfo_vol.setText(volume.strip())
         self.te_iteminfo_percent.setText(percent.strip() + " %")
+
+        self.SetRealRemove("ALL", "ALL")
+        if self.flag_checking == 1 :
+            self.func_start_check()
 
     def func_GET_CurrentTime(self) :
         year = strftime("%Y", localtime())
@@ -719,7 +645,7 @@ class Kiwoom(QMainWindow, form_class):
             self.text_edit.append(timestamp + "Timer Thread Started")
             self.login_event_loop.terminate()
 
-            self.func_start_check()          # Aloha
+            # self.func_start_check()          # Aloha
             
         else:
             print("Login Failed")
@@ -845,11 +771,13 @@ class Kiwoom(QMainWindow, form_class):
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
 
         # print("data received")
-        comp_str = "GET_Item_Price"
+        # comp_str = "GET_Item_Price"
 
-        if comp_str in rqname:
-            # print("DATA : HOGA")
-            self.func_GET_Hoga_2(rqname, trcode, recordname)
+        # if comp_str in rqname:
+        #     self.SET_hoga(rqname, trcode, recordname)
+
+        if rqname == "SET_hoga":
+            self.SET_hoga(rqname, trcode, recordname)
 
         if rqname == "SETTING":
             self.func_SET_Items(rqname, trcode, recordname)
@@ -869,142 +797,143 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00009_man":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
-        print("receive REAL DATA")
-        print(code)
+        print("receive REAL DATA : ", code)
+
         val = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10)
         price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27)
         price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28)
 
-        for i in range(len(self.item_codes)) :
-            if code == self.item_codes[i]:
-                if self.func_GET_db_item(code, 2) == 1:     # status : trading
-                    self.table_summary.item(i, 0).setBackground(QtGui.QColor(0,255,0))
-                    if self.func_GET_db_item(code, 3) == 4:
-                        buy_qty = self.func_GET_db_item(code, 4)
+        if val != '' :
+            for i in range(len(self.item_codes)) :
+                if code == self.item_codes[i]:
+                    if self.func_GET_db_item(code, 2) == 1:     # status : trading
+                        self.table_summary.item(i, 0).setBackground(QtGui.QColor(0,255,0))
+                        if self.func_GET_db_item(code, 3) == 4:         # sell & buy 중 buy 단계인 경우
+                            buy_qty = self.func_GET_db_item(code, 4)
 
-                        self.func_UPDATE_db_item(item_code, 3, 0)       # orderType -> 0
+                            self.func_UPDATE_db_item(item_code, 3, 0)       # orderType -> 0
 
-                        # self.func_ORDER_BUY_auto(code, buy_qty, price_buy)
-                        
-                else :
-                    self.table_summary.item(i, 0).setBackground(QtGui.QColor(255,255,255))
-                    val = val.replace('+', '').replace('-', '').strip()
-                    self.func_SET_TableData(1, i, 4, val, 0)
-                    price_buy = price_buy.replace('+', '').replace('-', '').strip()
-                    price_sell = price_sell.replace('+', '').replace('-', '').strip()
-                    self.func_SET_TableData(1, i, 5, price_buy, 0)
-                    self.func_SET_TableData(1, i, 6, price_sell, 0)
-                    # self.func_SET_TableData(1, i, 6, price_sell.replace('+', '').replace('-', '').strip(), 0)
-                    owncount = int(self.table_summary.item(i, 2).text())
-                    unit = float(self.table_summary.item(i, 3).text())
+                            # self.func_ORDER_BUY_auto(code, buy_qty, price_buy)
 
-                    total_purchase = owncount * unit
-                    self.func_SET_TableData(1, i, 7, str(total_purchase), 0)
-                    
-                    total_evaluation = owncount * float(val)
-                    self.func_SET_TableData(1, i, 8, str(total_evaluation), 0)
-
-                    temp_total = total_evaluation - total_purchase
-                    self.func_SET_TableData(1, i, 9, str(temp_total), 0)
-
-                    fee_buy = FEE_BUY * total_purchase
-                    fee_sell = FEE_SELL * total_evaluation
-                    tax = TAX * total_evaluation
-                    total_fee = round((fee_buy + fee_sell + tax), 1)
-                    self.func_SET_TableData(1, i, 10, str(total_fee), 0)
-
-                    total_sum = total_evaluation - total_purchase - total_fee
-                    self.func_SET_TableData(1, i, 11, str(int(total_sum)), 0)
-
-                    percent = round((total_sum / total_purchase) * 100, 1)
-                    if percent > 0:
-                        self.func_SET_TableData(1, i, 12, str(percent), 1)
-                    elif percent < 0:
-                        self.func_SET_TableData(1, i, 12, str(percent), 2)
                     else :
-                        self.func_SET_TableData(1, i, 12, str(percent), 0)
+                        self.table_summary.item(i, 0).setBackground(QtGui.QColor(255,255,255))
+                        val = val.replace('+', '').replace('-', '').strip()
+                        self.func_SET_TableData(1, i, 4, val, 0)
+                        price_buy = price_buy.replace('+', '').replace('-', '').strip()
+                        price_sell = price_sell.replace('+', '').replace('-', '').strip()
+                        self.func_SET_TableData(1, i, 5, price_buy, 0)
+                        self.func_SET_TableData(1, i, 6, price_sell, 0)
+                        # self.func_SET_TableData(1, i, 6, price_sell.replace('+', '').replace('-', '').strip(), 0)
+                        owncount = int(self.table_summary.item(i, 2).text())
+                        unit = float(self.table_summary.item(i, 3).text())
 
-                    ################## judgement ###################
-                    # step = int(self.table_summary.item(i, 13).text())
-                    item_code = code
-                    step = self.func_GET_db_item(item_code, 1)
-                    self.func_SET_TableData(1, i, 13, str(step), 0)
-
-
-                    # Add Water
-                    if percent < -2 and step < STEP_LIMIT :
-                        timestamp = self.func_GET_CurrentTime()
-                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : 물타기")
+                        total_purchase = owncount * unit
+                        self.func_SET_TableData(1, i, 7, str(total_purchase), 0)
                         
-                        V = int(price_buy)          # 매도 최우선가
-                        A = total_purchase          # 총 매입금액
-                        B = total_evaluation        # 총 평가금액
-                        T = TAX
-                        FB = FEE_BUY
-                        FS = FEE_SELL
-                        P = GOAL_PER
+                        total_evaluation = owncount * float(val)
+                        self.func_SET_TableData(1, i, 8, str(total_evaluation), 0)
 
-                        buy_qty = math.ceil((B-A-B*T-A*FB-B*FS-A*P) / (V*P + V*T + FB + FS))
-                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
-                        self.func_UPDATE_db_item(item_code, 3, 1)       ## orderType을 물타기(1) 로 변경
+                        temp_total = total_evaluation - total_purchase
+                        self.func_SET_TableData(1, i, 9, str(temp_total), 0)
 
-                        self.func_ORDER_BUY_auto(item_code, buy_qty, V)    # make order
+                        fee_buy = FEE_BUY * total_purchase
+                        fee_sell = FEE_SELL * total_evaluation
+                        tax = TAX * total_evaluation
+                        total_fee = round((fee_buy + fee_sell + tax), 1)
+                        self.func_SET_TableData(1, i, 10, str(total_fee), 0)
 
-                    # Sell & Buy
-                    if percent > 2 and step < STEP_LIMIT :
-                        timestamp = self.func_GET_CurrentTime()
-                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : 수익실현 및 복구")
-                        sell_qty = int(owncount / 2)
-                        price = int(price_sell)
-                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
-                        self.func_UPDATE_db_item(item_code, 3, 2)       ## orderType을 수익실현 및 복구(2) 로 변경
-                        self.func_UPDATE_db_item(item_code, 4, sell_qty)    ## 복구를 위해 판매한 수량을 trAmount에 기입
-                        
-                        # self.func_ORDER_SELL_auto(item_code, sell_qty, price)
+                        total_sum = total_evaluation - total_purchase - total_fee
+                        self.func_SET_TableData(1, i, 11, str(int(total_sum)), 0)
 
-                        ## ! chejan에서 복구 코드 추가 필요
-                    
-                    # Full Sell
-                    if percent > 2 and step == STEP_LIMIT :
-                        timestamp = self.func_GET_CurrentTime()
-                        self.text_edit.append(timestamp + " " + item_code + " JUDGE : FULL 매도")
-                        sell_qty = owncount
-                        price = int(price_sell)
-                        self.func_UPDATE_db_item(item_code, 2, 1)       ## ordered 변경(-> 1)
-                        self.func_UPDATE_db_item(item_code, 3, 3)
-
-                        # self.func_ORDER_SELL_auto(item_code, sell_qty, price)
-
-                    # STAY
-                    if percent < -2 and step == STEP_LIMIT :
-                        cur_time = time.time()
-                        stay_time = int(self.stay_print_time[item_code])
-
-                        if stay_time == 0 :
-                            timestamp = self.func_GET_CurrentTime()
-                            self.text_edit.append(timestamp + " " + item_code + " JUDGE : STAY")
-                            self.stay_print_time[item_code] = int(cur_time)
+                        percent = round((total_sum / total_purchase) * 100, 1)
+                        if percent > 0:
+                            self.func_SET_TableData(1, i, 12, str(percent), 1)
+                        elif percent < 0:
+                            self.func_SET_TableData(1, i, 12, str(percent), 2)
                         else :
-                            dur = int(cur_time - stay_time)
-                            if dur > 60 :
+                            self.func_SET_TableData(1, i, 12, str(percent), 0)
+
+                        ################## judgement ###################
+                        item_code = code
+                        step = self.func_GET_db_item(item_code, 1)
+                        self.func_SET_TableData(1, i, 13, str(step), 0)
+
+
+                        # Add Water
+                        if percent < -2 and step < STEP_LIMIT :
+                            timestamp = self.func_GET_CurrentTime()
+                            self.text_edit.append(timestamp + " " + item_code + " JUDGE : 물타기")
+                            
+                            V = int(price_buy)          # 매도 최우선가
+                            A = total_purchase          # 총 매입금액
+                            B = total_evaluation        # 총 평가금액
+                            T = TAX
+                            FB = FEE_BUY
+                            FS = FEE_SELL
+                            P = GOAL_PER
+
+                            buy_qty = math.ceil((B-A-B*T-A*FB-B*FS-A*P) / (V*P + V*T + FB + FS))
+
+                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered 변경(-> 1)
+                                if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType을 물타기(1) 로 변경
+                                    if MAKE_ORDER == 1:
+                                        self.func_ORDER_BUY_auto(item_code, buy_qty, V)    # make order
+
+                        # Sell & Buy
+                        if percent > 2 and step < STEP_LIMIT :
+                            timestamp = self.func_GET_CurrentTime()
+                            self.text_edit.append(timestamp + " " + item_code + " JUDGE : 수익실현 및 복구")
+                            sell_qty = int(owncount / 2)
+                            price = int(price_sell)
+
+                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered 변경(-> 1)
+                                if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType을 Sell & Buy(2) 로 변경
+                                    if self.func_UPDATE_db_item(item_code, 4, sell_qty) == 1:    ## 복구를 위해 판매한 수량을 trAmount에 기입
+                                        if MAKE_ORDER == 1:
+                                            self.func_ORDER_SELL_auto(item_code, sell_qty, price)
+                        
+                        # Full Sell
+                        if percent > 2 and step == STEP_LIMIT :
+                            timestamp = self.func_GET_CurrentTime()
+                            self.text_edit.append(timestamp + " " + item_code + " JUDGE : FULL 매도")
+                            sell_qty = owncount
+                            price = int(price_sell)
+
+                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                                if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                                    if MAKE_ORDER == 1:
+                                        self.func_ORDER_SELL_auto(item_code, sell_qty, price)
+
+                        # STAY
+                        if percent < -2 and step == STEP_LIMIT :
+                            cur_time = time.time()
+                            stay_time = int(self.stay_print_time[item_code])
+
+                            if stay_time == 0 :
                                 timestamp = self.func_GET_CurrentTime()
                                 self.text_edit.append(timestamp + " " + item_code + " JUDGE : STAY")
                                 self.stay_print_time[item_code] = int(cur_time)
+                            else :
+                                dur = int(cur_time - stay_time)
+                                if dur > 60 :
+                                    timestamp = self.func_GET_CurrentTime()
+                                    self.text_edit.append(timestamp + " " + item_code + " JUDGE : STAY")
+                                    self.stay_print_time[item_code] = int(cur_time)
 
-                    else :
-                        cur_time = time.time()
-                        status_time = int(self.status_print_time[item_code])
-
-                        if status_time == 0 :
-                            timestamp = self.func_GET_CurrentTime()
-                            self.text_edit.append(timestamp + " " + item_code + " JUDGE : STAY")
-                            self.status_print_time[item_code] = int(cur_time)
                         else :
-                            dur = int(cur_time - status_time)
-                            if dur > 60 :
+                            cur_time = time.time()
+                            status_time = int(self.status_print_time[item_code])
+
+                            if status_time == 0 :
                                 timestamp = self.func_GET_CurrentTime()
                                 self.text_edit.append(timestamp + " " + item_code + " JUDGE : STAY")
                                 self.status_print_time[item_code] = int(cur_time)
+                            else :
+                                dur = int(cur_time - status_time)
+                                if dur > 60 :
+                                    timestamp = self.func_GET_CurrentTime()
+                                    self.text_edit.append(timestamp + " " + item_code + " JUDGE : STAY")
+                                    self.status_print_time[item_code] = int(cur_time)
 
 
 
