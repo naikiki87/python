@@ -10,6 +10,12 @@
     <height>867</height>
    </rect>
   </property>
+  <property name="baseSize">
+   <size>
+    <width>5</width>
+    <height>0</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
@@ -712,7 +718,7 @@
      </layout>
     </widget>
    </widget>
-   <widget class="QTableWidget" name="table_daily_summary">
+   <widget class="QTableWidget" name="table_dailyprofit">
     <property name="geometry">
      <rect>
       <x>820</x>
@@ -742,7 +748,7 @@
      <rect>
       <x>820</x>
       <y>220</y>
-      <width>291</width>
+      <width>331</width>
       <height>31</height>
      </rect>
     </property>
@@ -751,6 +757,12 @@
       <widget class="QLabel" name="label_21">
        <property name="enabled">
         <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <property name="text">
         <string> ~ </string>
@@ -765,6 +777,12 @@
        <property name="enabled">
         <bool>true</bool>
        </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>일자 : </string>
        </property>
@@ -774,13 +792,33 @@
       </widget>
      </item>
      <item row="0" column="3">
-      <widget class="QLineEdit" name="input_ds_end"/>
+      <widget class="QLineEdit" name="input_ds_end">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>5</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QLineEdit" name="input_ds_start"/>
+      <widget class="QLineEdit" name="input_ds_start">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+         <horstretch>5</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+      </widget>
      </item>
      <item row="0" column="4">
-      <widget class="QPushButton" name="btn_HISTORY_2">
+      <widget class="QPushButton" name="btn_dailyprofit">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="text">
         <string>검색</string>
        </property>
@@ -791,33 +829,20 @@
    <widget class="QWidget" name="gridLayoutWidget_8">
     <property name="geometry">
      <rect>
-      <x>1120</x>
+      <x>1210</x>
       <y>220</y>
-      <width>301</width>
+      <width>211</width>
       <height>31</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout_10">
-     <item row="0" column="1">
-      <widget class="QLabel" name="show_ds_start">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string/>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
      <item row="0" column="0">
       <widget class="QLabel" name="label_31">
        <property name="enabled">
         <bool>true</bool>
        </property>
        <property name="text">
-        <string>기준일자 :</string>
+        <string>기간 :</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -828,6 +853,31 @@
       <widget class="QLabel" name="show_ds_end">
        <property name="enabled">
         <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="show_ds_start">
+       <property name="enabled">
+        <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>1</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <property name="text">
         <string/>
@@ -841,6 +891,12 @@
       <widget class="QLabel" name="label_32">
        <property name="enabled">
         <bool>true</bool>
+       </property>
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
        </property>
        <property name="text">
         <string> ~ </string>

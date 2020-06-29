@@ -69,12 +69,13 @@ class Kiwoom(QMainWindow, form_class):
         self.btn_START.clicked.connect(self.func_start_check)
         self.btn_STOP.clicked.connect(self.func_stop_check)
         self.btn_HISTORY.clicked.connect(self.func_GET_TradeHistory)
+        self.btn_dailyprofit.clicked.connect(lambda: self.func_GET_DailyProfit(1))
 
         ## table setting
         self.func_SET_tableSUMMARY()        # monitoring table
         self.func_SET_tableHISTORY()        # history table
         self.func_SET_tableORDER()          # order 현황 table
-        self.func_SET_tableDAILYSUMMARY()          # order 현황 table
+        self.func_SET_table_dailyprofit()   # dailyprofit table
 
     @pyqtSlot(str)
     def update_times(self, data) :
@@ -215,21 +216,13 @@ class Kiwoom(QMainWindow, form_class):
 
                 except:
                     pass
-            
-    def btn_test(self) :
-        print("btn test")
-        item_code = "005930"
-        if self.func_UPDATE_db_item(item_code, 2, 11) == 1:       # ordered -> 0
-            if self.func_UPDATE_db_item(item_code, 3, 11) == 1:       # orderType -> 0
-                self.func_UPDATE_db_item(item_code, 4, 21)       # trAmount -> 0
-        
 
+    def btn_test(self) :
+        a = 0
     def btn_test_2(self):
         print("btn Test2 clicked")
         code = "015760"
         self.SetRealRemove("0101", code)
-        
-            
 
     def func_start_check(self) :
         self.flag_checking = 1
@@ -237,14 +230,18 @@ class Kiwoom(QMainWindow, form_class):
         today = self.func_GET_Today()
         self.flag_HistoryData_Auto = 1
         self.func_GET_TradeHistory(today)
+
+        ## deposit load
         self.func_GET_Deposit()
+
+        ## daily profit load
+        self.func_GET_DailyProfit(0)
 
         acc_no = ACCOUNT
         acc_pw = PASSWORD
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
-
     def func_SET_Items(self, rqname, trcode, recordname):
         self.table_summary.clearContents()      ## table clear
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
@@ -279,7 +276,6 @@ class Kiwoom(QMainWindow, form_class):
         
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Monitoring START")
-
     def func_stop_check(self):
         # print("self : ", self.item_count, type(self.item_count))
         # for i in range(self.item_count) :
@@ -292,11 +288,6 @@ class Kiwoom(QMainWindow, form_class):
         self.text_edit.append(timestamp + "Monitoring STOP")
 
         return 1
-
-    def SetRealReg(self, screenNo, item_code, fid, realtype):
-        self.kiwoom.dynamicCall("SetRealReg(QString, QString, QString, QString)", screenNo, item_code, fid, realtype)
-    def SetRealRemove(self, screenNo, item_code):
-        self.kiwoom.dynamicCall("SetRealRemove(QString, QString)", screenNo, item_code)
 
     ## 매수 ##
     def func_ORDER_BUY_click(self) :
@@ -464,7 +455,6 @@ class Kiwoom(QMainWindow, form_class):
                 # restart checking
                 self.func_start_check()
 
-
     def GET_hoga(self, item_code):
         # hoga 창에 호가 입력
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
@@ -495,6 +485,59 @@ class Kiwoom(QMainWindow, form_class):
         self.wid_show_deposit.setText(str('{0:,}'.format(int(deposit))))
         self.wid_show_deposit_d1.setText(str('{0:,}'.format(int(d_1))))
         self.wid_show_deposit_d2.setText(str('{0:,}'.format(int(d_2))))
+
+    def func_GET_DailyProfit(self, input) :
+        acc_no = ACCOUNT
+        acc_pw = PASSWORD
+
+        if input == 0:
+            year = strftime("%Y", localtime())
+            month = strftime("%m", localtime())
+
+            start_day = year + month + "01"
+            end_day = self.func_GET_Today()
+        
+        elif input == 1:
+            start_day = self.input_ds_start.text()
+            end_day = self.input_ds_end.text()
+
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시작일자", start_day)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종료일자", end_day)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_DailyProfit", "opt10074", 0, "0101")
+
+        self.show_ds_start.setText(start_day)
+        self.show_ds_end.setText(end_day)
+    def func_SHOW_DailyProfit(self, rqname, trcode, recordname):
+        self.table_dailyprofit.clearContents()      ## table clear
+        data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
+        self.table_dailyprofit.setRowCount(0)
+        self.table_dailyprofit.setRowCount(data_cnt)
+
+        for i in range(data_cnt) :
+            try :
+                date = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "일자")
+                total_buy = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매수금액")
+                total_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매도금액")
+                profit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "당일매도손익")
+                fee = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "당일매매수수료")
+                tax = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "당일매매세금")
+
+                self.func_SET_TableData(4, i, 0, date.strip(), 0)
+                self.func_SET_TableData(4, i, 1, total_buy.strip(), 0)
+                self.func_SET_TableData(4, i, 2, total_sell.strip(), 0)
+
+                if int(profit) == 0 :
+                    self.func_SET_TableData(4, i, 3, profit.strip(), 0)
+                elif int(profit) > 0 :
+                    self.func_SET_TableData(4, i, 3, profit.strip(), 1)
+                elif int(profit) < 0 :
+                    self.func_SET_TableData(4, i, 3, profit.strip(), 2)
+                self.func_SET_TableData(4, i, 4, fee.strip(), 0)
+                self.func_SET_TableData(4, i, 5, tax.strip(), 0)
+
+            except :
+                pass
 
     def func_GET_TradeHistory(self, date) :       # search history data manually
         if self.flag_HistoryData_Auto == 1:
@@ -574,7 +617,6 @@ class Kiwoom(QMainWindow, form_class):
             self.flag_ItemInfo_click = 0
 
         self.GET_hoga(code)
-
     def func_GET_ItemInfo_by_click(self, index) :
         row = index.row()
         try:
@@ -723,50 +765,51 @@ class Kiwoom(QMainWindow, form_class):
         self.table_order.setHorizontalHeaderItem(5, QTableWidgetItem("주문량"))
         self.table_order.setHorizontalHeaderItem(6, QTableWidgetItem("체결량"))
         self.table_order.setHorizontalHeaderItem(7, QTableWidgetItem("미체결"))
-    def func_SET_tableDAILYSUMMARY(self):
+    def func_SET_table_dailyprofit(self):
         row_count = 0
         col_count = 6
 
-        self.table_daily_summary.setRowCount(row_count)
-        self.table_daily_summary.setColumnCount(col_count)
-        self.table_daily_summary.resizeRowsToContents()
+        self.table_dailyprofit.setRowCount(row_count)
+        self.table_dailyprofit.setColumnCount(col_count)
+        self.table_dailyprofit.resizeRowsToContents()
 
         for i in range(col_count):
-            self.table_daily_summary.setColumnWidth(i, 100)
+            self.table_dailyprofit.setColumnWidth(i, 100)
 
-        self.table_daily_summary.verticalHeader().setVisible(False)
-        self.table_daily_summary.verticalHeader().setDefaultSectionSize(1)
-        self.table_daily_summary.setHorizontalHeaderItem(0, QTableWidgetItem("일자"))
-        self.table_daily_summary.setHorizontalHeaderItem(1, QTableWidgetItem("매수금액"))
-        self.table_daily_summary.setHorizontalHeaderItem(2, QTableWidgetItem("매도금액"))
-        self.table_daily_summary.setHorizontalHeaderItem(3, QTableWidgetItem("매도손익"))
-        self.table_daily_summary.setHorizontalHeaderItem(4, QTableWidgetItem("수수료"))
-        self.table_daily_summary.setHorizontalHeaderItem(5, QTableWidgetItem("세금"))
+        self.table_dailyprofit.verticalHeader().setVisible(False)
+        self.table_dailyprofit.verticalHeader().setDefaultSectionSize(1)
+        self.table_dailyprofit.setHorizontalHeaderItem(0, QTableWidgetItem("일자"))
+        self.table_dailyprofit.setHorizontalHeaderItem(1, QTableWidgetItem("매수금액"))
+        self.table_dailyprofit.setHorizontalHeaderItem(2, QTableWidgetItem("매도금액"))
+        self.table_dailyprofit.setHorizontalHeaderItem(3, QTableWidgetItem("매도손익"))
+        self.table_dailyprofit.setHorizontalHeaderItem(4, QTableWidgetItem("수수료"))
+        self.table_dailyprofit.setHorizontalHeaderItem(5, QTableWidgetItem("세금"))
 
     def func_SET_TableData(self, table_no, row, col, content, color):
+        item = QTableWidgetItem(content)
+        item.setTextAlignment(4)    # 가운데 정렬
+        if color == 1:
+            item.setForeground(QBrush(Qt.red)) # 글자색
+        elif color == 2:
+            item.setForeground(QBrush(Qt.blue)) # 글자색
+
         # summary table
         if table_no == 1:
-            item = QTableWidgetItem(content)
-            # item.setAlignment(QtCore.Qt.AlignHCenter | QtCore.Qt.AlignVCenter)
-            item.setTextAlignment(4)    # 가운데 정렬
-            if color == 1:
-                item.setForeground(QBrush(Qt.red)) # 글자색
-            elif color == 2:
-                item.setForeground(QBrush(Qt.blue)) # 글자색
             self.table_summary.setItem(row, col, item)
-        
         # history table
         if table_no == 2:
-            item = QTableWidgetItem(content)
-            item.setTextAlignment(4)    # 가운데 정렬
             self.table_history.setItem(row, col, item)
-
         # order table
         if table_no == 3:
-            order = 1
-            item = QTableWidgetItem(content)
-            item.setTextAlignment(4)    # 가운데 정렬
             self.table_order.setItem(row, col, item)
+        if table_no == 4:
+            self.table_dailyprofit.setItem(row, col, item)
+
+    def SetRealReg(self, screenNo, item_code, fid, realtype):
+        self.kiwoom.dynamicCall("SetRealReg(QString, QString, QString, QString)", screenNo, item_code, fid, realtype)
+    def SetRealRemove(self, screenNo, item_code):
+        self.kiwoom.dynamicCall("SetRealRemove(QString, QString)", screenNo, item_code)
+
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
 
         # print("data received")
@@ -777,22 +820,19 @@ class Kiwoom(QMainWindow, form_class):
 
         if rqname == "SET_hoga":
             self.SET_hoga(rqname, trcode, recordname)
-
+        if rqname == "GET_DailyProfit":
+            self.func_SHOW_DailyProfit(rqname, trcode, recordname)
         if rqname == "SETTING":
             self.func_SET_Items(rqname, trcode, recordname)
         if rqname == "GET_Deposit":
             self.func_SHOW_Deposit(rqname, trcode, recordname)
-
         if rqname == "GET_ItemInfo":
             self.func_SHOW_ItemInfo(rqname, trcode, recordname)
-
         if rqname == "GET_Ordering":
             self.func_SHOW_Ordering(rqname, trcode, recordname)
-
         if rqname == "opw00018_req":
             # print("DATA : CHECK BALANCE")
             self.func_SHOW_CheckBalance(rqname, trcode, recordname)
-
         if rqname == "opw00009_man":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
