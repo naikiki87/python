@@ -13,6 +13,7 @@ from PyQt5 import QtTest, QtCore, QtWidgets, uic, QtGui
 import module_timer
 import module_get_summary
 import module_item_finder
+import module_item_finder2
 
 form_class = uic.loadUiType("interface.ui")[0]
 ACCOUNT = "8137639811"
@@ -83,6 +84,10 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(str)
     def update_times(self, data) :
         self.text_edit4.setText(data)
+    @pyqtSlot(str)
+    def msg_from_FINDER(self, data) :
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + data)
     @pyqtSlot(str)
     def item_finder_messages(self, data):
         self.text_edit.append(data)
@@ -248,12 +253,8 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         print("btn test")
 
-        db_codes = self.func_GET_db_item("a", 0)
-        print(db_codes)
-        print(type(db_codes))
-        print(len(db_codes))
-        for i in range(len(db_codes)) :
-            print(i, " : ", db_codes[i])
+        self.item_finder.find_items()
+
 
     def btn_test_2(self):
         print("btn Test2 clicked")
@@ -749,6 +750,11 @@ class Kiwoom(QMainWindow, form_class):
             self.timer = module_timer.Timer()
             self.timer.cur_time.connect(self.update_times)
             self.timer.start()
+
+
+            self.item_finder = module_item_finder2.Finder("6458")
+            self.item_finder.msg_from_FINDER.connect(self.msg_from_FINDER)
+            self.item_finder.start()
 
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Timer Thread Started")
