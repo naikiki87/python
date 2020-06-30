@@ -121,7 +121,7 @@ class Kiwoom(QMainWindow, form_class):
             elif col == 2:      # get ordered
                 sql = "select ordered from STATUS where code = ?"
                 cur.execute(sql, [code])
-            elif col == 3:      # get ordered
+            elif col == 3:      # get orderType
                 sql = "select orderType from STATUS where code = ?"
                 cur.execute(sql, [code])
             elif col == 4:      # get trAmount
@@ -255,7 +255,6 @@ class Kiwoom(QMainWindow, form_class):
         for i in range(len(db_codes)) :
             print(i, " : ", db_codes[i])
 
-
     def btn_test_2(self):
         print("btn Test2 clicked")
         code = "015760"
@@ -289,14 +288,15 @@ class Kiwoom(QMainWindow, form_class):
         db_codes = self.func_GET_db_item("a", 0)
         print("A : ", db_codes)
 
-        ## 실제 보유항목과 db 내역 sync
-        for i in range(self.item_count):
-            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
-            db_codes.remove(item_code)
+        if db_codes != "none" :
+            # 실제 보유항목과 db 내역 sync
+            for i in range(self.item_count):
+                item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+                db_codes.remove(item_code)
 
-        ## 미보유 항목을 db에서 삭제
-        for i in range(len(db_codes)):
-            self.func_DELETE_db_item(db_codes[i])
+            ## 미보유 항목을 db에서 삭제
+            for i in range(len(db_codes)):
+                self.func_DELETE_db_item(db_codes[i])
 
         for i in range(self.item_count):
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
