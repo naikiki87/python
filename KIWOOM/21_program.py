@@ -101,26 +101,40 @@ class Kiwoom(QMainWindow, form_class):
     def func_GET_db_item(self, code, col):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
-        if col == 1:        # get step
-            sql = "select step from STATUS where code = ?"
-            cur.execute(sql, [code])
-        elif col == 2:      # get ordered
-            sql = "select ordered from STATUS where code = ?"
-            cur.execute(sql, [code])
-        elif col == 3:      # get ordered
-            sql = "select orderType from STATUS where code = ?"
-            cur.execute(sql, [code])
-        elif col == 4:      # get trAmount
-            sql = "select trAmount from STATUS where code = ?"
-            cur.execute(sql, [code])
+        if col == 0:        # get all codes
+            sql = "select code from STATUS"
+            cur.execute(sql)
+            rows = cur.fetchall()
+            conn.close()
 
-        row = cur.fetchone()
-        conn.close()
+            if rows is None :
+                return "none"
+            else:
+                codes = []
+                for row in rows:
+                    codes.append(row[0])
+                return codes
+        else :
+            if col == 1:        # get step
+                sql = "select step from STATUS where code = ?"
+                cur.execute(sql, [code])
+            elif col == 2:      # get ordered
+                sql = "select ordered from STATUS where code = ?"
+                cur.execute(sql, [code])
+            elif col == 3:      # get ordered
+                sql = "select orderType from STATUS where code = ?"
+                cur.execute(sql, [code])
+            elif col == 4:      # get trAmount
+                sql = "select trAmount from STATUS where code = ?"
+                cur.execute(sql, [code])
 
-        if row is None:
-            return "none"
-        else:
-            return row[0]
+            row = cur.fetchone()
+            conn.close()
+
+            if row is None:
+                return "none"
+            else:
+                return row[0]
     def func_INSERT_db_item(self, code, step, ordered, orderType, trAmount):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
@@ -212,10 +226,8 @@ class Kiwoom(QMainWindow, form_class):
                 except:
                     pass
 
-            self.df_ordering = self.df_ordering.sort_values(by=['remained'], axis=0, ascending=False)
+            self.df_ordering = self.df_ordering.sort_values(by=['remained', 'order_time'], axis=0, ascending=[False, False])
             self.df_ordering = self.df_ordering.reset_index(drop=True, inplace=False)
-
-            print(self.df_ordering)
 
             for i in range(len(self.df_ordering)):
                 try:
@@ -235,8 +247,14 @@ class Kiwoom(QMainWindow, form_class):
 
     def btn_test(self) :
         print("btn test")
-        today = self.func_GET_Today()
-        self.func_GET_Ordering(today)
+
+        db_codes = self.func_GET_db_item("a", 0)
+        print(db_codes)
+        print(type(db_codes))
+        print(len(db_codes))
+        for i in range(len(db_codes)) :
+            print(i, " : ", db_codes[i])
+
 
     def btn_test_2(self):
         print("btn Test2 clicked")
@@ -268,6 +286,17 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.clearContents()      ## table clear
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
 
+        db_codes = self.func_GET_db_item("a", 0)
+        print("A : ", db_codes)
+
+        for i in range(self.item_count):
+            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+            db_codes.remove(item_code)
+
+        ## 미보유 항목을 db에서 삭제
+        for i in range(len(db_codes)):
+            self.func_DELETE_db_item(db_codes[i])
+
         for i in range(self.item_count):
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
             item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
@@ -284,7 +313,7 @@ class Kiwoom(QMainWindow, form_class):
                 self.func_INSERT_db_item(item_code, 0, 0, 0, 0)       # db initialize
             else :
                 self.func_SET_TableData(1, i, 13, str(step), 0)
-
+        
         self.item_codes = []
         for i in range(self.item_count):
             code = self.table_summary.item(i, 0).text()
@@ -362,7 +391,9 @@ class Kiwoom(QMainWindow, form_class):
         orgorderno = ""
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
-        self.func_GET_Ordering()
+        
+        today = self.func_GET_Today()
+        self.func_GET_Ordering(today)
         self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
 
     ## 매도 ##
@@ -412,7 +443,9 @@ class Kiwoom(QMainWindow, form_class):
         
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
-        self.func_GET_Ordering()
+        
+        today = self.func_GET_Today()
+        self.func_GET_Ordering(today)
         self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
 
     def func_GET_Chejan_data(self, fid):
