@@ -289,6 +289,7 @@ class Kiwoom(QMainWindow, form_class):
         db_codes = self.func_GET_db_item("a", 0)
         print("A : ", db_codes)
 
+        ## 실제 보유항목과 db 내역 sync
         for i in range(self.item_count):
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
             db_codes.remove(item_code)
