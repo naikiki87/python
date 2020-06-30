@@ -722,9 +722,9 @@
     <property name="geometry">
      <rect>
       <x>820</x>
-      <y>260</y>
+      <y>240</y>
       <width>602</width>
-      <height>101</height>
+      <height>121</height>
      </rect>
     </property>
     <property name="rowCount">
@@ -747,7 +747,7 @@
     <property name="geometry">
      <rect>
       <x>820</x>
-      <y>220</y>
+      <y>200</y>
       <width>331</width>
       <height>31</height>
      </rect>
@@ -830,7 +830,7 @@
     <property name="geometry">
      <rect>
       <x>1210</x>
-      <y>220</y>
+      <y>200</y>
       <width>211</width>
       <height>31</height>
      </rect>
