@@ -29,7 +29,7 @@ class Kiwoom(QMainWindow):
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
 
-        # self.comm_connect()       # Aloha
+        self.comm_connect()       # Aloha
         
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
@@ -140,7 +140,7 @@ class Kiwoom(QMainWindow):
     def update_times(self, data) :
         self.text_edit4.setText(data)
     @pyqtSlot(str)
-    def item_finder_messages(self, data):
+    def item_finder_msg(self, data):
         self.text_edit.append(data)
     @pyqtSlot(dict)
     def item_finder_items(self, data):
@@ -189,16 +189,11 @@ class Kiwoom(QMainWindow):
 
 
     def btn_test(self) :                # search histlry data automatically
-        self.search_date_list = list(range(20200601, 20200612))
-        self.search_date_list = list(map(str, self.search_date_list))
-        self.history_index = 0
-        self.init_history = 1
-        self.cnt_check_history = 0
-        self.cnt_tab_history = 0
-
-        self.df_history = pd.DataFrame(columns = ['day', 'type', 'T_ID', 'time', 'Code', 'Name', 'Qty', 'Price', 'Req_ID'])
-
-        self.get_trade_history2()
+        print("btn test")
+        # self.item_finder.start(100)
+        # self.item_finder.run()
+        # self.item_finder.run()
+        self.timer.start_test()
 
     def get_trade_history2(self):
         self.search_date = self.search_date_list[self.history_index]
@@ -353,9 +348,14 @@ class Kiwoom(QMainWindow):
         self.login_event_loop.start()
     def event_connect(self, err_code):
         if err_code == 0:
+            self.item_finder = module_item_finder.ItemFinder()
+
             self.text_edit.append("CONNECTED")
             self.timer = module_timer.Timer()
             self.timer.cur_time.connect(self.update_times)
+
+            
+            # self.item_finder.item_finder_msg.connect(self.item_finder_msg)
             
             # self.buy_test()
             self.timer.start()
@@ -453,10 +453,10 @@ class Kiwoom(QMainWindow):
         else :
             self.is_continue = 1
             while self.is_continue:
-                if self.buy_cnt == 2:
-                    self.auto_item_info()
-                    self.auto_buy = 1
-                self.text_edit.append(str(self.buy_cnt))
+                # if self.buy_cnt == 2:
+                #     self.auto_item_info()
+                    # self.auto_buy = 1
+                # self.text_edit.append(str(self.buy_cnt))
                 self.buy_cnt = self.buy_cnt + 1
 
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)

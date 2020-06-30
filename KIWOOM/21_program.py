@@ -89,8 +89,9 @@ class Kiwoom(QMainWindow, form_class):
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + data)
     @pyqtSlot(str)
-    def item_finder_messages(self, data):
-        self.text_edit.append(data)
+    def item_finder_msg(self, data):
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + data)
     @pyqtSlot(dict)
     def item_finder_items(self, data):
         new_items = pd.DataFrame.from_dict(data)
@@ -253,7 +254,7 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         print("btn test")
 
-        self.item_finder.find_items()
+        self.item_finder.start(100)
 
 
     def btn_test_2(self):
@@ -751,10 +752,13 @@ class Kiwoom(QMainWindow, form_class):
             self.timer.cur_time.connect(self.update_times)
             self.timer.start()
 
+            # self.item_finder = module_item_finder2.Finder("6458")
+            # self.item_finder.msg_from_FINDER.connect(self.msg_from_FINDER)
+            # self.item_finder.start()
 
-            self.item_finder = module_item_finder2.Finder("6458")
-            self.item_finder.msg_from_FINDER.connect(self.msg_from_FINDER)
-            self.item_finder.start()
+            self.item_finder = module_item_finder.ItemFinder()
+            self.item_finder.item_finder_msg.connect(self.item_finder_msg)
+            # self.item_finder.item_finder_items.connect(self.item_finder_items)
 
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Timer Thread Started")
