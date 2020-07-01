@@ -56,7 +56,6 @@ class Kiwoom(QMainWindow, form_class):
         self.flag_ItemInfo_click = 0
         self.flag_HistoryData_Auto = 0
         self.stay_print_time = {}
-        self.status_print_time = {}     # judge 판단 후 이상없을 시 현상황 print를 위한 dict 자료형 init
         self.flag_lock_init = 0
         self.flag_lock = {}
         self.item_codes = []
@@ -256,8 +255,8 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         print("btn test")
 
-        self.item_finder.start(100)
-
+        self.worker2 = module_get_summary.Worker("6458")
+        self.worker2.start()
 
     def btn_test_2(self):
         print("btn Test2 clicked")
@@ -265,6 +264,7 @@ class Kiwoom(QMainWindow, form_class):
         self.SetRealRemove("0101", code)
 
     def func_start_check(self) :
+        self.table_summary.clearContents()      ## table clear
         self.flag_checking = 1
         ## history load
         today = self.func_GET_Today()
@@ -286,7 +286,6 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
     def func_SET_Items(self, rqname, trcode, recordname):
-        self.table_summary.clearContents()      ## table clear
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
 
         db_codes = self.func_GET_db_item("a", 0)
@@ -320,32 +319,23 @@ class Kiwoom(QMainWindow, form_class):
                 self.func_SET_TableData(1, i, 13, str(step), 0)
         
         self.item_codes = []
-        
-
         for i in range(self.item_count):
             code = self.table_summary.item(i, 0).text()
             self.SetRealReg("0101", code, "10", 1)      # Real Time Data Registration
             self.item_codes.append(code)
+            self.stay_print_time[code] = 0
             if self.flag_lock_init == 0:
                 self.flag_lock[code] = 0                ## each item's lock init : 0
         self.flag_lock_init = 1
-            
         print("lock : ", self.flag_lock)
-
-        for i in range(self.item_count) :
-            code = self.table_summary.item(i, 0).text()
-            self.status_print_time[code] = 0
-            self.stay_print_time[code] = 0
         
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Monitoring START")
     def func_stop_check(self):
-        # print("self : ", self.item_count, type(self.item_count))
-        # for i in range(self.item_count) :
-        #     code = self.table_summary.item(i, 0).text()
-        #     self.SetRealRemove("0101", code)
-
         self.SetRealRemove("ALL", "ALL")
+
+        today = self.func_GET_Today()
+        self.func_GET_Ordering(today)
 
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Monitoring STOP")
@@ -501,32 +491,32 @@ class Kiwoom(QMainWindow, form_class):
                     orderType = self.func_GET_db_item(item_code, 3)
 
                     if orderType == 0 :             # normal trade
-                        self.func_UPDATE_db_item(item_code, 2, 0)       # ordered -> 0
-                        self.flag_lock[item_code] = 0           # unlock
+                        if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
+                            self.flag_lock[item_code] = 0           # unlock
 
                     elif orderType == 1 :         # add water
                         print("chejan : add water")
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
-                            self.flag_lock[item_code] = 0           # unlock
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       # orderType -> 0
                                 new_step = step + 1
-                                self.func_UPDATE_db_item(item_code, 1, new_step)
+                                if self.func_UPDATE_db_item(item_code, 1, new_step) == 1:
+                                    self.flag_lock[item_code] = 0           # unlock
 
                     elif orderType == 2 :       # sell & buy 중 sell 완료
                         print("chejan : sell&buy - sell")
-                        self.func_UPDATE_db_item(item_code, 3, 4)       # orderType -> 4
-                        self.flag_lock[item_code] = 0                       # unlock
+                        if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       # orderType -> 4
+                            self.flag_lock[item_code] = 0                       # unlock
 
                     elif orderType == 3 :       # full sell
                         print("chejan : full sell")
                         self.func_DELETE_db_item(item_code)
 
-                    elif orderType == 4 :       # sellf & buy 중 buy 완료
+                    elif orderType == 4 :       # sell & buy 중 buy 완료
                         print("chejan : sell&buy - buy")
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:      # ordered -> 0
-                            self.flag_lock[item_code] = 0                       # unlock
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:  # orderType -> 0
-                                self.func_UPDATE_db_item(item_code, 4, 0)       # trAmount -> 0
+                                if self.func_UPDATE_db_item(item_code, 4, 0) == 1:       # trAmount -> 0
+                                    self.flag_lock[item_code] = 0                       # unlock
 
 
                 # restart checking
@@ -765,8 +755,18 @@ class Kiwoom(QMainWindow, form_class):
             # self.item_finder.msg_from_FINDER.connect(self.msg_from_FINDER)
             # self.item_finder.start()
 
-            self.item_finder = module_item_finder.ItemFinder()
-            self.item_finder.item_finder_msg.connect(self.item_finder_msg)
+            # self.item_finder = module_item_finder.ItemFinder()
+            # self.item_finder.item_finder_msg.connect(self.item_finder_msg)
+            # self.item_finder.start()
+
+            self.worker1 = module_get_summary.Worker("6458")
+            # self.worker2 = module_get_summary.Worker("6458")
+            # self.worker3 = module_get_summary.Worker("6458")
+
+            self.worker1.start()
+            # self.worker2.start()
+            # self.worker3.start()
+
             # self.item_finder.item_finder_items.connect(self.item_finder_items)
 
             timestamp = self.func_GET_CurrentTime()
@@ -932,15 +932,16 @@ class Kiwoom(QMainWindow, form_class):
                         price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27)
                         price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28)
                         # print("receive REAL DATA : ", code)
-                        if self.func_GET_db_item(code, 2) == 1:     # status : trading
-                            self.table_summary.item(i, 0).setBackground(QtGui.QColor(0,255,0))
+                        order_state = self.func_GET_db_item(code, 2)
+                        if order_state == 1:     # status : trading
                             if self.func_GET_db_item(code, 3) == 4:         # sell & buy 중 buy 단계인 경우
                                 buy_qty = self.func_GET_db_item(code, 4)
                                 V = int(price_buy)
                                 if MAKE_ORDER == 1 :
+                                    print("real receive : buy&sell - buy", code)
                                     self.func_ORDER_BUY_auto(code, buy_qty, V)
 
-                        else :
+                        elif order_state == 0 :
                             self.table_summary.item(i, 0).setBackground(QtGui.QColor(255,255,255))
 
                             ################# show data ######################                            
@@ -997,6 +998,8 @@ class Kiwoom(QMainWindow, form_class):
                                 if self.func_UPDATE_db_item(code, 2, 1) == 1:       ## ordered 변경(-> 1)
                                     if self.func_UPDATE_db_item(code, 3, 1) == 1:       ## orderType을 물타기(1) 로 변경
                                         if MAKE_ORDER == 1:
+                                            print("make order : ", code, "BUY")
+                                            self.table_summary.item(i, 0).setBackground(QtGui.QColor(0,255,0))
                                             self.func_ORDER_BUY_auto(code, buy_qty, V)    # make order
 
                             # Sell & Buy
@@ -1011,6 +1014,8 @@ class Kiwoom(QMainWindow, form_class):
                                     if self.func_UPDATE_db_item(code, 3, 2) == 1:      ## orderType을 Sell & Buy(2) 로 변경
                                         if self.func_UPDATE_db_item(code, 4, sell_qty) == 1:    ## 복구를 위해 판매한 수량을 trAmount에 기입
                                             if MAKE_ORDER == 1:
+                                                print("make order : ", code, "SELL")
+                                                self.table_summary.item(i, 0).setBackground(QtGui.QColor(0,255,0))
                                                 self.func_ORDER_SELL_auto(code, sell_qty, price)
                             
                             # Full Sell
@@ -1024,12 +1029,13 @@ class Kiwoom(QMainWindow, form_class):
                                 if self.func_UPDATE_db_item(code, 2, 1) == 1:      ## ordered 변경 -> 1
                                     if self.func_UPDATE_db_item(code, 3, 3) == 1:  ## orderType 변경 -> 3
                                         if MAKE_ORDER == 1:
+                                            print("make order : ", code, "SELL")
+                                            self.table_summary.item(i, 0).setBackground(QtGui.QColor(0,255,0))
                                             self.func_ORDER_SELL_auto(code, sell_qty, price)
 
                             # STAY
                             else :
                                 print("judge : ", code, " : 4 ")
-                            # if percent < PER_LOW and step == STEP_LIMIT :
                                 self.flag_lock[code] = 0    ###### unlock
                                 cur_time = time.time()
                                 stay_time = int(self.stay_print_time[code])
@@ -1044,23 +1050,6 @@ class Kiwoom(QMainWindow, form_class):
                                         timestamp = self.func_GET_CurrentTime()
                                         self.text_edit.append(timestamp + " " + code + " JUDGE : STAY")
                                         self.stay_print_time[code] = int(cur_time)
-
-                            # else :
-                            #     self.flag_lock[code] = 0    ###### unlock
-                            #     cur_time = time.time()
-                            #     status_time = int(self.status_print_time[code])
-
-                            #     if status_time == 0 :
-                            #         timestamp = self.func_GET_CurrentTime()
-                            #         self.text_edit.append(timestamp + " " + code + " JUDGE : STAY")
-                            #         self.status_print_time[code] = int(cur_time)
-                            #     else :
-                            #         dur = int(cur_time - status_time)
-                            #         if dur > 60 :
-                            #             timestamp = self.func_GET_CurrentTime()
-                            #             self.text_edit.append(timestamp + " " + code + " JUDGE : STAY")
-                            #             self.status_print_time[code] = int(cur_time)
-
 
 
 if __name__=="__main__":

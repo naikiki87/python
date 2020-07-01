@@ -85,10 +85,14 @@ class Worker(QThread):
             except:
                 pass
         
-        cnt = 0
-        while True:
-            self.get_summary()
-            QtTest.QTest.qWait(3000)
+        self.cnt = 0
+        while True :
+            print(self.cnt)
+            self.cnt = self.cnt + 1
+            time.sleep(1)
+        # while True:
+        #     self.get_summary()
+        #     QtTest.QTest.qWait(3000)
             # time.sleep(3)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
