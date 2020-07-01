@@ -24,8 +24,8 @@ FEE_SELL = 0.0035
 GOAL_PER = -0.01
 STEP_LIMIT = 5
 
-PER_LOW = -2
-PER_HI = 2
+PER_LOW = -1.5
+PER_HI = 1
 MAKE_ORDER = 1
 
 for i in range(10) :
@@ -945,7 +945,6 @@ class Kiwoom(QMainWindow, form_class):
                         price_sell = price_sell.replace('+', '').replace('-', '').strip()
                         self.func_SET_TableData(1, i, 5, price_buy, 0)
                         self.func_SET_TableData(1, i, 6, price_sell, 0)
-                        # self.func_SET_TableData(1, i, 6, price_sell.replace('+', '').replace('-', '').strip(), 0)
                         owncount = int(self.table_summary.item(i, 2).text())
                         unit = float(self.table_summary.item(i, 3).text())
 
@@ -999,7 +998,6 @@ class Kiwoom(QMainWindow, form_class):
                             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered 변경(-> 1)
                                 if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType을 물타기(1) 로 변경
                                     if MAKE_ORDER == 1:
-                                        # self.flag_lock[item_code] = 1       # lock
                                         self.func_ORDER_BUY_auto(item_code, buy_qty, V)    # make order
 
                         # Sell & Buy
@@ -1013,7 +1011,6 @@ class Kiwoom(QMainWindow, form_class):
                                 if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType을 Sell & Buy(2) 로 변경
                                     if self.func_UPDATE_db_item(item_code, 4, sell_qty) == 1:    ## 복구를 위해 판매한 수량을 trAmount에 기입
                                         if MAKE_ORDER == 1:
-                                            # self.flag_lock[item_code] = 1       # lock
                                             self.func_ORDER_SELL_auto(item_code, sell_qty, price)
                         
                         # Full Sell
@@ -1026,7 +1023,6 @@ class Kiwoom(QMainWindow, form_class):
                             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                                 if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
                                     if MAKE_ORDER == 1:
-                                        # self.flag_lock[item_code] = 1       # lock
                                         self.func_ORDER_SELL_auto(item_code, sell_qty, price)
 
                         # STAY
