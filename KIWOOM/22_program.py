@@ -505,6 +505,7 @@ class Kiwoom(QMainWindow, form_class):
                         self.flag_lock[item_code] = 0           # unlock
 
                     elif orderType == 1 :         # add water
+                        print("chejan : add water")
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
                             self.flag_lock[item_code] = 0           # unlock
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       # orderType -> 0
@@ -512,13 +513,16 @@ class Kiwoom(QMainWindow, form_class):
                                 self.func_UPDATE_db_item(item_code, 1, new_step)
 
                     elif orderType == 2 :       # sell & buy 중 sell 완료
+                        print("chejan : sell&buy - sell")
                         self.func_UPDATE_db_item(item_code, 3, 4)       # orderType -> 4
                         self.flag_lock[item_code] = 0                       # unlock
 
                     elif orderType == 3 :       # full sell
+                        print("chejan : full sell")
                         self.func_DELETE_db_item(item_code)
 
                     elif orderType == 4 :       # sellf & buy 중 buy 완료
+                        print("chejan : sell&buy - buy")
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:      # ordered -> 0
                             self.flag_lock[item_code] = 0                       # unlock
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:  # orderType -> 0
@@ -927,15 +931,14 @@ class Kiwoom(QMainWindow, form_class):
             for i in range(len(self.item_codes)) :
                 if code == self.item_codes[i] and self.flag_lock[code] == 0:        ## code를 찾고 해당 code가 unlock 인 상태
                     self.flag_lock[code] = 1    ############### locking
-                    print("receive REAL DATA : ", code)
+                    # print("receive REAL DATA : ", code)
                     if self.func_GET_db_item(code, 2) == 1:     # status : trading
                         self.table_summary.item(i, 0).setBackground(QtGui.QColor(0,255,0))
                         if self.func_GET_db_item(code, 3) == 4:         # sell & buy 중 buy 단계인 경우
                             buy_qty = self.func_GET_db_item(code, 4)
-                            self.func_UPDATE_db_item(item_code, 3, 0)       # orderType -> 0
-
+                            V = int(price_buy)
                             if MAKE_ORDER == 1 :
-                                self.func_ORDER_BUY_auto(code, buy_qty, price_buy)
+                                self.func_ORDER_BUY_auto(code, buy_qty, V)
 
                     else :
                         self.table_summary.item(i, 0).setBackground(QtGui.QColor(255,255,255))
