@@ -51,6 +51,7 @@ class Kiwoom(QMainWindow, form_class):
 
     def init_ENV(self) :
         ## flag setting
+        self.cnt_thread = 0
         self.cnt_call_hoga = 0
         self.cnt_tab_history = 0
         self.flag_ItemInfo_click = 0
@@ -253,15 +254,19 @@ class Kiwoom(QMainWindow, form_class):
                     pass
 
     def btn_test(self) :
-        print("btn test")
+        self.cnt_thread = self.cnt_thread + 1
+        print("btn test", self.cnt_thread)
+        
+        globals()['self.worker{}'.format(self.cnt_thread)] = module_get_summary.Worker("6458")
+        globals()['self.worker{}'.format(self.cnt_thread)].start()
 
-        self.worker2 = module_get_summary.Worker("6458")
-        self.worker2.start()
+        # self.worker2 = module_get_summary.Worker("6458")
+        # self.worker2.start()
 
     def btn_test_2(self):
-        print("btn Test2 clicked")
-        code = "015760"
-        self.SetRealRemove("0101", code)
+        globals()['self.worker{}'.format(self.cnt_thread)].terminate()
+        self.cnt_thread = self.cnt_thread - 1
+        print("btn Test2 clicked", self.cnt_thread)
 
     def func_start_check(self) :
         self.table_summary.clearContents()      ## table clear
