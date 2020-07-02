@@ -13,16 +13,6 @@ for i in range(10) :
     globals()['save_times{}'.format(i)] = 0
     globals()['elapsed_min{}'.format(i)] = 0
 
-# DF_item0 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-# DF_item1 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-# DF_item2 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-# DF_item3 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-# DF_item4 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-# DF_item5 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-# DF_item6 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-# DF_item7 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-# DF_item8 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
-# DF_item9 = pd.DataFrame(columns = ['code', 'price', 'av_1', 'av_2', 'av_3', 'av_4', 'av_5', 'av_10'])
 
 class Worker(QThread):
     connected = 0
@@ -48,6 +38,7 @@ class Worker(QThread):
 
         self.worker.OnEventConnect.connect(self.event_connect)
         self.worker.OnReceiveTrData.connect(self.receive_tr_data)
+        self.worker.OnReceiveRealData.connect(self.receive_real_data)
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -72,7 +63,9 @@ class Worker(QThread):
             self.worker.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
             self.worker.dynamicCall("SetInputValue(QString, QString)", "비밀번호", self.acc_password)
             self.worker.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00018_req", "opw00018", 0, "0101")
-
+    def SetRealReg(self, screenNo, item_code, fid, realtype):
+        print("worker : setrealreg")
+        self.worker.dynamicCall("SetRealReg(QString, QString, QString, QString)", screenNo, item_code, fid, realtype)
     def run(self):
         while True:
             try:
@@ -84,20 +77,31 @@ class Worker(QThread):
                 
             except:
                 pass
+
+        code = "005930"
+        self.SetRealReg("0101", code, "10", 1)      # Real Time Data Registration
+
+        # self.get_summary()
+        self.get_item_info()
         
-        self.cnt = 0
-        while True :
-            print(self.cnt)
-            self.cnt = self.cnt + 1
-            time.sleep(1)
+        # self.cnt = 0
+
+        # while True :
+        #     print(self.cnt)
+        #     self.cnt = self.cnt + 1
+        #     time.sleep(1)
         # while True:
         #     self.get_summary()
         #     QtTest.QTest.qWait(3000)
             # time.sleep(3)
+    
+    def receive_real_data(self, code, real_type, real_data): 
+        print("worker real receive : ", code)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
+        print("tr data : ", rqname)
         if rqname == "opw00018_req":
-            # print("data received", rqname)
+            print("data received", rqname)
             data_cnt = self.get_repeat_cnt(trcode, rqname)
 
             total_purchase = self.worker.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "총매입금액")
