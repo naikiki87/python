@@ -8,10 +8,10 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore
 
-for i in range(10) :
-    globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', 'price', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5', 'm_6', 'm_7', 'm_8', 'm_9', 'm_10'])
-    globals()['save_times{}'.format(i)] = 0
-    globals()['elapsed_min{}'.format(i)] = 0
+# for i in range(10) :
+#     globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', 'price', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5', 'm_6', 'm_7', 'm_8', 'm_9', 'm_10'])
+#     globals()['save_times{}'.format(i)] = 0
+#     globals()['elapsed_min{}'.format(i)] = 0
 
 
 class Worker(QThread):
@@ -22,15 +22,10 @@ class Worker(QThread):
     elapsed_min = 0
     save_times_init = 0
 
-    def __init__(self, acc_pw):
+    def __init__(self, seq, acc_pw, item_code):
         super().__init__()
-        # print("thread worker init")
-        # for i in range(10) :
-        #     globals()['self.DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', 'price'])
-
-        # self.save_times = 0
-        # print("save price : ", save_times)
-        # self.save_times = 0
+        self.item_code = item_code
+        self.seq = seq
         self.acc_password = acc_pw
         self.worker = QAxWidget()
         self.worker.setControl("KHOPENAPI.KHOpenAPICtrl.1")
@@ -78,25 +73,15 @@ class Worker(QThread):
             except:
                 pass
 
-        code = "005930"
-        self.SetRealReg("0101", code, "10", 1)      # Real Time Data Registration
+        self.set_real()
 
-        # self.get_summary()
-        self.get_item_info()
+    def set_real(self) :
+        print("set real")
         
-        # self.cnt = 0
-
-        # while True :
-        #     print(self.cnt)
-        #     self.cnt = self.cnt + 1
-        #     time.sleep(1)
-        # while True:
-        #     self.get_summary()
-        #     QtTest.QTest.qWait(3000)
-            # time.sleep(3)
+        self.SetRealReg("0101", self.item_code, "10", 1)      # Real Time Data Registration
     
     def receive_real_data(self, code, real_type, real_data): 
-        print("worker real receive : ", code)
+        print(self.seq, "worker real receive : ", code)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("tr data : ", rqname)

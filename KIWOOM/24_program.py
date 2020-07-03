@@ -254,19 +254,19 @@ class Kiwoom(QMainWindow, form_class):
                     pass
 
     def btn_test(self) :
-        self.cnt_thread = self.cnt_thread + 1
-        print("btn test", self.cnt_thread)
-        
-        globals()['self.worker{}'.format(self.cnt_thread)] = module_get_summary.Worker("6458")
-        globals()['self.worker{}'.format(self.cnt_thread)].start()
+        print("btn test")
 
-        # self.worker2 = module_get_summary.Worker("6458")
-        # self.worker2.start()
+        # self.cnt_thread = self.cnt_thread + 1
+        # print("btn test", self.cnt_thread)
+        
+        # globals()['self.worker{}'.format(self.cnt_thread)] = module_get_summary.Worker("6458")
+        # globals()['self.worker{}'.format(self.cnt_thread)].start()
+
+        self.worker2 = module_get_summary.Worker("6458")
+        self.worker2.start()
 
     def btn_test_2(self):
-        globals()['self.worker{}'.format(self.cnt_thread)].terminate()
-        self.cnt_thread = self.cnt_thread - 1
-        print("btn Test2 clicked", self.cnt_thread)
+        print("btn test2")
 
     def func_start_check(self) :
         self.table_summary.clearContents()      ## table clear
@@ -766,8 +766,6 @@ class Kiwoom(QMainWindow, form_class):
 
             # self.worker1 = module_get_summary.Worker("6458")
             # self.worker1.start()
-            code = "005930"
-            self.SetRealReg("0101", code, "10", 1)      # Real Time Data Registration
 
             # self.item_finder.item_finder_items.connect(self.item_finder_items)
 
