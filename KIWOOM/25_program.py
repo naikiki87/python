@@ -12,6 +12,7 @@ from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore, QtWidgets, uic, QtGui
 import module_timer
 import module_get_summary
+import module_get_summary2
 import module_item_finder
 import module_item_finder2
 
@@ -34,10 +35,10 @@ for i in range(10) :
     globals()['elapsed_min{}'.format(i)] = 0
 
 class Kiwoom(QMainWindow, form_class):
-    test_msg = pyqtSignal(dict)
+    test_msg = pyqtSignal(int)
 
     def __init__(self):
-        super().__init__()
+        super().__init__(parent)
         self.setupUi(self)
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
@@ -257,13 +258,20 @@ class Kiwoom(QMainWindow, form_class):
 
     def btn_test(self) :
         print("btn test")
-        code = self.code_edit.text()
-        print("code : ", code)
 
-        self.cnt_thread = self.cnt_thread + 1
+        self.testworker = module_get_summary.Worker(parent=self)
+        self.test_msg.connect(self.testworker.receive_data_from_main)
+        self.tetworker.start()
+
+
+
+        # code = self.code_edit.text()
+        # print("code : ", code)
+
+        # self.cnt_thread = self.cnt_thread + 1
         
-        globals()['self.worker{}'.format(self.cnt_thread)] = module_get_summary.Worker(self.cnt_thread, "6458", code)
-        globals()['self.worker{}'.format(self.cnt_thread)].start()
+        # globals()['self.worker{}'.format(self.cnt_thread)] = module_get_summary.Worker(self.cnt_thread, "6458", code)
+        # globals()['self.worker{}'.format(self.cnt_thread)].start()
         # self.worker2 = module_get_summary.Worker(1, "6458", code)
         # self.worker2.start()
 
