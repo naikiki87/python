@@ -29,28 +29,25 @@ PER_LOW = -1.5
 PER_HI = 1
 MAKE_ORDER = 1
 
-for i in range(10) :
-    globals()['DF_item{}'.format(i)] = pd.DataFrame(columns = ['code', '%', 'm_1', 'm_2', 'm_3', 'm_4', 'm_5', 'm_6', 'm_7', 'm_8', 'm_9', 'm_10'])
-    globals()['save_times{}'.format(i)] = 0
-    globals()['elapsed_min{}'.format(i)] = 0
-
 class Kiwoom(QMainWindow, form_class):
-    test_msg = pyqtSignal(int)
+    test_msg = pyqtSignal("PyQt_PyObject")
+    test_dict = pyqtSignal("PyQt_PyObject")
 
     def __init__(self):
-        super().__init__(parent)
+        super().__init__()
         self.setupUi(self)
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
 
-        # self.comm_connect()       # Aloha
+        self.comm_connect()       # Aloha
         
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
-        # self.kiwoom.OnReceiveRealData.connect(self.receive_real_data)
+        self.kiwoom.OnReceiveRealData.connect(self.receive_real_data)
         self.kiwoom.OnReceiveChejanData.connect(self.func_RECEIVE_Chejan_data)
 
         self.init_ENV()
+
 
     def init_ENV(self) :
         ## flag setting
@@ -86,9 +83,15 @@ class Kiwoom(QMainWindow, form_class):
         self.func_SET_tableORDER()          # order 현황 table
         self.func_SET_table_dailyprofit()   # dailyprofit table
 
+
+    @pyqtSlot(int)
+    def data_from_thread(self, data) :
+        print("Main - data from thread : ", data)
+
     @pyqtSlot(str)
     def update_times(self, data) :
         self.text_edit4.setText(data)
+
     @pyqtSlot(str)
     def msg_from_FINDER(self, data) :
         timestamp = self.func_GET_CurrentTime()
@@ -101,6 +104,14 @@ class Kiwoom(QMainWindow, form_class):
     def item_finder_items(self, data):
         new_items = pd.DataFrame.from_dict(data)
         print(new_items)
+
+    @pyqtSlot(dict)
+    def rp_dict(self, data):
+        print("main : ", data)
+        self.func_SET_TableData(1, 0, 0, str(data['own']), 0)
+        self.func_SET_TableData(1, 0, 1, str(data['val']), 0)
+        self.func_SET_TableData(1, 0, 2, str(data['unit']), 0)
+        self.func_SET_TableData(1, 0, 3, str(data['a']), 0)
 
     def func_SET_db_table(self) :
         conn = sqlite3.connect("item_status.db")
@@ -259,24 +270,24 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         print("btn test")
 
-        self.testworker = module_get_summary.Worker(parent=self)
-        self.test_msg.connect(self.testworker.receive_data_from_main)
-        self.tetworker.start()
+        # self.test_msg.emit("Hello thread")
 
+        # for i in range(20) :
+        #     self.th.get_item_info()
+        #     QtTest.QTest.qWait(2000)
 
+        test_dict = {}
 
-        # code = self.code_edit.text()
-        # print("code : ", code)
+        test_dict['own'] = 10
+        test_dict['unit'] = 100
+        test_dict['val'] = 90
 
-        # self.cnt_thread = self.cnt_thread + 1
-        
-        # globals()['self.worker{}'.format(self.cnt_thread)] = module_get_summary.Worker(self.cnt_thread, "6458", code)
-        # globals()['self.worker{}'.format(self.cnt_thread)].start()
-        # self.worker2 = module_get_summary.Worker(1, "6458", code)
-        # self.worker2.start()
+        self.test_dict.emit(test_dict)
+
 
     def btn_test_2(self):
         print("btn test2")
+        self.test_msg = "hello thread"
 
     def func_start_check(self) :
         self.table_summary.clearContents()      ## table clear
@@ -765,28 +776,32 @@ class Kiwoom(QMainWindow, form_class):
             self.timer = module_timer.Timer()
             self.timer.cur_time.connect(self.update_times)
             self.timer.start()
-
-            # self.item_finder = module_item_finder2.Finder("6458")
-            # self.item_finder.msg_from_FINDER.connect(self.msg_from_FINDER)
-            # self.item_finder.start()
-
-            # self.item_finder = module_item_finder.ItemFinder()
-            # self.item_finder.item_finder_msg.connect(self.item_finder_msg)
-            # self.item_finder.start()
-
-            # self.worker1 = module_get_summary.Worker("6458")
-            # self.worker1.start()
-
-            # self.item_finder.item_finder_items.connect(self.item_finder_items)
-
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Timer Thread Started")
             self.login_event_loop.terminate()
 
+            print("LOGIN")
+
             # self.func_start_check()          # Aloha
+
+            self.th = module_get_summary2.Worker()
+            self.th.data_from_thread.connect(self.data_from_thread)
+            self.test_msg.connect(self.th.data_from_main)
+            self.test_dict.connect(self.th.dict_from_main)
+            self.th.rp_dict.connect(self.rp_dict)
+            self.th.start()
+
+            # QtTest.QTest.qWait(5000)
+
+            # self.th2 = module_get_summary2.Worker(2)
+            # self.th2.data_from_thread.connect(self.data_from_thread)
+            # self.test_msg.connect(self.th2.data_from_main)
+            # self.th2.start()
+
             
         else:
             print("Login Failed")
+    
     ## [END] login ##
     def func_SET_tableSUMMARY(self):
         row_count = 5
