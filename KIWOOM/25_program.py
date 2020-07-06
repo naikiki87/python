@@ -47,7 +47,7 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
 
-        self.kiwoom.dynamicCall("CommConnect()")        ## aloha
+        # self.kiwoom.dynamicCall("CommConnect()")        ## aloha
         
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
@@ -296,27 +296,23 @@ class Kiwoom(QMainWindow, form_class):
         print("th con : ", data)
         self.list_th_connected[self.th_seq] = data
 
-
     def btn_test(self) :
         print("btn test")
         
-        self.th_seq = 0
-        self.worker0 = module_get_summary2.Worker(0)
-        self.worker0.th_con.connect(self.th_connected)
-        self.test_dict0.connect(self.worker0.dict_from_main)
-        
-        self.worker0.start()
+        self.worker = module_get_summary2.Worker(1)
+        self.worker.start()
+
+        QtTest.QTest.qWait(3000)
+
+        self.worker2 = module_get_summary2.Worker(2)
+        self.worker2.start()
+
+        QtTest.QTest.qWait(3000)
 
         while True :
-            if self.list_th_connected[self.th_seq] == 1:
-                break
-            QtTest.QTest.qWait(100)
-
-        self.th_seq = 1
-        self.worker1 = module_get_summary2.Worker(1)
-        self.worker1.th_con.connect(self.th_connected)
-        self.test_dict1.connect(self.worker1.dict_from_main)
-        self.worker1.start()
+            self.worker.get_item_info()
+            self.worker2.get_item_info()
+            QtTest.QTest.qWait(1000)
     
     @pyqtSlot(str)
     def delete_item(self, data) :

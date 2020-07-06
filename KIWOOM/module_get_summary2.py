@@ -51,12 +51,12 @@ class Worker(QThread):
         self.worker.dynamicCall("CommRqData(QString, QString, int, QString)", "opt10001_req", "opt10001", 0, "0101")
 
     def run(self):
-        self.lock = 0
+        self.lock = 0       ## lock variable initialize
         while True:
             try:
                 print("con : ", self.connected)
                 if self.connected == 1:
-                    self.th_con.emit(1)
+                    # self.th_con.emit(1)
                     break
                 time.sleep(1)
             except:
@@ -172,7 +172,7 @@ class Worker(QThread):
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         if rqname == "opt10001_req":
-            print(" data received", rqname)
+            print(self.seq, " data received", rqname)
     def get_repeat_cnt(self, trcode, rqname):
         ret = self.worker.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
         return ret
