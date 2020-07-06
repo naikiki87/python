@@ -47,7 +47,7 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
 
-        self.comm_connect()       # Aloha
+        self.kiwoom.dynamicCall("CommConnect()")        ## aloha
         
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
@@ -56,10 +56,10 @@ class Kiwoom(QMainWindow, form_class):
 
         self.init_ENV()
 
-
     def init_ENV(self) :
         ## flag setting
         self.cnt_thread = 0
+        self.item_slot = {}
         self.list_th_connected = [0, 0, 0, 0, 0]
         self.cnt_call_hoga = 0
         self.cnt_tab_history = 0
@@ -92,7 +92,6 @@ class Kiwoom(QMainWindow, form_class):
         self.func_SET_tableORDER()          # order 현황 table
         self.func_SET_table_dailyprofit()   # dailyprofit table
 
-
     @pyqtSlot(int)
     def data_from_thread(self, data) :
         print("Main - data from thread : ", data)
@@ -117,20 +116,26 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(dict)
     def rp_dict(self, data):
         print("main : ", data)
-        self.func_SET_TableData(1, data['seq'], 4, str(data['cur_price']), 0)
-        self.func_SET_TableData(1, data['seq'], 5, str(data['price_buy']), 0)
-        self.func_SET_TableData(1, data['seq'], 6, str(data['price_sell']), 0)
-        self.func_SET_TableData(1, data['seq'], 7, str(data['total_purchase']), 0)
-        self.func_SET_TableData(1, data['seq'], 8, str(data['total_evaluation']), 0)
-        self.func_SET_TableData(1, data['seq'], 9, str(data['temp_total']), 0)
-        self.func_SET_TableData(1, data['seq'], 10, str(data['total_fee']), 0)
-        self.func_SET_TableData(1, data['seq'], 11, str(data['total_sum']), 0)
-        if data['percent'] > 0 :
-            self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 1)
-        elif data['percent'] < 0 :
-            self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 2)
-        elif data['percent'] == 0 :
-            self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 0)
+        if data['lock'] == 1 :
+            self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(0,255,0))
+        elif data['lock'] == 0 :
+            self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
+        
+            self.func_SET_TableData(1, data['seq'], 4, str(data['cur_price']), 0)
+            self.func_SET_TableData(1, data['seq'], 5, str(data['price_buy']), 0)
+            self.func_SET_TableData(1, data['seq'], 6, str(data['price_sell']), 0)
+            self.func_SET_TableData(1, data['seq'], 7, str(data['total_purchase']), 0)
+            self.func_SET_TableData(1, data['seq'], 8, str(data['total_evaluation']), 0)
+            self.func_SET_TableData(1, data['seq'], 9, str(data['temp_total']), 0)
+            self.func_SET_TableData(1, data['seq'], 10, str(data['total_fee']), 0)
+            self.func_SET_TableData(1, data['seq'], 11, str(data['total_sum']), 0)
+            if data['percent'] > 0 :
+                self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 1)
+            elif data['percent'] < 0 :
+                self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 2)
+            elif data['percent'] == 0 :
+                self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 0)
+            self.func_SET_TableData(1, data['seq'], 13, str(data['step']), 0)
 
     def func_SET_db_table(self) :
         conn = sqlite3.connect("item_status.db")
@@ -312,6 +317,10 @@ class Kiwoom(QMainWindow, form_class):
         self.worker1.th_con.connect(self.th_connected)
         self.test_dict1.connect(self.worker1.dict_from_main)
         self.worker1.start()
+    
+    @pyqtSlot(str)
+    def delete_item(self, data) :
+        self.SetRealRemove("0101", data)
 
     def create_thread(self) :
         print("create threads")
@@ -320,7 +329,8 @@ class Kiwoom(QMainWindow, form_class):
         self.worker0 = module_get_summary2.Worker(0)
         self.worker0.th_con.connect(self.th_connected)
         self.test_dict0.connect(self.worker0.dict_from_main)
-        self.worker0.rp_dict.connect(self.rp_dict)
+        self.worker0.trans_dict.connect(self.rp_dict)
+        self.worker0.delete_item.connect(self.delete_item)
         self.worker0.start()
 
         while True :
@@ -333,7 +343,8 @@ class Kiwoom(QMainWindow, form_class):
         self.worker1 = module_get_summary2.Worker(1)
         self.worker1.th_con.connect(self.th_connected)
         self.test_dict1.connect(self.worker1.dict_from_main)
-        self.worker1.rp_dict.connect(self.rp_dict)
+        self.worker1.trans_dict.connect(self.rp_dict)
+        self.worker1.delete_item.connect(self.delete_item)
         self.worker1.start()
 
         while True :
@@ -346,7 +357,8 @@ class Kiwoom(QMainWindow, form_class):
         self.worker2 = module_get_summary2.Worker(2)
         self.worker2.th_con.connect(self.th_connected)
         self.test_dict2.connect(self.worker2.dict_from_main)
-        self.worker2.rp_dict.connect(self.rp_dict)
+        self.worker2.trans_dict.connect(self.rp_dict)
+        self.worker2.delete_item.connect(self.delete_item)
         self.worker2.start()
 
         while True :
@@ -359,7 +371,8 @@ class Kiwoom(QMainWindow, form_class):
         self.worker3 = module_get_summary2.Worker(3)
         self.worker3.th_con.connect(self.th_connected)
         self.test_dict3.connect(self.worker3.dict_from_main)
-        self.worker3.rp_dict.connect(self.rp_dict)
+        self.worker3.trans_dict.connect(self.rp_dict)
+        self.worker3.delete_item.connect(self.delete_item)
         self.worker3.start()
         
         while True :
@@ -828,11 +841,6 @@ class Kiwoom(QMainWindow, form_class):
         today = year + month + day
 
         return today
-    ## [START] login ##
-    def comm_connect(self):
-        self.kiwoom.dynamicCall("CommConnect()")
-        self.login_event_loop = QThread()
-        self.login_event_loop.start()
     def event_connect(self, err_code):
         if err_code == 0:
             timestamp = self.func_GET_CurrentTime()
@@ -842,26 +850,8 @@ class Kiwoom(QMainWindow, form_class):
             self.timer.start()
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Timer Thread Started")
-            self.login_event_loop.terminate()
-
-            print("LOGIN")
 
             # self.func_start_check()          # Aloha
-
-            # self.th = module_get_summary2.Worker()
-            # self.th.data_from_thread.connect(self.data_from_thread)
-            # self.test_msg.connect(self.th.data_from_main)
-            # self.test_dict.connect(self.th.dict_from_main)
-            # self.th.rp_dict.connect(self.rp_dict)
-            # self.th.start()
-
-            # QtTest.QTest.qWait(5000)
-
-            # self.th2 = module_get_summary2.Worker(2)
-            # self.th2.data_from_thread.connect(self.data_from_thread)
-            # self.test_msg.connect(self.th2.data_from_main)
-            # self.th2.start()
-
             
         else:
             print("Login Failed")
@@ -1016,32 +1006,36 @@ class Kiwoom(QMainWindow, form_class):
         # print("real slot : ", th_num, ", ", code)
         cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
         if cur_price != '' :
-            price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()
-            price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()
-            item_name = self.table_summary.item(th_num, 1).text()
-            own_count = self.table_summary.item(th_num, 2).text()
-            unit_price = self.table_summary.item(th_num, 3).text()
+            try :
+                price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()
+                price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()
+                item_name = self.table_summary.item(th_num, 1).text()
+                own_count = self.table_summary.item(th_num, 2).text()
+                unit_price = self.table_summary.item(th_num, 3).text()
 
-            test_dict = {}
+                test_dict = {}
+                
+                test_dict['item_code'] = code
+                test_dict['item_name'] = item_name
+                test_dict['own_count'] = int(own_count)
+                test_dict['unit_price'] = float(unit_price)
+                test_dict['cur_price'] = int(cur_price)
+                test_dict['price_buy'] = int(price_buy)
+                test_dict['price_sell'] = int(price_sell)
+
+                if th_num == 0 :
+                    self.test_dict0.emit(test_dict)
+                elif th_num == 1 :
+                    self.test_dict1.emit(test_dict)
+                elif th_num == 2 :
+                    self.test_dict2.emit(test_dict)
+                elif th_num == 3 :
+                    self.test_dict3.emit(test_dict)
+                elif th_num == 4 :
+                    self.test_dict4.emit(test_dict)
             
-            test_dict['item_code'] = code
-            test_dict['item_name'] = item_name
-            test_dict['own_count'] = int(own_count)
-            test_dict['unit_price'] = float(unit_price)
-            test_dict['cur_price'] = int(cur_price)
-            test_dict['price_buy'] = int(price_buy)
-            test_dict['price_sell'] = int(price_sell)
-
-            if th_num == 0 :
-                self.test_dict0.emit(test_dict)
-            elif th_num == 1 :
-                self.test_dict1.emit(test_dict)
-            elif th_num == 2 :
-                self.test_dict2.emit(test_dict)
-            elif th_num == 3 :
-                self.test_dict3.emit(test_dict)
-            elif th_num == 4 :
-                self.test_dict4.emit(test_dict)
+            except :
+                pass
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
