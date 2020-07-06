@@ -23,10 +23,10 @@ PASSWORD = "6458"
 
 class Worker(QThread):
     connected = 0
-    data_from_thread = pyqtSignal(int)
     trans_dict = pyqtSignal(dict)
     th_con = pyqtSignal(int)
     delete_item = pyqtSignal(str)
+    notice = pyqtSignal(dict)
 
     def __init__(self, seq):
         super().__init__()
@@ -56,17 +56,12 @@ class Worker(QThread):
             try:
                 print("con : ", self.connected)
                 if self.connected == 1:
-                    # self.th_con.emit(1)
+                    self.th_con.emit(1)
                     break
                 time.sleep(1)
             except:
                 pass
     
-    @pyqtSlot("PyQt_PyObject")
-    def data_from_main(self, data) :
-        print(self.seq, " : ", data)
-
-    # @pyqtSlot("PyQt_PyObject")
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
@@ -169,13 +164,153 @@ class Worker(QThread):
                                     print("make order : ", item_code, "SELL")
                                     self.func_ORDER_SELL_2(item_code, sell_qty, price)
 
-
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         if rqname == "opt10001_req":
             print(self.seq, " data received", rqname)
     def get_repeat_cnt(self, trcode, rqname):
         ret = self.worker.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
         return ret
+
+    
+
+        ################## judgement ###################
+    def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation) :
+        res = {}
+        # Add Water
+        if percent < PER_LOW and step < STEP_LIMIT :
+            V = int(price_buy)          # 매도 최우선가
+            A = total_purchase          # 총 매입금액
+            B = total_evaluation        # 총 평가금액
+            T = TAX
+            FB = FEE_BUY
+            FS = FEE_SELL
+            P = GOAL_PER
+
+            buy_qty = math.ceil((B-A-B*T-A*FB-B*FS-A*P) / (V*P + V*T + FB + FS))
+
+            res['judge'] = 1
+            res['buy_qty'] = buy_qty
+            res['buy_price'] = V
+
+            return res
+
+        # Sell & Buy
+        elif percent > PER_HI and step < STEP_LIMIT :
+            sell_qty = int(own_count / 2)
+            price = int(price_sell)
+
+            res['judge'] = 2
+            res['sell_qty'] = sell_qty
+            res['sell_price'] = price
+
+            return res
+        
+        # Full Sell
+        elif percent > PER_HI and step == STEP_LIMIT :
+            sell_qty = own_count
+            price = int(price_sell)
+
+            res['judge'] = 3
+            res['sell_qty'] = sell_qty
+            res['sell_price'] = price
+
+            return res
+
+        # STAY
+        else :
+            # cur_time = time.time()
+            # stay_time = int(self.stay_print_time[code])
+
+            res['judge'] = 0
+
+            return res
+            
+    ## 매수
+    def func_ORDER_BUY_2(self, item_code, qty, price) :
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "ORDER : BUY")
+
+        rqname = "RQ_TEST"
+        screen_no = "0101"
+        acc_no = ACCOUNT
+        order_type = 1
+        hogagb = "00"
+        orgorderno = ""
+        order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+                     [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
+        
+        today = self.func_GET_Today()
+        self.func_GET_Ordering(today)
+        self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
+    ## 매도
+    def func_ORDER_SELL_2(self, item_code, qty, price) :
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "ORDER : SELL")
+        
+        rqname = "RQ_TEST"
+        screen_no = "0101"
+        acc_no = ACCOUNT
+        order_type = 2
+        hogagb = "00"
+        orgorderno = ""
+        
+        order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+                     [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
+        
+        self.func_UPDATE_db_item(item_code, 2, 1)       # oerdered -> 1
+
+    def func_GET_Chejan_data(self, fid):
+        ret = self.kiwoom.dynamicCall("GetChejanData(int)", fid)
+        return ret
+    def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
+        order_id = item_code = item_name = trade_price = trade_amount = remained = trade_time = 'n'
+        if gubun == "0" :       
+            order_id = self.func_GET_Chejan_data(9203)      # 주문번호
+            item_code = self.func_GET_Chejan_data(9001)     # 종목코드
+            item_name = self.func_GET_Chejan_data(302)      # 종목명
+            trade_amount = self.func_GET_Chejan_data(911)   # 체결량
+            remained = self.func_GET_Chejan_data(902)       # 미체결
+            trade_time = self.func_GET_Chejan_data(908)      # 주문체결시간
+
+            # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
+            if remained == '0':         # 체결시
+                item_code = item_code.replace('A', '').strip()
+                step = self.func_GET_db_item(item_code, 1)
+                #### orderType 검사
+                orderType = self.func_GET_db_item(item_code, 3)
+
+                if orderType == 1 :         # add water
+                    print("chejan : add water")
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
+                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       # orderType -> 0
+                            new_step = step + 1
+                            if self.func_UPDATE_db_item(item_code, 1, new_step) == 1:
+                                self.lock = 0           # unlock
+
+                elif orderType == 2 :       # sell & buy 중 sell 완료
+                    print("chejan : sell&buy - sell")
+                    if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       # orderType -> 4
+                        # self.trans_dict.emit(self.rp_dict)
+                        self.lock = 0           ## unlock
+
+                elif orderType == 3 :       # full sell
+                    print("chejan : full sell")
+                    self.func_DELETE_db_item(item_code)
+                    notice = {}
+                    notice['type'] = 0
+                    notice['item_code'] = item_code
+                    notice['thread'] = self.seq
+                    self.notice.emit(notice)      ## delete item - 감시대상에서 삭제
+                    self.delete_item.emit(item_code)        ## 감시대상에서 삭제
+                    self.lock = 0
+
+                elif orderType == 4 :       # sell & buy 중 buy 완료
+                    print("chejan : sell&buy - buy")
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:      # ordered -> 0
+                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:  # orderType -> 0
+                            if self.func_UPDATE_db_item(item_code, 4, 0) == 1:       # trAmount -> 0
+                                self.lock = 0
+
 
     def func_GET_db_item(self, code, col):
         conn = sqlite3.connect("item_status.db")
@@ -257,136 +392,3 @@ class Worker(QThread):
         conn.commit()
         conn.close()
         print("data DELETED")
-
-        ################## judgement ###################
-    def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation) :
-        res = {}
-        # Add Water
-        if percent < PER_LOW and step < STEP_LIMIT :
-            V = int(price_buy)          # 매도 최우선가
-            A = total_purchase          # 총 매입금액
-            B = total_evaluation        # 총 평가금액
-            T = TAX
-            FB = FEE_BUY
-            FS = FEE_SELL
-            P = GOAL_PER
-
-            buy_qty = math.ceil((B-A-B*T-A*FB-B*FS-A*P) / (V*P + V*T + FB + FS))
-
-            res['judge'] = 1
-            res['buy_qty'] = buy_qty
-            res['buy_price'] = V
-
-            return res
-
-        # Sell & Buy
-        elif percent > PER_HI and step < STEP_LIMIT :
-            sell_qty = int(own_count / 2)
-            price = int(price_sell)
-
-            res['judge'] = 2
-            res['sell_qty'] = sell_qty
-            res['sell_price'] = price
-
-            return res
-        
-        # Full Sell
-        elif percent > PER_HI and step == STEP_LIMIT :
-            sell_qty = own_count
-            price = int(price_sell)
-
-            res['judge'] = 3
-            res['sell_qty'] = sell_qty
-            res['sell_price'] = price
-
-            return res
-
-        # STAY
-        else :
-            # cur_time = time.time()
-            # stay_time = int(self.stay_print_time[code])
-
-            res['judge'] = 0
-
-            return res
-            
-    ## 매수 ##
-    def func_ORDER_BUY_2(self, item_code, qty, price) :
-        timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "ORDER : BUY")
-
-        rqname = "RQ_TEST"
-        screen_no = "0101"
-        acc_no = ACCOUNT
-        order_type = 1
-        hogagb = "00"
-        orgorderno = ""
-        order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
-                     [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
-        
-        today = self.func_GET_Today()
-        self.func_GET_Ordering(today)
-        self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
-
-    def func_ORDER_SELL_2(self, item_code, qty, price) :
-        timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "ORDER : SELL")
-        
-        rqname = "RQ_TEST"
-        screen_no = "0101"
-        acc_no = ACCOUNT
-        order_type = 2
-        hogagb = "00"
-        orgorderno = ""
-        
-        order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
-                     [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
-        
-        self.func_UPDATE_db_item(item_code, 2, 1)       # oerdered -> 1
-
-    def func_GET_Chejan_data(self, fid):
-        ret = self.kiwoom.dynamicCall("GetChejanData(int)", fid)
-        return ret
-    def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
-        order_id = item_code = item_name = trade_price = trade_amount = remained = trade_time = 'n'
-        if gubun == "0" :       
-            order_id = self.func_GET_Chejan_data(9203)      # 주문번호
-            item_code = self.func_GET_Chejan_data(9001)     # 종목코드
-            item_name = self.func_GET_Chejan_data(302)      # 종목명
-            trade_amount = self.func_GET_Chejan_data(911)   # 체결량
-            remained = self.func_GET_Chejan_data(902)       # 미체결
-            trade_time = self.func_GET_Chejan_data(908)      # 주문체결시간
-
-            # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
-            if remained == '0':         # 체결시
-                item_code = item_code.replace('A', '').strip()
-                step = self.func_GET_db_item(item_code, 1)
-                #### orderType 검사
-                orderType = self.func_GET_db_item(item_code, 3)
-
-                if orderType == 1 :         # add water
-                    print("chejan : add water")
-                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
-                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       # orderType -> 0
-                            new_step = step + 1
-                            if self.func_UPDATE_db_item(item_code, 1, new_step) == 1:
-                                self.lock = 0           # unlock
-
-                elif orderType == 2 :       # sell & buy 중 sell 완료
-                    print("chejan : sell&buy - sell")
-                    if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       # orderType -> 4
-                        # self.trans_dict.emit(self.rp_dict)
-                        self.lock = 0           ## unlock
-
-                elif orderType == 3 :       # full sell
-                    print("chejan : full sell")
-                    self.func_DELETE_db_item(item_code)
-                    self.delete_item.emit(item_code)        ## 감시대상에서 삭제
-                    self.lock = 0
-
-                elif orderType == 4 :       # sell & buy 중 buy 완료
-                    print("chejan : sell&buy - buy")
-                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:      # ordered -> 0
-                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:  # orderType -> 0
-                            if self.func_UPDATE_db_item(item_code, 4, 0) == 1:       # trAmount -> 0
-                                self.lock = 0

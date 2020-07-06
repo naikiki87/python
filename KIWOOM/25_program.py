@@ -47,7 +47,7 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
 
-        # self.kiwoom.dynamicCall("CommConnect()")        ## aloha
+        self.kiwoom.dynamicCall("CommConnect()")        ## aloha
         
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
@@ -63,7 +63,7 @@ class Kiwoom(QMainWindow, form_class):
         self.list_th_connected = [0, 0, 0, 0, 0]
         self.cnt_call_hoga = 0
         self.cnt_tab_history = 0
-        self.flag_ItemInfo_click = 0
+        # self.flag_ItemInfo_click = 0
         self.flag_HistoryData_Auto = 0
         self.stay_print_time = {}
         self.flag_lock_init = 0
@@ -91,10 +91,6 @@ class Kiwoom(QMainWindow, form_class):
         self.func_SET_tableHISTORY()        # history table
         self.func_SET_tableORDER()          # order 현황 table
         self.func_SET_table_dailyprofit()   # dailyprofit table
-
-    @pyqtSlot(int)
-    def data_from_thread(self, data) :
-        print("Main - data from thread : ", data)
 
     @pyqtSlot(str)
     def update_times(self, data) :
@@ -313,69 +309,6 @@ class Kiwoom(QMainWindow, form_class):
             self.worker.get_item_info()
             self.worker2.get_item_info()
             QtTest.QTest.qWait(1000)
-    
-    @pyqtSlot(str)
-    def delete_item(self, data) :
-        self.SetRealRemove("0101", data)
-
-    def create_thread(self) :
-        print("create threads")
-        
-        self.th_seq = 0
-        self.worker0 = module_get_summary2.Worker(0)
-        self.worker0.th_con.connect(self.th_connected)
-        self.test_dict0.connect(self.worker0.dict_from_main)
-        self.worker0.trans_dict.connect(self.rp_dict)
-        self.worker0.delete_item.connect(self.delete_item)
-        self.worker0.start()
-
-        while True :
-            if self.list_th_connected[self.th_seq] == 1:
-                print("create threads : ", self.th_seq)
-                break
-            QtTest.QTest.qWait(100)
-
-        self.th_seq = 1
-        self.worker1 = module_get_summary2.Worker(1)
-        self.worker1.th_con.connect(self.th_connected)
-        self.test_dict1.connect(self.worker1.dict_from_main)
-        self.worker1.trans_dict.connect(self.rp_dict)
-        self.worker1.delete_item.connect(self.delete_item)
-        self.worker1.start()
-
-        while True :
-            if self.list_th_connected[self.th_seq] == 1:
-                print("create threads : ", self.th_seq)
-                break
-            QtTest.QTest.qWait(100)
-
-        self.th_seq = 2
-        self.worker2 = module_get_summary2.Worker(2)
-        self.worker2.th_con.connect(self.th_connected)
-        self.test_dict2.connect(self.worker2.dict_from_main)
-        self.worker2.trans_dict.connect(self.rp_dict)
-        self.worker2.delete_item.connect(self.delete_item)
-        self.worker2.start()
-
-        while True :
-            if self.list_th_connected[self.th_seq] == 1:
-                print("create threads : ", self.th_seq)
-                break
-            QtTest.QTest.qWait(100)
-
-        self.th_seq = 3
-        self.worker3 = module_get_summary2.Worker(3)
-        self.worker3.th_con.connect(self.th_connected)
-        self.test_dict3.connect(self.worker3.dict_from_main)
-        self.worker3.trans_dict.connect(self.rp_dict)
-        self.worker3.delete_item.connect(self.delete_item)
-        self.worker3.start()
-        
-        while True :
-            if self.list_th_connected[self.th_seq] == 1:
-                print("create threads : ", self.th_seq)
-                break
-            QtTest.QTest.qWait(100)
 
     def btn_test_2(self):
         print("btn test2")
@@ -383,6 +316,88 @@ class Kiwoom(QMainWindow, form_class):
         temp_dict = {}
         temp_dict['a'] = 10
         self.test_dict0.emit(temp_dict)
+
+    def delete_item(self, item_code, thread) :
+        self.SetRealRemove("0101", item_code)
+        del self.item_slot[thread]
+
+    @pyqtSlot(dict)
+    def notice_from_worker(self, data) :
+        print("notice from worker : ", data)
+        noti_type = data['type']
+        if noti_type == 0:
+            item_code = data['item_code']
+            thread = data['thread']
+            self.delete_item(item_code, thread)
+    def create_thread(self) :
+        print("create threads")
+        ## 1st        
+        self.th_seq = 0
+        self.worker0 = module_get_summary2.Worker(0)
+        self.worker0.th_con.connect(self.th_connected)
+        self.test_dict0.connect(self.worker0.dict_from_main)
+        self.worker0.trans_dict.connect(self.rp_dict)
+        self.worker0.notice.connect(self.notice_from_worker)
+        self.worker0.start()
+        while True :
+            print("here : ", self.list_th_connected[self.th_seq])
+            if self.list_th_connected[self.th_seq] == 1:
+                print("create threads : ", self.th_seq)
+                break
+            QtTest.QTest.qWait(500)
+        ## 2nd
+        self.th_seq = 1
+        self.worker1 = module_get_summary2.Worker(1)
+        self.worker1.th_con.connect(self.th_connected)
+        self.test_dict1.connect(self.worker1.dict_from_main)
+        self.worker1.trans_dict.connect(self.rp_dict)
+        self.worker1.notice.connect(self.notice_from_worker)
+        self.worker1.start()
+        while True :
+            if self.list_th_connected[self.th_seq] == 1:
+                print("create threads : ", self.th_seq)
+                break
+            QtTest.QTest.qWait(500)
+        ## 3rd
+        self.th_seq = 2
+        self.worker2 = module_get_summary2.Worker(2)
+        self.worker2.th_con.connect(self.th_connected)
+        self.test_dict2.connect(self.worker2.dict_from_main)
+        self.worker2.trans_dict.connect(self.rp_dict)
+        self.worker2.notice.connect(self.notice_from_worker)
+        self.worker2.start()
+        while True :
+            if self.list_th_connected[self.th_seq] == 1:
+                print("create threads : ", self.th_seq)
+                break
+            QtTest.QTest.qWait(500)
+        ## 4th
+        self.th_seq = 3
+        self.worker3 = module_get_summary2.Worker(3)
+        self.worker3.th_con.connect(self.th_connected)
+        self.test_dict3.connect(self.worker3.dict_from_main)
+        self.worker3.trans_dict.connect(self.rp_dict)
+        self.worker3.notice.connect(self.notice_from_worker)
+        self.worker3.start()
+        while True :
+            if self.list_th_connected[self.th_seq] == 1:
+                print("create threads : ", self.th_seq)
+                break
+            QtTest.QTest.qWait(500)
+
+        ## 5th
+        # self.th_seq = 4
+        # self.worker4 = module_get_summary2.Worker(4)
+        # self.worker4.th_con.connect(self.th_connected)
+        # self.test_dict4.connect(self.worker4.dict_from_main)
+        # self.worker4.trans_dict.connect(self.rp_dict)
+        # self.worker4.notice.connect(self.notice_from_worker)
+        # self.worker4.start()
+        # while True :
+        #     if self.list_th_connected[self.th_seq] == 1:
+        #         print("create threads : ", self.th_seq)
+        #         break
+        #     QtTest.QTest.qWait(500)
 
     def func_start_check(self) :
         self.table_summary.clearContents()      ## table clear
@@ -426,7 +441,8 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SET_TableData(1, i, 2, str(int(owncount)), 0)
             self.func_SET_TableData(1, i, 3, str(round(float(unit_price), 1)), 0)
 
-            self.item_slot[item_code] = i       ## slot 번호 할당
+            # self.item_slot[item_code] = i       ## slot 번호 할당
+            self.item_slot[i] = item_code
             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
             self.item_codes.append(item_code)
 
@@ -621,21 +637,6 @@ class Kiwoom(QMainWindow, form_class):
                 # restart checking
                 self.func_start_check()
 
-    def GET_hoga(self, item_code):
-        # hoga 창에 호가 입력
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SET_hoga", "opt10004", 0, "0101")
-
-        # item information 호출
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
-    def SET_hoga(self, rqname, trcode, recordname) :
-        hoga_buy = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', '')
-        hoga_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', '')
-
-        self.wid_buy_price.setText(hoga_buy)
-        self.wid_sell_price.setText(hoga_sell)
-
     def func_GET_Deposit(self) :
         acc_no = ACCOUNT
         acc_pw = PASSWORD
@@ -778,21 +779,27 @@ class Kiwoom(QMainWindow, form_class):
             pass
 
     def func_GET_ItemInfo(self, code):
-        if self.flag_ItemInfo_click == 0:
-            code = self.code_edit.text()
-        else :
-            code = code
-            self.flag_ItemInfo_click = 0
-
-        self.GET_hoga(code)
+        print("clicked item info")
+        try :
+            item_code = self.code_edit.text()
+            self.GET_hoga(item_code)
+        except :
+            pass
     def func_GET_ItemInfo_by_click(self, index) :
         row = index.row()
         try:
             item_code = self.table_summary.item(row, 0).text()
             item_code = item_code.replace("A", "")
-            self.flag_ItemInfo_click = 1
+            # self.flag_ItemInfo_click = 1
             self.code_edit.setText(item_code.strip())
-            self.func_GET_ItemInfo(item_code.strip())
+
+            hoga_buy = self.table_summary.item(row, 5)
+            hoga_sell = self.table_summary.item(row, 6)
+            self.wid_buy_price.setText(hoga_buy)
+            self.wid_sell_price.setText(hoga_sell)
+
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
         except:
             pass
     def func_SHOW_ItemInfo(self, rqname, trcode, recordname):
@@ -812,9 +819,24 @@ class Kiwoom(QMainWindow, form_class):
         self.te_iteminfo_vol.setText(volume.strip())
         self.te_iteminfo_percent.setText(percent.strip() + " %")
 
-        self.SetRealRemove("ALL", "ALL")
-        if self.flag_checking == 1 :
-            self.func_start_check()
+        # self.SetRealRemove("ALL", "ALL")
+        # if self.flag_checking == 1 :
+        #     self.func_start_check()
+
+    def GET_hoga(self, item_code):
+        # hoga 창에 호가 입력
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SET_hoga", "opt10004", 0, "0101")
+
+        # item information 호출
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
+    def SET_hoga(self, rqname, trcode, recordname) :
+        hoga_buy = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', '')
+        hoga_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', '')
+
+        self.wid_buy_price.setText(hoga_buy)
+        self.wid_sell_price.setText(hoga_sell)
 
     def func_GET_CurrentTime(self) :
         year = strftime("%Y", localtime())
@@ -852,7 +874,6 @@ class Kiwoom(QMainWindow, form_class):
         else:
             print("Login Failed")
     
-    ## [END] login ##
     def func_SET_tableSUMMARY(self):
         row_count = 5
         col_count = 14
@@ -946,7 +967,6 @@ class Kiwoom(QMainWindow, form_class):
         self.table_dailyprofit.setHorizontalHeaderItem(3, QTableWidgetItem("매도손익"))
         self.table_dailyprofit.setHorizontalHeaderItem(4, QTableWidgetItem("수수료"))
         self.table_dailyprofit.setHorizontalHeaderItem(5, QTableWidgetItem("세금"))
-
     def func_SET_TableData(self, table_no, row, col, content, color):
         item = QTableWidgetItem(content)
         item.setTextAlignment(4)    # 가운데 정렬
@@ -998,8 +1018,10 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00009_man":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
-        th_num = self.item_slot[code]
-        # print("real slot : ", th_num, ", ", code)
+        for slot, item_code in self.item_slot.items() :
+            if item_code == code :
+                th_num = slot
+
         cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
         if cur_price != '' :
             try :
