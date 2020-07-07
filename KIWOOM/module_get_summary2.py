@@ -25,7 +25,6 @@ class Worker(QThread):
     connected = 0
     trans_dict = pyqtSignal(dict)
     th_con = pyqtSignal(int)
-    delete_item = pyqtSignal(str)
     notice = pyqtSignal(dict)
 
     def __init__(self, seq):
@@ -62,20 +61,50 @@ class Worker(QThread):
     
     @pyqtSlot(dict)
     def che_result(self, data) :
+        item_code = data['item_code']
+        print("Che result : ", item_code)
         if data['th_num'] == self.seq :
-            # if data['order_id'] == aaaaa :
             print(self.seq, " CHEJAN DATA RECEIVED")
-            # self.lock = 0
+
+            orderType = self.func_GET_db_item(item_code, 3)
+
+            if orderType == 1 :
+                cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
+                new_step = cur_step + 1
+                if self.func_UPDATE_db_item(item_code, 1, new_step) == 1 :   ## update step
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                            self.lock = 0           ## unlock
+
+            elif orderType == 2 :
+                if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       ## orderType -> 4
+                    self.lock = 0           ## unlock
+
+            elif orderType == 3 :
+                self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
+                notice = {}
+                notice['type'] = 0      ## notice : item delete
+                notice['item_code'] = item_code
+                notice['thread'] = self.seq
+                self.notice.emit(notice)    ## NOTICE
+
+            elif orderType == 4 :
+                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                    if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                        self.lock = 0           ## unlock
+
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
         if self.lock == 0 :
             self.lock = 1       ## lock
-            if self.func_GET_db_item(item_code, 1) == "none" :      ## db init
+            step = self.func_GET_db_item(item_code, 1)
+            if step == "none" :
                 self.func_INSERT_db_item(item_code, 0, 0, 0, 0)       # db initialize
                 self.lock = 0
             else :
+                ## SHOW ##
                 own_count = data['own_count']
                 unit_price = data['unit_price']
                 cur_price = data['cur_price']
@@ -96,7 +125,7 @@ class Worker(QThread):
                 self.rp_dict = {}
                 self.rp_dict.update(data)
 
-                self.rp_dict['lock'] = 1
+                self.rp_dict['ordered'] = 0
                 self.rp_dict['total_purchase'] = total_purchase
                 self.rp_dict['total_evaluation'] = total_evaluation
                 self.rp_dict['temp_total'] = temp_total
@@ -104,87 +133,94 @@ class Worker(QThread):
                 self.rp_dict['total_sum'] = total_sum
                 self.rp_dict['percent'] = percent
                 self.rp_dict['step'] = step
-                
                 self.rp_dict['seq'] = self.seq
+
+                self.trans_dict.emit(self.rp_dict)       ## SHOW
 
                 orderType = self.func_GET_db_item(item_code, 3)
 
                 if orderType == 4 :
-                    buy_qty = self.func_GET_db_item(item_code, 4)
-                    buy_price = price_buy
+                    self.rp_dict['ordered'] = 1
+                    self.rp_dict['seq'] = self.seq
+                    self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
 
-                    if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered 변경(-> 1)
-                        if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       ## orderType -> 4
-                            if MAKE_ORDER == 1:
-                                print("make order : ", item_code, "BUY")
-                                self.ORDER_BUY(item_code, buy_qty, buy_price)    # make order
+                    qty = self.func_GET_db_item(item_code, 4)       ## DB : qty <- trAmount
+                    price = price_buy
+
+                    if MAKE_ORDER == 1:
+                        print("make order : ", item_code, "BUY")
+                        self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
 
                 else :
                     res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation)
                     judge_type = res['judge']
 
-                    if item_code == "015760":
-                        print(item_code, "JUDGE : TEST BUY")
-                        buy_qty = 1
-                        buy_price = price_buy
-                        self.ORDER_BUY(item_code, buy_qty, buy_price)    # make order
-                    elif item_code == "006120" :
-                        print(item_code, "JUDGE : TEST SELL")
-                        sell_qty = 1
-                        sell_price = price_sell
-                        self.ORDER_SELL(item_code, sell_qty, sell_price)
-
-                    else :
-                        print(item_code, "judge : TEST STAY")
-                        self.rp_dict['lock'] = 0
+                    if judge_type == 0 :        ## stay
+                        print(item_code, "judge : 0")
                         self.lock = 0
-                        self.trans_dict.emit(self.rp_dict)
 
-                        # if judge_type == 0 :        ## stay
-                        #     print(item_code, "judge : 0")
-                        #     self.rp_dict['lock'] = 0
-                        #     self.lock = 0
-                        #     self.trans_dict.emit(self.rp_dict)
+                    elif judge_type == 1 :      ## add water
+                        print(item_code, "judge : 1")
 
-                        # elif judge_type == 1 :      ## add water
-                        #     print(item_code, "judge : 1")
-                        #     self.trans_dict.emit(self.rp_dict)      ## show status
+                        qty = res['buy_qty']
+                        price = res['buy_price']
 
-                        #     buy_qty = res['buy_qty']
-                        #     buy_price = res['buy_price']
+                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                            if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                                if MAKE_ORDER == 1:
+                                    print("make order : ", item_code, "BUY")
+                                    self.indicate_ordered()         ## INDICATE : ordered
+                                    self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
 
-                        #     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered 변경(-> 1)
-                        #         if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType을 물타기(1) 로 변경
-                        #             if MAKE_ORDER == 1:
-                        #                 print("make order : ", item_code, "BUY")
-                        #                 self.ORDER_BUY(item_code, buy_qty, buy_price)    # make order
+                    elif judge_type == 2 :      ## sell & buy
+                        print(item_code, "judge : 2")
 
-                        # elif judge_type == 2 :      ## sell & buy
-                        #     print(item_code, "judge : 2")
-                        #     self.trans_dict.emit(self.rp_dict)
+                        qty = res['sell_qty']
+                        price = res['sell_price']
 
-                        #     sell_qty = res['sell_qty']
-                        #     price = res['sell_price']
+                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                            if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
+                                if self.func_UPDATE_db_item(item_code, 4, qty) == 1:    ## 판매수량 -> trAmount
+                                    if MAKE_ORDER == 1:
+                                        print("make order : ", item_code, "SELL")
+                                        self.indicate_ordered()         ## INDICATE : ordered
+                                        self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
 
-                        #     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                        #         if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
-                        #             if self.func_UPDATE_db_item(item_code, 4, sell_qty) == 1:    ## 판매수량 -> trAmount
-                        #                 if MAKE_ORDER == 1:
-                        #                     print("make order : ", item_code, "SELL")
-                        #                     self.ORDER_SELL(item_code, sell_qty, price)
+                    elif judge_type == 3 :      ## full_sell
+                        print(item_code, "judge : 3")
 
-                        # elif judge_type == 3 :      ## full_sell
-                        #     print(item_code, "judge : 3")
-                        #     self.trans_dict.emit(self.rp_dict)
+                        qty = res['sell_qty']
+                        price = res['sell_price']
 
-                        #     sell_qty = res['sell_qty']
-                        #     price = res['sell_price']
+                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                            if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                                if MAKE_ORDER == 1:
+                                    print("make order : ", item_code, "SELL")
+                                    self.indicate_ordered()         ## INDICATE : ordered
+                                    self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
 
-                        #     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                        #         if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
-                        #             if MAKE_ORDER == 1:
-                        #                 print("make order : ", item_code, "SELL")
-                        #                 self.ORDER_SELL(item_code, sell_qty, price)
+                    # if item_code == "015760":
+                    #     print(item_code, "JUDGE : TEST BUY")
+                    #     buy_qty = 1
+                    #     buy_price = price_buy
+                    #     self.ORDER_BUY(item_code, buy_qty, buy_price)    # make order
+                    # elif item_code == "006120" :
+                    #     print(item_code, "JUDGE : TEST SELL")
+                    #     sell_qty = 1
+                    #     sell_price = price_sell
+                    #     self.ORDER_SELL(item_code, sell_qty, sell_price)
+
+                    # else :
+                    #     print(item_code, "judge : TEST STAY")
+                    #     self.rp_dict['ordered'] = 0
+                    #     self.lock = 0
+                    #     self.trans_dict.emit(self.rp_dict)
+
+                        
+    def indicate_ordered(self) :
+        self.rp_dict['ordered'] = 1
+        self.rp_dict['seq'] = self.seq
+        self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
 
     def get_repeat_cnt(self, trcode, rqname):
         ret = self.worker.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)

@@ -62,6 +62,7 @@ class Kiwoom(QMainWindow, form_class):
 
     def init_ENV(self) :
         ## flag setting
+        self.set_deposit = 0
         self.cnt_thread = 0
         self.item_slot = {}
         self.list_th_connected = [0, 0, 0, 0, 0]
@@ -116,9 +117,9 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(dict)
     def rp_dict(self, data):
         # print("main : ", data)
-        if data['lock'] == 1 :
+        if data['ordered'] == 1 :
             self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(0,255,0))
-        elif data['lock'] == 0 :
+        elif data['ordered'] == 0 :
             self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
         
             self.func_SET_TableData(1, data['seq'], 4, str(data['cur_price']), 0)
@@ -309,9 +310,6 @@ class Kiwoom(QMainWindow, form_class):
 
         QtTest.QTest.qWait(3000)
 
-
-        
-
     def btn_test_2(self):
         print("btn test2")
 
@@ -424,8 +422,8 @@ class Kiwoom(QMainWindow, form_class):
         ## ordering load
         self.func_GET_Ordering(today)
 
-        ## deposit load
-        self.func_GET_Deposit()
+        # ## deposit load
+        # self.func_GET_Deposit()
 
         ## daily profit load
         self.func_GET_DailyProfit(0)
@@ -487,11 +485,8 @@ class Kiwoom(QMainWindow, form_class):
 
         today = self.func_GET_Today()
         self.func_GET_Ordering(today)
-
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Monitoring STOP")
-
-        return 1
 
     ## 매수 ##
     def func_ORDER_BUY_click(self) :
@@ -612,6 +607,14 @@ class Kiwoom(QMainWindow, form_class):
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
             if remained == '0':         # 체결시
+                self.func_GET_Deposit()     ## 예수금 갱신
+                while True :
+                    if self.set_deposit == 1:
+                        print("lastest deposit")
+                        self.set_deposit = 0
+                        break
+                    QtTest.QTest.qWait(100)
+
                 self.func_stop_check()
                 
                 item_code = item_code.replace('A', '').strip()
@@ -624,6 +627,7 @@ class Kiwoom(QMainWindow, form_class):
 
                 che_dict = {}
                 che_dict['th_num'] = th_num
+                che_dict['item_code'] = item_code
                 che_dict['order_id'] = order_id
                 che_dict['res'] = 1
 
@@ -654,7 +658,11 @@ class Kiwoom(QMainWindow, form_class):
         # str('{0:,}'.format())
         self.wid_show_deposit.setText(str('{0:,}'.format(int(deposit))))
         self.wid_show_deposit_d1.setText(str('{0:,}'.format(int(d_1))))
-        self.wid_show_deposit_d2.setText(str('{0:,}'.format(int(d_2))))
+        # self.wid_show_deposit_d2.setText(str('{0:,}'.format(int(d_2))))
+
+        self.wid_show_deposit_d2.setText(str(int(d_2)))
+
+        self.set_deposit = 1
 
     def func_GET_DailyProfit(self, input) :
         acc_no = ACCOUNT
@@ -872,6 +880,15 @@ class Kiwoom(QMainWindow, form_class):
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Timer Thread Started")
 
+            self.func_GET_Deposit()
+
+            while True :
+                if self.set_deposit == 1:
+                    print("lastest deposit")
+                    self.set_deposit = 0
+                    break
+                QtTest.QTest.qWait(100)
+
             # self.func_start_check()          # Aloha
             
         else:
@@ -1044,6 +1061,7 @@ class Kiwoom(QMainWindow, form_class):
                 test_dict['cur_price'] = int(cur_price)
                 test_dict['price_buy'] = int(price_buy)
                 test_dict['price_sell'] = int(price_sell)
+                test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
 
                 if th_num == 0 :
                     self.test_dict0.emit(test_dict)
