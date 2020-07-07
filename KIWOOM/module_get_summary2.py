@@ -251,6 +251,7 @@ class Worker(QThread):
             
     ## 매수
     def func_ORDER_BUY_2(self, item_code, qty, price) :
+        print("thread's buy")
         timestamp = self.func_GET_CurrentTime()
         print(timestamp + "ORDER : BUY")
         # self.text_edit.append(timestamp + "ORDER : BUY")
@@ -267,6 +268,7 @@ class Worker(QThread):
         self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
     ## 매도
     def func_ORDER_SELL_2(self, item_code, qty, price) :
+        print("thread's sell")
         timestamp = self.func_GET_CurrentTime()
         print(timestamp + "ORDER : SELL")
         # self.text_edit.append(timestamp + "ORDER : SELL")
