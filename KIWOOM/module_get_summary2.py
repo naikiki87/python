@@ -3,7 +3,7 @@ import time
 import pandas as pd
 import sqlite3
 import math
-
+from time import localtime, strftime
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 from PyQt5.QtGui import *
@@ -37,7 +37,7 @@ class Worker(QThread):
 
         self.worker.OnEventConnect.connect(self.event_connect)
         self.worker.OnReceiveTrData.connect(self.receive_tr_data)
-        self.worker.OnReceiveChejanData.connect(self.func_RECEIVE_Chejan_data)
+        # self.worker.OnReceiveChejanData.connect(self.func_RECEIVE_Chejan_data)
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -62,6 +62,13 @@ class Worker(QThread):
             except:
                 pass
     
+    @pyqtSlot(dict)
+    def che_result(self, data) :
+        if data['th_num'] == self.seq :
+            # if data['order_id'] == aaaaa :
+            print(self.seq, " CHEJAN DATA RECEIVED")
+            # self.lock = 0
+
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
@@ -118,51 +125,68 @@ class Worker(QThread):
                     res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation)
                     judge_type = res['judge']
 
-                    if judge_type == 0 :        ## stay
-                        print(item_code, "judge : 0")
+                    if item_code == "015760":
+                        print(item_code, "JUDGE : TEST BUY")
+                        buy_qty = 1
+                        buy_price = price_buy
+                        self.func_ORDER_BUY_2(item_code, buy_qty, buy_price)    # make order
+                    elif item_code == "006120" :
+                        print(item_code, "JUDGE : TEST SELL")
+                        sell_qty = 1
+                        sell_price = price_sell
+                        self.func_ORDER_SELL_2(item_code, sell_qty, sell_price)
+
+                    else :
+                        print(item_code, "judge : TEST STAY")
                         self.rp_dict['lock'] = 0
                         self.lock = 0
                         self.trans_dict.emit(self.rp_dict)
 
-                    elif judge_type == 1 :      ## add water
-                        print(item_code, "judge : 1")
-                        self.trans_dict.emit(self.rp_dict)      ## show status
+                        # if judge_type == 0 :        ## stay
+                        #     print(item_code, "judge : 0")
+                        #     self.rp_dict['lock'] = 0
+                        #     self.lock = 0
+                        #     self.trans_dict.emit(self.rp_dict)
 
-                        buy_qty = res['buy_qty']
-                        buy_price = res['buy_price']
+                        # elif judge_type == 1 :      ## add water
+                        #     print(item_code, "judge : 1")
+                        #     self.trans_dict.emit(self.rp_dict)      ## show status
 
-                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered 변경(-> 1)
-                            if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType을 물타기(1) 로 변경
-                                if MAKE_ORDER == 1:
-                                    print("make order : ", item_code, "BUY")
-                                    self.func_ORDER_BUY_2(item_code, buy_qty, buy_price)    # make order
+                        #     buy_qty = res['buy_qty']
+                        #     buy_price = res['buy_price']
 
-                    elif judge_type == 2 :      ## sell & buy
-                        print(item_code, "judge : 2")
-                        self.trans_dict.emit(self.rp_dict)
+                        #     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered 변경(-> 1)
+                        #         if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType을 물타기(1) 로 변경
+                        #             if MAKE_ORDER == 1:
+                        #                 print("make order : ", item_code, "BUY")
+                        #                 self.func_ORDER_BUY_2(item_code, buy_qty, buy_price)    # make order
 
-                        sell_qty = res['sell_qty']
-                        price = res['sell_price']
+                        # elif judge_type == 2 :      ## sell & buy
+                        #     print(item_code, "judge : 2")
+                        #     self.trans_dict.emit(self.rp_dict)
 
-                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                            if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
-                                if self.func_UPDATE_db_item(item_code, 4, sell_qty) == 1:    ## 판매수량 -> trAmount
-                                    if MAKE_ORDER == 1:
-                                        print("make order : ", item_code, "SELL")
-                                        self.func_ORDER_SELL_2(item_code, sell_qty, price)
+                        #     sell_qty = res['sell_qty']
+                        #     price = res['sell_price']
 
-                    elif judge_type == 3 :      ## full_sell
-                        print(item_code, "judge : 3")
-                        self.trans_dict.emit(self.rp_dict)
+                        #     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                        #         if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
+                        #             if self.func_UPDATE_db_item(item_code, 4, sell_qty) == 1:    ## 판매수량 -> trAmount
+                        #                 if MAKE_ORDER == 1:
+                        #                     print("make order : ", item_code, "SELL")
+                        #                     self.func_ORDER_SELL_2(item_code, sell_qty, price)
 
-                        sell_qty = res['sell_qty']
-                        price = res['sell_price']
+                        # elif judge_type == 3 :      ## full_sell
+                        #     print(item_code, "judge : 3")
+                        #     self.trans_dict.emit(self.rp_dict)
 
-                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                            if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
-                                if MAKE_ORDER == 1:
-                                    print("make order : ", item_code, "SELL")
-                                    self.func_ORDER_SELL_2(item_code, sell_qty, price)
+                        #     sell_qty = res['sell_qty']
+                        #     price = res['sell_price']
+
+                        #     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                        #         if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                        #             if MAKE_ORDER == 1:
+                        #                 print("make order : ", item_code, "SELL")
+                        #                 self.func_ORDER_SELL_2(item_code, sell_qty, price)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         if rqname == "opt10001_req":
@@ -228,7 +252,8 @@ class Worker(QThread):
     ## 매수
     def func_ORDER_BUY_2(self, item_code, qty, price) :
         timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "ORDER : BUY")
+        print(timestamp + "ORDER : BUY")
+        # self.text_edit.append(timestamp + "ORDER : BUY")
 
         rqname = "RQ_TEST"
         screen_no = "0101"
@@ -236,16 +261,15 @@ class Worker(QThread):
         order_type = 1
         hogagb = "00"
         orgorderno = ""
-        order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+        order = self.worker.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
         
-        today = self.func_GET_Today()
-        self.func_GET_Ordering(today)
         self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
     ## 매도
     def func_ORDER_SELL_2(self, item_code, qty, price) :
         timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "ORDER : SELL")
+        print(timestamp + "ORDER : SELL")
+        # self.text_edit.append(timestamp + "ORDER : SELL")
         
         rqname = "RQ_TEST"
         screen_no = "0101"
@@ -254,62 +278,65 @@ class Worker(QThread):
         hogagb = "00"
         orgorderno = ""
         
-        order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+        order = self.worker.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
         
         self.func_UPDATE_db_item(item_code, 2, 1)       # oerdered -> 1
 
-    def func_GET_Chejan_data(self, fid):
-        ret = self.kiwoom.dynamicCall("GetChejanData(int)", fid)
-        return ret
-    def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
-        order_id = item_code = item_name = trade_price = trade_amount = remained = trade_time = 'n'
-        if gubun == "0" :       
-            order_id = self.func_GET_Chejan_data(9203)      # 주문번호
-            item_code = self.func_GET_Chejan_data(9001)     # 종목코드
-            item_name = self.func_GET_Chejan_data(302)      # 종목명
-            trade_amount = self.func_GET_Chejan_data(911)   # 체결량
-            remained = self.func_GET_Chejan_data(902)       # 미체결
-            trade_time = self.func_GET_Chejan_data(908)      # 주문체결시간
+    # def func_GET_Chejan_data(self, fid):
+    #     ret = self.worker.dynamicCall("GetChejanData(int)", fid)
+    #     return ret
+    # def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
+    #     order_id = item_code = item_name = trade_price = trade_amount = remained = trade_time = 'n'
+    #     if gubun == "0" :       
+    #         order_id = self.func_GET_Chejan_data(9203)      # 주문번호
+    #         item_code = self.func_GET_Chejan_data(9001)     # 종목코드
+    #         item_name = self.func_GET_Chejan_data(302)      # 종목명
+    #         trade_amount = self.func_GET_Chejan_data(911)   # 체결량
+    #         remained = self.func_GET_Chejan_data(902)       # 미체결
+    #         trade_time = self.func_GET_Chejan_data(908)      # 주문체결시간
 
-            # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
-            if remained == '0':         # 체결시
-                item_code = item_code.replace('A', '').strip()
-                step = self.func_GET_db_item(item_code, 1)
-                #### orderType 검사
-                orderType = self.func_GET_db_item(item_code, 3)
+    #         # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
+    #         if remained == '0':         # 체결시
+    #             item_code = item_code.replace('A', '').strip()
+    #             if item_code == "015760" :
+    #                 print("CHEJAN : ", self.seq)
+    #                 self.lock = 1
+    #             step = self.func_GET_db_item(item_code, 1)
+    #             #### orderType 검사
+    #             orderType = self.func_GET_db_item(item_code, 3)
 
-                if orderType == 1 :         # add water
-                    print("chejan : add water")
-                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
-                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       # orderType -> 0
-                            new_step = step + 1
-                            if self.func_UPDATE_db_item(item_code, 1, new_step) == 1:
-                                self.lock = 0           # unlock
+    #             if orderType == 1 :         # add water
+    #                 print("chejan : add water")
+    #                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
+    #                     if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       # orderType -> 0
+    #                         new_step = step + 1
+    #                         if self.func_UPDATE_db_item(item_code, 1, new_step) == 1:
+    #                             self.lock = 0           # unlock
 
-                elif orderType == 2 :       # sell & buy 중 sell 완료
-                    print("chejan : sell&buy - sell")
-                    if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       # orderType -> 4
-                        # self.trans_dict.emit(self.rp_dict)
-                        self.lock = 0           ## unlock
+    #             elif orderType == 2 :       # sell & buy 중 sell 완료
+    #                 print("chejan : sell&buy - sell")
+    #                 if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       # orderType -> 4
+    #                     # self.trans_dict.emit(self.rp_dict)
+    #                     self.lock = 0           ## unlock
 
-                elif orderType == 3 :       # full sell
-                    print("chejan : full sell")
-                    self.func_DELETE_db_item(item_code)
-                    notice = {}
-                    notice['type'] = 0
-                    notice['item_code'] = item_code
-                    notice['thread'] = self.seq
-                    self.notice.emit(notice)      ## delete item - 감시대상에서 삭제
-                    self.delete_item.emit(item_code)        ## 감시대상에서 삭제
-                    self.lock = 0
+    #             elif orderType == 3 :       # full sell
+    #                 print("chejan : full sell")
+    #                 self.func_DELETE_db_item(item_code)
+    #                 notice = {}
+    #                 notice['type'] = 0
+    #                 notice['item_code'] = item_code
+    #                 notice['thread'] = self.seq
+    #                 self.notice.emit(notice)      ## delete item - 감시대상에서 삭제
+    #                 self.delete_item.emit(item_code)        ## 감시대상에서 삭제
+    #                 self.lock = 0
 
-                elif orderType == 4 :       # sell & buy 중 buy 완료
-                    print("chejan : sell&buy - buy")
-                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:      # ordered -> 0
-                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:  # orderType -> 0
-                            if self.func_UPDATE_db_item(item_code, 4, 0) == 1:       # trAmount -> 0
-                                self.lock = 0
+    #             elif orderType == 4 :       # sell & buy 중 buy 완료
+    #                 print("chejan : sell&buy - buy")
+    #                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:      # ordered -> 0
+    #                     if self.func_UPDATE_db_item(item_code, 3, 0) == 1:  # orderType -> 0
+    #                         if self.func_UPDATE_db_item(item_code, 4, 0) == 1:       # trAmount -> 0
+    #                             self.lock = 0
 
 
     def func_GET_db_item(self, code, col):
@@ -392,3 +419,15 @@ class Worker(QThread):
         conn.commit()
         conn.close()
         print("data DELETED")
+
+    def func_GET_CurrentTime(self) :
+        year = strftime("%Y", localtime())
+        month = strftime("%m", localtime())
+        day = strftime("%d", localtime())
+        hour = strftime("%H", localtime())
+        cmin = strftime("%M", localtime())
+        sec = strftime("%S", localtime())
+
+        now = "[" + year + "/" + month +"/" + day + " " + hour + ":" + cmin + ":" + sec + "] "
+
+        return now

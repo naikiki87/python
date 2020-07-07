@@ -41,6 +41,10 @@ class Kiwoom(QMainWindow, form_class):
     test_dict3 = pyqtSignal(dict)
     test_dict4 = pyqtSignal(dict)
 
+    che_dict = pyqtSignal(dict)
+
+
+
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -111,7 +115,7 @@ class Kiwoom(QMainWindow, form_class):
 
     @pyqtSlot(dict)
     def rp_dict(self, data):
-        print("main : ", data)
+        # print("main : ", data)
         if data['lock'] == 1 :
             self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(0,255,0))
         elif data['lock'] == 0 :
@@ -305,10 +309,8 @@ class Kiwoom(QMainWindow, form_class):
 
         QtTest.QTest.qWait(3000)
 
-        while True :
-            self.worker.get_item_info()
-            self.worker2.get_item_info()
-            QtTest.QTest.qWait(1000)
+
+        
 
     def btn_test_2(self):
         print("btn test2")
@@ -330,19 +332,23 @@ class Kiwoom(QMainWindow, form_class):
             thread = data['thread']
             self.delete_item(item_code, thread)
     def create_thread(self) :
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "CREATE THREADS")
         print("create threads")
         ## 1st        
         self.th_seq = 0
         self.worker0 = module_get_summary2.Worker(0)
         self.worker0.th_con.connect(self.th_connected)
         self.test_dict0.connect(self.worker0.dict_from_main)
+        self.che_dict.connect(self.worker0.che_result)
         self.worker0.trans_dict.connect(self.rp_dict)
         self.worker0.notice.connect(self.notice_from_worker)
         self.worker0.start()
         while True :
-            print("here : ", self.list_th_connected[self.th_seq])
+            # print("here : ", self.list_th_connected[self.th_seq])
             if self.list_th_connected[self.th_seq] == 1:
-                print("create threads : ", self.th_seq)
+                timestamp = self.func_GET_CurrentTime()
+                self.text_edit.append(timestamp + "THREAD 1 CREATED")
                 break
             QtTest.QTest.qWait(500)
         ## 2nd
@@ -350,12 +356,14 @@ class Kiwoom(QMainWindow, form_class):
         self.worker1 = module_get_summary2.Worker(1)
         self.worker1.th_con.connect(self.th_connected)
         self.test_dict1.connect(self.worker1.dict_from_main)
+        self.che_dict.connect(self.worker1.che_result)
         self.worker1.trans_dict.connect(self.rp_dict)
         self.worker1.notice.connect(self.notice_from_worker)
         self.worker1.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
-                print("create threads : ", self.th_seq)
+                timestamp = self.func_GET_CurrentTime()
+                self.text_edit.append(timestamp + "THREAD 2 CREATED")
                 break
             QtTest.QTest.qWait(500)
         ## 3rd
@@ -363,12 +371,14 @@ class Kiwoom(QMainWindow, form_class):
         self.worker2 = module_get_summary2.Worker(2)
         self.worker2.th_con.connect(self.th_connected)
         self.test_dict2.connect(self.worker2.dict_from_main)
+        self.che_dict.connect(self.worker2.che_result)
         self.worker2.trans_dict.connect(self.rp_dict)
         self.worker2.notice.connect(self.notice_from_worker)
         self.worker2.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
-                print("create threads : ", self.th_seq)
+                timestamp = self.func_GET_CurrentTime()
+                self.text_edit.append(timestamp + "THREAD 3 CREATED")
                 break
             QtTest.QTest.qWait(500)
         ## 4th
@@ -376,12 +386,14 @@ class Kiwoom(QMainWindow, form_class):
         self.worker3 = module_get_summary2.Worker(3)
         self.worker3.th_con.connect(self.th_connected)
         self.test_dict3.connect(self.worker3.dict_from_main)
+        self.che_dict.connect(self.worker3.che_result)
         self.worker3.trans_dict.connect(self.rp_dict)
         self.worker3.notice.connect(self.notice_from_worker)
         self.worker3.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
-                print("create threads : ", self.th_seq)
+                timestamp = self.func_GET_CurrentTime()
+                self.text_edit.append(timestamp + "THREAD 4 CREATED")
                 break
             QtTest.QTest.qWait(500)
 
@@ -390,12 +402,14 @@ class Kiwoom(QMainWindow, form_class):
         # self.worker4 = module_get_summary2.Worker(4)
         # self.worker4.th_con.connect(self.th_connected)
         # self.test_dict4.connect(self.worker4.dict_from_main)
+        # self.che_dict.connect(self.worker4.che_result)
         # self.worker4.trans_dict.connect(self.rp_dict)
         # self.worker4.notice.connect(self.notice_from_worker)
         # self.worker4.start()
         # while True :
         #     if self.list_th_connected[self.th_seq] == 1:
-        #         print("create threads : ", self.th_seq)
+                # timestamp = self.func_GET_CurrentTime()
+                # self.text_edit.append(timestamp + "THREAD 5 CREATED")
         #         break
         #     QtTest.QTest.qWait(500)
 
@@ -418,6 +432,28 @@ class Kiwoom(QMainWindow, form_class):
 
         ## create Thread(workers)
         self.create_thread()
+
+        acc_no = ACCOUNT
+        acc_pw = PASSWORD
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
+    def func_restart_check(self) :
+        self.table_summary.clearContents()      ## table clear
+        self.flag_checking = 1
+        ## history load
+        today = self.func_GET_Today()
+        self.flag_HistoryData_Auto = 1
+        self.func_GET_TradeHistory(today)
+
+        ## ordering load
+        self.func_GET_Ordering(today)
+
+        ## deposit load
+        self.func_GET_Deposit()
+
+        ## daily profit load
+        self.func_GET_DailyProfit(0)
 
         acc_no = ACCOUNT
         acc_pw = PASSWORD
@@ -576,7 +612,22 @@ class Kiwoom(QMainWindow, form_class):
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
             if remained == '0':         # 체결시
-                self.func_stop_check()      ## checking stop
+                self.func_stop_check()
+                
+                item_code = item_code.replace('A', '').strip()
+                print("CHE RECEIVE : ", item_code)
+                for slot, code in self.item_slot.items() :
+                    if code == item_code :
+                        th_num = slot
+                
+                print("th num : ", th_num)
+
+                che_dict = {}
+                che_dict['th_num'] = th_num
+                che_dict['order_id'] = order_id
+                che_dict['res'] = 1
+
+                self.che_dict.emit(che_dict)
 
                 self.text_edit.append("-- 체결완료 --")
                 self.text_edit.append("체결시간 : " + trade_time)
@@ -587,56 +638,8 @@ class Kiwoom(QMainWindow, form_class):
                 self.text_edit.append("미체결 : " + remained)
                 self.text_edit.append("")
 
-                ## 체결시 history table 갱신 수행
-                today = self.func_GET_Today()
-                self.flag_HistoryData_Auto = 1
-                self.func_GET_TradeHistory(today)
-
-                ## 체결시 db 갱신 수행
-                item_code = item_code.replace('A', '').strip()
-                step = self.func_GET_db_item(item_code, 1)
-
-                ### db에 저장안된 item 일 경우 item 초기화
-                if step == "none":
-                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)
-
-                ### db에 이미 저장되어 있는 item 일 경우
-                else :
-                    #### orderType 검사
-                    orderType = self.func_GET_db_item(item_code, 3)
-
-                    if orderType == 0 :             # normal trade
-                        if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
-                            self.flag_lock[item_code] = 0           # unlock
-
-                    elif orderType == 1 :         # add water
-                        print("chejan : add water")
-                        if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       # ordered -> 0
-                            if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       # orderType -> 0
-                                new_step = step + 1
-                                if self.func_UPDATE_db_item(item_code, 1, new_step) == 1:
-                                    self.flag_lock[item_code] = 0           # unlock
-
-                    elif orderType == 2 :       # sell & buy 중 sell 완료
-                        print("chejan : sell&buy - sell")
-                        if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       # orderType -> 4
-                            self.flag_lock[item_code] = 0                       # unlock
-
-                    elif orderType == 3 :       # full sell
-                        print("chejan : full sell")
-                        self.func_DELETE_db_item(item_code)
-
-                    elif orderType == 4 :       # sell & buy 중 buy 완료
-                        print("chejan : sell&buy - buy")
-                        if self.func_UPDATE_db_item(item_code, 2, 0) == 1:      # ordered -> 0
-                            if self.func_UPDATE_db_item(item_code, 3, 0) == 1:  # orderType -> 0
-                                if self.func_UPDATE_db_item(item_code, 4, 0) == 1:       # trAmount -> 0
-                                    self.flag_lock[item_code] = 0                       # unlock
-
-
-                # restart checking
-                self.func_start_check()
-
+                self.func_restart_check()
+                
     def func_GET_Deposit(self) :
         acc_no = ACCOUNT
         acc_pw = PASSWORD
@@ -1018,6 +1021,7 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00009_man":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
+        # th_num = self.item_slot[code]
         for slot, item_code in self.item_slot.items() :
             if item_code == code :
                 th_num = slot
