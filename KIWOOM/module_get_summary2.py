@@ -15,9 +15,9 @@ FEE_BUY = 0.0035
 FEE_SELL = 0.0035
 GOAL_PER = -0.01
 STEP_LIMIT = 5
-PER_LOW = -1.5
-PER_HI = 1
-MAKE_ORDER = 0
+PER_LOW = -2
+PER_HI = 0.2
+MAKE_ORDER = 1
 ACCOUNT = "8137639811"
 PASSWORD = "6458"
 
@@ -49,6 +49,7 @@ class Worker(QThread):
 
     def run(self):
         self.lock = 0       ## lock variable initialize
+        self.cnt = 0
         while True:
             try:
                 print("con : ", self.connected)
@@ -62,7 +63,8 @@ class Worker(QThread):
     @pyqtSlot(dict)
     def che_result(self, data) :
         item_code = data['item_code']
-        print("Che result : ", item_code)
+        print(self.seq, " Che result : ", item_code)
+
         if data['th_num'] == self.seq :
             print(self.seq, " CHEJAN DATA RECEIVED")
 
@@ -97,6 +99,7 @@ class Worker(QThread):
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
+        # print(self.seq, " Lock : ", self.lock)
         if self.lock == 0 :
             self.lock = 1       ## lock
             step = self.func_GET_db_item(item_code, 1)
@@ -155,6 +158,20 @@ class Worker(QThread):
                     res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation)
                     judge_type = res['judge']
 
+                    # if item_code == "005930" and self.cnt == 0:
+                    #     print(item_code, "JUDGE : TEST BUY")
+                    #     qty = 1
+                    #     price = price_buy
+
+                    #     self.cnt = 1
+
+                    #     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                    #         if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                    #             if MAKE_ORDER == 1:
+                    #                 print("make order : ", item_code, "BUY")
+                    #                 self.indicate_ordered()         ## INDICATE : ordered
+                    #                 self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
+                        
                     if judge_type == 0 :        ## stay
                         print(item_code, "judge : 0")
                         self.lock = 0
@@ -198,24 +215,6 @@ class Worker(QThread):
                                     print("make order : ", item_code, "SELL")
                                     self.indicate_ordered()         ## INDICATE : ordered
                                     self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
-
-                    # if item_code == "015760":
-                    #     print(item_code, "JUDGE : TEST BUY")
-                    #     buy_qty = 1
-                    #     buy_price = price_buy
-                    #     self.ORDER_BUY(item_code, buy_qty, buy_price)    # make order
-                    # elif item_code == "006120" :
-                    #     print(item_code, "JUDGE : TEST SELL")
-                    #     sell_qty = 1
-                    #     sell_price = price_sell
-                    #     self.ORDER_SELL(item_code, sell_qty, sell_price)
-
-                    # else :
-                    #     print(item_code, "judge : TEST STAY")
-                    #     self.rp_dict['ordered'] = 0
-                    #     self.lock = 0
-                    #     self.trans_dict.emit(self.rp_dict)
-
                         
     def indicate_ordered(self) :
         self.rp_dict['ordered'] = 1
@@ -252,6 +251,8 @@ class Worker(QThread):
         # Sell & Buy
         elif percent > PER_HI and step < STEP_LIMIT :
             sell_qty = int(own_count / 2)
+            if sell_qty == 0 :
+                sell_qty = 1
             price = int(price_sell)
 
             res['judge'] = 2
@@ -282,10 +283,6 @@ class Worker(QThread):
             
     ## 매수
     def ORDER_BUY(self, item_code, qty, price) :
-        timestamp = self.func_GET_CurrentTime()
-        print(timestamp + "ORDER : BUY")
-        # self.text_edit.append(timestamp + "ORDER : BUY")
-
         rqname = "RQ_TEST"
         screen_no = "0101"
         acc_no = ACCOUNT
@@ -296,12 +293,10 @@ class Worker(QThread):
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
         
         self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
+        timestamp = self.func_GET_CurrentTime()
+        print(timestamp + "ORDER : BUY", item_code, " / ", qty)
     ## 매도
     def ORDER_SELL(self, item_code, qty, price) :
-        timestamp = self.func_GET_CurrentTime()
-        print(timestamp + "ORDER : SELL")
-        # self.text_edit.append(timestamp + "ORDER : SELL")
-        
         rqname = "RQ_TEST"
         screen_no = "0101"
         acc_no = ACCOUNT
@@ -313,6 +308,8 @@ class Worker(QThread):
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
         
         self.func_UPDATE_db_item(item_code, 2, 1)       # oerdered -> 1
+        timestamp = self.func_GET_CurrentTime()
+        print(timestamp + "ORDER : SELL", item_code, " / ", qty)
 
     def func_GET_db_item(self, code, col):
         conn = sqlite3.connect("item_status.db")

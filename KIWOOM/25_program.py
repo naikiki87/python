@@ -437,6 +437,7 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
     def func_restart_check(self) :
+        print("restart check")
         self.table_summary.clearContents()      ## table clear
         self.flag_checking = 1
         ## history load
@@ -444,8 +445,8 @@ class Kiwoom(QMainWindow, form_class):
         self.flag_HistoryData_Auto = 1
         self.func_GET_TradeHistory(today)
 
-        ## ordering load
-        self.func_GET_Ordering(today)
+        # ## ordering load
+        # self.func_GET_Ordering(today)
 
         ## deposit load
         self.func_GET_Deposit()
@@ -458,7 +459,10 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
+        print("restart : make order")
+
     def func_SET_Items(self, rqname, trcode, recordname):
+        print("Set Items")
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
 
         self.item_slot = {}
@@ -477,10 +481,13 @@ class Kiwoom(QMainWindow, form_class):
 
             # self.item_slot[item_code] = i       ## slot 번호 할당
             self.item_slot[i] = item_code
+            print("restart item_code : ", item_code)
             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
             self.item_codes.append(item_code)
+        print("Set items end")
 
     def func_stop_check(self):
+        print("stop checking")
         self.SetRealRemove("ALL", "ALL")
 
         today = self.func_GET_Today()
@@ -607,13 +614,7 @@ class Kiwoom(QMainWindow, form_class):
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
             if remained == '0':         # 체결시
-                self.func_GET_Deposit()     ## 예수금 갱신
-                while True :
-                    if self.set_deposit == 1:
-                        print("lastest deposit")
-                        self.set_deposit = 0
-                        break
-                    QtTest.QTest.qWait(100)
+                # self.func_GET_Deposit()     ## 예수금 갱신
 
                 self.func_stop_check()
                 
@@ -631,6 +632,7 @@ class Kiwoom(QMainWindow, form_class):
                 che_dict['order_id'] = order_id
                 che_dict['res'] = 1
 
+                print("trans che result")
                 self.che_dict.emit(che_dict)
 
                 self.text_edit.append("-- 체결완료 --")
@@ -665,6 +667,7 @@ class Kiwoom(QMainWindow, form_class):
         self.set_deposit = 1
 
     def func_GET_DailyProfit(self, input) :
+        print("GET Daily Profit")
         acc_no = ACCOUNT
         acc_pw = PASSWORD
 
@@ -1020,6 +1023,7 @@ class Kiwoom(QMainWindow, form_class):
         # if comp_str in rqname:
         #     self.SET_hoga(rqname, trcode, recordname)
 
+        print("receive tr data : ", rqname)
         if rqname == "SET_hoga":
             self.SET_hoga(rqname, trcode, recordname)
         if rqname == "GET_DailyProfit":
