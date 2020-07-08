@@ -99,6 +99,8 @@ class Worker(QThread):
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
+        deposit = data['deposit']
+        print("deposit : ", deposit)
         # print(self.seq, " Lock : ", self.lock)
         if self.lock == 0 :
             self.lock = 1       ## lock
@@ -143,9 +145,10 @@ class Worker(QThread):
                 orderType = self.func_GET_db_item(item_code, 3)
 
                 if orderType == 4 :
-                    self.rp_dict['ordered'] = 1
-                    self.rp_dict['seq'] = self.seq
-                    self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
+                    self.indicate_ordered()         ## INDICATE : ordered
+                    # self.rp_dict['ordered'] = 1
+                    # self.rp_dict['seq'] = self.seq
+                    # self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
 
                     qty = self.func_GET_db_item(item_code, 4)       ## DB : qty <- trAmount
                     price = price_buy
@@ -164,13 +167,6 @@ class Worker(QThread):
                     #     price = price_buy
 
                     #     self.cnt = 1
-
-                    #     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                    #         if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                    #             if MAKE_ORDER == 1:
-                    #                 print("make order : ", item_code, "BUY")
-                    #                 self.indicate_ordered()         ## INDICATE : ordered
-                    #                 self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
                         
                     if judge_type == 0 :        ## stay
                         print(item_code, "judge : 0")
@@ -181,13 +177,23 @@ class Worker(QThread):
 
                         qty = res['buy_qty']
                         price = res['buy_price']
+                        deposit = res['deposit']
 
-                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                            if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                                if MAKE_ORDER == 1:
-                                    print("make order : ", item_code, "BUY")
-                                    self.indicate_ordered()         ## INDICATE : ordered
-                                    self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
+                        need_price = qty * price
+
+                        if deposit >= need_price :
+                            print("CASE : deposit >= total")
+                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                                if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                                    if MAKE_ORDER == 1:
+                                        print("make order : ", item_code, "BUY")
+                                        
+                                        self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
+                                        self.indicate_ordered()         ## INDICATE : ordered
+
+                        else :
+                            print("CASE : deposit < total")
+                            self.lock = 0
 
                     elif judge_type == 2 :      ## sell & buy
                         print(item_code, "judge : 2")
@@ -200,8 +206,9 @@ class Worker(QThread):
                                 if self.func_UPDATE_db_item(item_code, 4, qty) == 1:    ## 판매수량 -> trAmount
                                     if MAKE_ORDER == 1:
                                         print("make order : ", item_code, "SELL")
-                                        self.indicate_ordered()         ## INDICATE : ordered
+
                                         self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                                        self.indicate_ordered()         ## INDICATE : ordered
 
                     elif judge_type == 3 :      ## full_sell
                         print(item_code, "judge : 3")
@@ -213,8 +220,9 @@ class Worker(QThread):
                             if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
                                 if MAKE_ORDER == 1:
                                     print("make order : ", item_code, "SELL")
-                                    self.indicate_ordered()         ## INDICATE : ordered
+                                    
                                     self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                                    self.indicate_ordered()         ## INDICATE : ordered
                         
     def indicate_ordered(self) :
         self.rp_dict['ordered'] = 1
