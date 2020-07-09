@@ -104,10 +104,9 @@ class Worker(QThread):
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
-        print("dict : ", item_code)
+        print(self.seq, " dict : ", item_code)
         deposit = data['deposit']
-        # print("deposit : ", deposit)
-        # print(self.seq, " Lock : ", self.lock)
+        
         if self.lock == 0 :
             self.lock = 1       ## lock
             step = self.func_GET_db_item(item_code, 1)
