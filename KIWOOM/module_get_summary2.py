@@ -62,174 +62,232 @@ class Worker(QThread):
     
     @pyqtSlot(dict)
     def che_result(self, data) :
-        item_code = data['item_code']
-        print(self.seq, " Che result : ", item_code)
+        if data['th_num'] == self.seq :
+            print(self.seq, " CHEJAN DATA RECEIVED")
 
-        delete = data['delete']
-
-        if delete == 1 :
-            self.lock = 0
-        else :
-            if data['th_num'] == self.seq :
-                print(self.seq, " CHEJAN DATA RECEIVED")
-
-                orderType = self.func_GET_db_item(item_code, 3)
-
-                if orderType == 1 :
-                    cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
-                    new_step = cur_step + 1
-                    if self.func_UPDATE_db_item(item_code, 1, new_step) == 1 :   ## update step
-                        if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
-                            if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
-                                self.lock = 0           ## unlock
-
-                elif orderType == 2 :
-                    if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       ## orderType -> 4
-                        self.lock = 0           ## unlock
-
-                elif orderType == 3 :
-                    self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
-                    notice = {}
-                    notice['type'] = 0      ## notice : item delete
-                    notice['item_code'] = item_code
-                    notice['thread'] = self.seq
-                    self.notice.emit(notice)    ## NOTICE
-
-                elif orderType == 4 :
+            item_code = data['item_code']
+            orderType = self.func_GET_db_item(item_code, 3)
+            
+            ## Add water
+            if orderType == 1 :
+                print("[th che_result] orderType : ", orderType)
+                cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
+                new_step = cur_step + 1
+                if self.func_UPDATE_db_item(item_code, 1, new_step) == 1 :   ## update step
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                         if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                             self.lock = 0           ## unlock
 
+            ## Sell & Buy(SELL)
+            elif orderType == 2 :
+                print("[th che_result] orderType : ", orderType)
+                if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       ## orderType -> 4
+                    self.lock = 0           ## unlock
+
+            ## full sell
+            elif orderType == 3 :
+                print("[th che_result] orderType : ", orderType)
+                self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
+                self.lock = 0           ## unlock
+
+            ## Sell & Buy(BUY)
+            elif orderType == 4 :
+                print("[th che_result] orderType : ", orderType)
+                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                    if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                        self.lock = 0           ## unlock
+
+            ## BUY(Manual)
+            elif orderType == 5 :
+                print("[th che_result] orderType : ", orderType)
+                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                    if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                        self.lock = 0           ## unlock
+
+            ## SELL(Manual)
+            elif orderType == 6 :
+                print("[th che_result] orderType : ", orderType)
+                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                    if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                        self.lock = 0           ## unlock
+
+            ## FULL SELL(Manual)
+            elif orderType == 7 :
+                print("[th che_result] orderType : ", orderType)
+                self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
+                self.lock = 0           ## unlock
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
         print(self.seq, " dict : ", item_code)
         deposit = data['deposit']
-        
-        if self.lock == 0 :
-            self.lock = 1       ## lock
-            step = self.func_GET_db_item(item_code, 1)
-            if step == "none" :
-                self.func_INSERT_db_item(item_code, 0, 0, 0, 0)       # db initialize
-                self.lock = 0
-            else :
-                ## SHOW ##
-                own_count = data['own_count']
-                unit_price = data['unit_price']
-                cur_price = data['cur_price']
-                price_buy = data['price_buy']
-                price_sell = data['price_sell']
 
-                total_purchase = own_count * unit_price
-                total_evaluation = own_count * cur_price
-                temp_total = total_evaluation - total_purchase
-                fee_buy = FEE_BUY * total_purchase
-                fee_sell = FEE_SELL * total_evaluation
-                tax = TAX * total_evaluation
-                total_fee = round((fee_buy + fee_sell + tax), 1)
-                total_sum = total_evaluation - total_purchase - total_fee
-                percent = round((total_sum / total_purchase) * 100, 1)
+        if data['autoTrade'] == 0 :
+            self.lock = 1
+            orderType = data['orderType']
+
+            if orderType == 5 :
+                qty = data['qty']
+                price = data['price']
+
+                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                    if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
+                        print(self.seq, " thread setting complete -> ordertype : 5")
+                        if MAKE_ORDER == 1:
+                            print("make order : ", item_code, "BUY(MANUAL)")
+                            
+                            self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
+                            self.indicate_ordered()         ## INDICATE : ordered
+
+            elif orderType == 6 :
+                qty = data['qty']
+                price = data['price']
+
+                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                    if self.func_UPDATE_db_item(item_code, 3, 6) == 1:  ## orderType 변경 -> 6(manual sell)
+                        if MAKE_ORDER == 1:
+                            print("make order : ", item_code, "SELL(MANUAL)")
+                            
+                            self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                            self.indicate_ordered()         ## INDICATE : ordered
+
+            elif orderType == 7 :
+                qty = data['qty']
+                price = data['price']
+
+                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                    if self.func_UPDATE_db_item(item_code, 3, 7) == 1:  ## orderType 변경 -> 7(manual sell full)
+                        if MAKE_ORDER == 1:
+                            print("make order : ", item_code, "SELL FULL(MANUAL)")
+                            
+                            self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                            self.indicate_ordered()         ## INDICATE : ordered
+
+        elif data['autoTrade'] == 1 :
+            if self.lock == 0 :
+                self.lock = 1       ## lock
                 step = self.func_GET_db_item(item_code, 1)
+                if step == "none" :
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)       # db initialize
+                    self.lock = 0
+                else :
+                    ## SHOW ##
+                    own_count = data['own_count']
+                    unit_price = data['unit_price']
+                    cur_price = data['cur_price']
+                    price_buy = data['price_buy']
+                    price_sell = data['price_sell']
 
-                self.rp_dict = {}
-                self.rp_dict.update(data)
+                    total_purchase = own_count * unit_price
+                    total_evaluation = own_count * cur_price
+                    temp_total = total_evaluation - total_purchase
+                    fee_buy = FEE_BUY * total_purchase
+                    fee_sell = FEE_SELL * total_evaluation
+                    tax = TAX * total_evaluation
+                    total_fee = round((fee_buy + fee_sell + tax), 1)
+                    total_sum = total_evaluation - total_purchase - total_fee
+                    percent = round((total_sum / total_purchase) * 100, 1)
+                    step = self.func_GET_db_item(item_code, 1)
 
-                self.rp_dict['ordered'] = 0
-                self.rp_dict['total_purchase'] = total_purchase
-                self.rp_dict['total_evaluation'] = total_evaluation
-                self.rp_dict['temp_total'] = temp_total
-                self.rp_dict['total_fee'] = total_fee
-                self.rp_dict['total_sum'] = total_sum
-                self.rp_dict['percent'] = percent
-                self.rp_dict['step'] = step
-                self.rp_dict['seq'] = self.seq
+                    self.rp_dict = {}
+                    self.rp_dict.update(data)
 
-                self.trans_dict.emit(self.rp_dict)       ## SHOW
+                    self.rp_dict['ordered'] = 0
+                    self.rp_dict['total_purchase'] = total_purchase
+                    self.rp_dict['total_evaluation'] = total_evaluation
+                    self.rp_dict['temp_total'] = temp_total
+                    self.rp_dict['total_fee'] = total_fee
+                    self.rp_dict['total_sum'] = total_sum
+                    self.rp_dict['percent'] = percent
+                    self.rp_dict['step'] = step
+                    self.rp_dict['seq'] = self.seq
 
-                # orderType = self.func_GET_db_item(item_code, 3)
+                    self.trans_dict.emit(self.rp_dict)       ## SHOW
 
-                # if orderType == 4 :
-                #     self.indicate_ordered()         ## INDICATE : ordered
+                    orderType = self.func_GET_db_item(item_code, 3)
 
-                #     qty = self.func_GET_db_item(item_code, 4)       ## DB : qty <- trAmount
-                #     price = price_buy
+                    if orderType == 4 :
+                        self.indicate_ordered()         ## INDICATE : ordered
 
-                #     if MAKE_ORDER == 1:
-                #         print("make order : ", item_code, "BUY")
-                #         self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
+                        qty = self.func_GET_db_item(item_code, 4)       ## DB : qty <- trAmount
+                        price = price_buy
 
-                # else :
-                #     res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation)
-                #     judge_type = res['judge']
+                        if MAKE_ORDER == 1:
+                            print("make order : ", item_code, "SELL & BUY(BUY")
+                            self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
 
-                #     if judge_type == 0 :        ## stay
-                #         print(item_code, "judge : 0")
-                #         self.lock = 0
+                    else :
+                        res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation)
+                        judge_type = res['judge']
 
-                #     elif judge_type == 1 :      ## add water
-                #         print(item_code, "judge : 1")
+                        if judge_type == 0 :        ## stay
+                            print(item_code, "judge : 0")
+                            self.lock = 0
 
-                #         qty = res['buy_qty']
-                #         price = res['buy_price']
-                #         deposit = res['deposit']
+                        elif judge_type == 1 :      ## add water
+                            print(item_code, "judge : 1")
 
-                #         need_price = qty * price
+                            qty = res['buy_qty']
+                            price = res['buy_price']
+                            deposit = res['deposit']
 
-                #         if deposit >= need_price :
-                #             print("CASE : deposit >= total")
-                #             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                #                 if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                #                     if MAKE_ORDER == 1:
-                #                         print("make order : ", item_code, "BUY")
+                            need_price = qty * price
+
+                            if deposit >= need_price :
+                                print("CASE : deposit >= total")
+                                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                                    if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                                        if MAKE_ORDER == 1:
+                                            print("make order : ", item_code, "BUY")
+                                            
+                                            self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
+                                            self.indicate_ordered()         ## INDICATE : ordered
+
+                            else :
+                                print("CASE : deposit < total")
+                                self.lock = 0
+
+                        elif judge_type == 2 :      ## sell & buy
+                            print(item_code, "judge : 2")
+
+                            qty = res['sell_qty']
+                            price = res['sell_price']
+
+                            if qty == 0 :
+                                print(item_code, "judge : 2 and 3")
+                                qty = own_count
+                                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                                    if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                                        if MAKE_ORDER == 1:
+                                            print("make order : ", item_code, "SELL & BUY(SELL")
+                                            
+                                            self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                                            self.indicate_ordered()         ## INDICATE : ordered
+
+                            elif qty >= 1 :
+                                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                                    if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
+                                        if self.func_UPDATE_db_item(item_code, 4, qty) == 1:    ## 판매수량 -> trAmount
+                                            if MAKE_ORDER == 1:
+                                                print("make order : ", item_code, "SELL")
+
+                                                self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                                                self.indicate_ordered()         ## INDICATE : ordered
+
+                        elif judge_type == 3 :      ## full_sell
+                            print(item_code, "judge : 3")
+
+                            qty = res['sell_qty']
+                            price = res['sell_price']
+
+                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                                if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                                    if MAKE_ORDER == 1:
+                                        print("make order : ", item_code, "SELL")
                                         
-                #                         self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
-                #                         self.indicate_ordered()         ## INDICATE : ordered
-
-                #         else :
-                #             print("CASE : deposit < total")
-                #             self.lock = 0
-
-                #     elif judge_type == 2 :      ## sell & buy
-                #         print(item_code, "judge : 2")
-
-                #         qty = res['sell_qty']
-                #         price = res['sell_price']
-
-                #         if qty == 0 :
-                #             print(item_code, "judge : 2 and 3")
-                #             qty = own_count
-                #             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                #                 if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
-                #                     if MAKE_ORDER == 1:
-                #                         print("make order : ", item_code, "SELL")
-                                        
-                #                         self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
-                #                         self.indicate_ordered()         ## INDICATE : ordered
-
-                #         elif qty >= 1 :
-                #             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                #                 if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
-                #                     if self.func_UPDATE_db_item(item_code, 4, qty) == 1:    ## 판매수량 -> trAmount
-                #                         if MAKE_ORDER == 1:
-                #                             print("make order : ", item_code, "SELL")
-
-                #                             self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
-                #                             self.indicate_ordered()         ## INDICATE : ordered
-
-                #     elif judge_type == 3 :      ## full_sell
-                #         print(item_code, "judge : 3")
-
-                #         qty = res['sell_qty']
-                #         price = res['sell_price']
-
-                #         if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                #             if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
-                #                 if MAKE_ORDER == 1:
-                #                     print("make order : ", item_code, "SELL")
-                                    
-                #                     self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
-                #                     self.indicate_ordered()         ## INDICATE : ordered
+                                        self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                                        self.indicate_ordered()         ## INDICATE : ordered
                         
     def indicate_ordered(self) :
         self.rp_dict['ordered'] = 1

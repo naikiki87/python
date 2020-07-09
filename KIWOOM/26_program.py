@@ -44,8 +44,6 @@ class Kiwoom(QMainWindow, form_class):
 
     che_dict = pyqtSignal(dict)
 
-
-
     def __init__(self):
         super().__init__()
         self.setupUi(self)
@@ -227,7 +225,7 @@ class Kiwoom(QMainWindow, form_class):
         print("data DELETED")
     
     def func_GET_Ordering(self, today):
-        print("GET Ordering")
+        print("func GET Ordering")
         acc_no = ACCOUNT
         acc_pw = PASSWORD
 
@@ -322,19 +320,10 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "RESET", "opw00018", 0, "0102")
 
-
-    # def delete_item(self, item_code, thread) :
-    #     self.SetRealRemove("0101", item_code)
-    #     del self.item_slot[thread]
-
     @pyqtSlot(dict)
     def notice_from_worker(self, data) :
         print("notice from worker : ", data)
-        noti_type = data['type']
-        if noti_type == 0:
-            item_code = data['item_code']
-            thread = data['thread']
-            # self.delete_item(item_code, thread)
+
     def create_thread(self) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "CREATE THREADS")
@@ -418,22 +407,11 @@ class Kiwoom(QMainWindow, form_class):
             QtTest.QTest.qWait(500)
 
     def func_start_check(self) :
+        self.load_etc_data()
+
         self.create_thread()
         self.table_summary.clearContents()      ## table clear
         self.flag_checking = 1
-        ## history load
-        today = self.func_GET_Today()
-        self.flag_HistoryData_Auto = 1
-        self.func_GET_TradeHistory(today)
-
-        ## ordering load
-        self.func_GET_Ordering(today)
-
-        # ## deposit load
-        # self.func_GET_Deposit()
-
-        ## daily profit load
-        self.func_GET_DailyProfit(0)
 
         acc_no = ACCOUNT
         acc_pw = PASSWORD
@@ -490,18 +468,28 @@ class Kiwoom(QMainWindow, form_class):
             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
         print("Set items end")
+    def load_etc_data(self) :
+        ## deposit load
+        self.func_GET_Deposit()
 
+        ## history load
+        today = self.func_GET_Today()
+        self.flag_HistoryData_Auto = 1
+        self.func_GET_TradeHistory(today)
 
-    
+        ## ordering load
+        self.func_GET_Ordering(today)
+
+        ## daily profit load
+        self.func_GET_DailyProfit(0)
 
     def func_stop_check(self):
         print("stop checking")
         self.SetRealRemove("ALL", "ALL")
-
-        today = self.func_GET_Today()
-        self.func_GET_Ordering(today)
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Monitoring STOP")
+
+        self.load_etc_data()
 
     ## 매수 ##
     def func_ORDER_BUY_click(self) :
@@ -509,40 +497,43 @@ class Kiwoom(QMainWindow, form_class):
         self.text_edit.append(timestamp + "Clicked : BUY")
         try:
             item_code = self.code_edit.text()
+
+            th_num = self.which_thread(1, item_code)
+
             qty = int(self.buy_sell_count.text())
             price = self.wid_sell_price.text()
 
             print("itemcode : ", item_code)
             print("qty : ", qty)
             print("price : ", price)
-            self.func_ORDER_BUY_2(item_code, qty, price)
+
+            test_dict = {}
+            test_dict['autoTrade'] = 0
+            test_dict['item_code'] = item_code
+            test_dict['orderType'] = 5
+            test_dict['qty'] = qty
+            test_dict['price'] = price
+
+            if th_num == 0 :
+                self.test_dict0.emit(test_dict)
+            elif th_num == 1 :
+                self.test_dict1.emit(test_dict)
+            elif th_num == 2 :
+                self.test_dict2.emit(test_dict)
+            elif th_num == 3 :
+                self.test_dict3.emit(test_dict)
+            elif th_num == 4 :
+                self.test_dict4.emit(test_dict)
+            elif th_num == 100 :    ## 기존 내역에 없이 새로운 item을 넣을 경우
+                self.func_ORDER_BUY(item_code, qty, price)
 
         except Exception as e:
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + str(e))
+
             pass
-
-        
-    def func_ORDER_BUY_auto(self, item_code, qty, price) :
-        timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "Auto : BUY " + item_code)
-
-        item_code = item_code.replace('A', '').strip()
-
-        print("order buy")
-        print("code : ", item_code)
-        print("qty : ", qty)
-        print("price : ", price)
-        print("")
-
-        try:
-            # a = 0
-            self.func_ORDER_BUY_2(item_code, qty, price)
-            
-        except Exception as e:
-            timestamp = self.func_GET_CurrentTime()
-            self.text_edit.append(timestamp + str(e))
-    def func_ORDER_BUY_2(self, item_code, qty, price) :
+    
+    def func_ORDER_BUY(self, item_code, qty, price) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "ORDER : BUY")
 
@@ -566,38 +557,52 @@ class Kiwoom(QMainWindow, form_class):
 
         try:
             item_code = self.code_edit.text()
+
+            th_num = self.which_thread(1, item_code)
+
+            own_count = int(self.table_summary.item(th_num, 2).text())
+
             qty = int(self.buy_sell_count.text())
             price = self.wid_buy_price.text()
             print("itemcode : ", item_code)
             print("qty : ", qty)
             print("price : ", price)
-            self.func_ORDER_SELL_2(item_code, qty, price)
+
+            test_dict = {}
+            test_dict['autoTrade'] = 0
+            test_dict['item_code'] = item_code
+
+            if qty > own_count :
+                timestamp = self.func_GET_CurrentTime()
+                self.text_edit.append(timestamp, item_code, " Manual SELL Error - order-qty is bigger than own-qty")
+            elif qty < own_count :
+                timestamp = self.func_GET_CurrentTime()
+                self.text_edit.append(timestamp, item_code, " Manual SELL")
+                test_dict['orderType'] = 6
+            elif qty == own_count :
+                timestamp = self.func_GET_CurrentTime()
+                self.text_edit.append(timestamp, item_code, " Manual SELL FULL")
+                test_dict['orderType'] = 7
+
+            test_dict['qty'] = qty
+            test_dict['price'] = price
+
+            if th_num == 0 :
+                self.test_dict0.emit(test_dict)
+            elif th_num == 1 :
+                self.test_dict1.emit(test_dict)
+            elif th_num == 2 :
+                self.test_dict2.emit(test_dict)
+            elif th_num == 3 :
+                self.test_dict3.emit(test_dict)
+            elif th_num == 4 :
+                self.test_dict4.emit(test_dict)
 
         except Exception as e:
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + str(e))
 
-        
-    def func_ORDER_SELL_auto(self, item_code, qty, price) :
-        timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "Auto : SELL")
-
-        item_code = item_code.replace('A', '').strip()
-
-        print("order sell")
-        print("code : ", item_code)
-        print("qty : ", qty)
-        print("price : ", price)
-        print("")
-
-        try:
-            a = 0
-            self.func_ORDER_SELL_2(item_code, qty, price)
-            
-        except Exception as e:
-            timestamp = self.func_GET_CurrentTime()
-            self.text_edit.append(timestamp + str(e))
-    def func_ORDER_SELL_2(self, item_code, qty, price) :
+    def func_ORDER_SELL(self, item_code, qty, price) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "ORDER : SELL")
         
@@ -652,6 +657,8 @@ class Kiwoom(QMainWindow, form_class):
     def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
         order_id = item_code = item_name = trade_price = trade_amount = remained = trade_time = 'n'
         if gubun == "0" :       
+            receive_type = self.func_GET_Chejan_data(913)      # 주문상태(접수, 확인, 체결)
+            trade_type = self.func_GET_Chejan_data(907)      # 매도수구분(1: 매도, 2: 매수)
             order_id = self.func_GET_Chejan_data(9203)      # 주문번호
             item_code = self.func_GET_Chejan_data(9001)     # 종목코드
             item_name = self.func_GET_Chejan_data(302)      # 종목명
@@ -672,41 +679,129 @@ class Kiwoom(QMainWindow, form_class):
                 print("[" + trade_time+"]" + order_id + ':' + item_code + '/' + item_name.strip() + '/' + trade_amount + '(' + remained + ')')
                 print("-------------")
 
-                # self.SetRealRemove("ALL", item_code)        ## remove real
-
                 orderType = self.func_GET_db_item(item_code, 3)
 
                 if orderType == "none" :        ## new item inserted
-                    print("CHEJAN : NEW ITEM")
+                    print("[MAIN CHEJAN] NEW ITEM")
                     slot_num = self.which_thread(1, 0)        ## find empty slot
                     print("SLOT NUM : ", slot_num)
                     self.item_slot[slot_num] = item_code      ## Assign Slot
-                    print("Slot Assign Complete)
+                    print("Slot Assign Complete")
 
                     self.func_INSERT_db_item(item_code, 0, 0, 0, 0)     ## insert DB
                     self.func_restart_check(slot_num, item_code)
                     
                     self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
-                elif orderType == 0 :           ## 기존 아이템 전체를 수동 삭제시
-                    print("CHEJAN : DELETE AUTO")
+                elif orderType == 1 :
+                    print("[MAIN CHEJAN] ADD Water")
                     th_num = self.which_thread(0, item_code)
-                    print("0 th num : ", th_num)
-                    
-                    self.item_slot[th_num] = 0      ## slot 초기화
-                    print("item slot : ", self.item_slot)
-                    self.func_DELETE_db_item(item_code)     ## db 삭제
+                    print("[1] THREAD NUM : ", th_num)
+                    self.table_summary.removeRow(th_num)        ## table data 삭제
 
-                    self.table_summary.removeRow(th_num)
+                    self.func_restart_check(th_num, item_code)
 
                     che_dict = {}
-                    che_dict['delete'] = 1
                     che_dict['th_num'] = th_num
                     che_dict['item_code'] = item_code
-                    che_dict['order_id'] = order_id
-                    che_dict['res'] = 1
+                    che_dict['delete'] = 0
 
                     self.che_dict.emit(che_dict)
+
+                elif orderType == 2 :
+                    print("[MAIN CHEJAN] SELL & BUY(SELL)")
+                    th_num = self.which_thread(0, item_code)
+                    print("[2] THREAD NUM : ", th_num)
+                    self.table_summary.removeRow(th_num)        ## table data 삭제
+                    
+                    self.func_restart_check(th_num, item_code)
+                    che_dict = {}
+                    che_dict['th_num'] = th_num
+                    che_dict['item_code'] = item_code
+                    che_dict['delete'] = 0
+
+                    self.che_dict.emit(che_dict)
+
+                elif orderType == 3 :       ## Full Sell 일 경우
+                    print("[MAIN CHEJAN] FULL SELL(Auto)")
+                    th_num = self.which_thread(0, item_code)
+                    print("[3] THREAD NUM : ", th_num)
+                    self.item_slot[th_num] = 0      ## unassign slot
+                    print("[3] Slot unassign Complete")
+                    
+                    self.table_summary.removeRow(th_num)        ## table 에 데이터 삭제
+                    self.SetRealRemove("ALL", item_code)        ## 실시간 데이터 감시 해제
+
+                    che_dict = {}
+                    che_dict['th_num'] = th_num
+                    che_dict['delete'] = 1
+                    che_dict['item_code'] = item_code
+                    
+                    self.che_dict.emit(che_dict)        ## 결과 
+
+                elif orderType == 4 :
+                    print("[MAIN CHEJAN] SELL & BUY(BUY)")
+                    th_num = self.which_thread(0, item_code)
+                    print("[4] THREAD NUM : ", th_num)
+                    self.table_summary.removeRow(th_num)        ## table data 삭제
+                    
+                    self.func_restart_check(th_num, item_code)
+
+                    che_dict = {}
+                    che_dict['th_num'] = th_num
+                    che_dict['item_code'] = item_code
+                    che_dict['delete'] = 0
+
+                    self.che_dict.emit(che_dict)
+
+                elif orderType == 5 :       ## buy(manual)
+                    print("[MAIN CHEJAN] BUY(MANUAL)")
+                    th_num = self.which_thread(0, item_code)
+                    print("[5] THREAD NUM : ", th_num)
+                    self.table_summary.removeRow(th_num)        ## table data 삭제
+                    
+                    self.func_restart_check(th_num, item_code)
+
+                    che_dict = {}
+                    che_dict['th_num'] = th_num
+                    che_dict['item_code'] = item_code
+                    che_dict['delete'] = 0
+
+                    self.che_dict.emit(che_dict)
+
+                elif orderType == 6 :       ## sell(manual)
+                    print("[MAIN CHEJAN] SELL(MANUAL)")
+                    th_num = self.which_thread(0, item_code)
+                    print("[6] THREAD NUM : ", th_num)
+                    self.table_summary.removeRow(th_num)        ## table data 삭제
+                    
+                    self.func_restart_check(th_num, item_code)
+
+                    che_dict = {}
+                    che_dict['th_num'] = th_num
+                    che_dict['item_code'] = item_code
+                    che_dict['delete'] = 0
+
+                    self.che_dict.emit(che_dict)
+
+                elif orderType == 7 :       ## manual Sell Full
+                    print("[MAIN CHEJAN] FULL SELL(MANUAL)")
+                    th_num = self.which_thread(0, item_code)
+                    print("[7] THREAD NUM : ", th_num)
+                    self.item_slot[th_num] = 0      ## unassign slot
+                    print("[7] Slot unassign Complete")
+                    
+                    self.table_summary.removeRow(th_num)        ## table 에 데이터 삭제
+                    self.SetRealRemove("ALL", item_code)        ## 실시간 데이터 감시 해제
+
+                    che_dict = {}
+                    che_dict['th_num'] = th_num
+                    che_dict['delete'] = 1
+                    che_dict['item_code'] = item_code
+                    
+                    self.che_dict.emit(che_dict)        ## 결과 
+
+                self.load_etc_data()
                 
     def func_GET_Deposit(self) :
         acc_no = ACCOUNT
@@ -869,8 +964,8 @@ class Kiwoom(QMainWindow, form_class):
             # self.flag_ItemInfo_click = 1
             self.code_edit.setText(item_code.strip())
 
-            hoga_buy = self.table_summary.item(row, 5)
-            hoga_sell = self.table_summary.item(row, 6)
+            hoga_buy = self.table_summary.item(row, 5).text()
+            hoga_sell = self.table_summary.item(row, 6).text()
             self.wid_buy_price.setText(str(int(hoga_buy)))
             self.wid_sell_price.setText(str(int(hoga_sell)))
 
@@ -1128,6 +1223,7 @@ class Kiwoom(QMainWindow, form_class):
                 test_dict['price_buy'] = int(price_buy)
                 test_dict['price_sell'] = int(price_sell)
                 test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
+                test_dict['autoTrade'] = 1
 
                 if th_num == 0 :
                     self.test_dict0.emit(test_dict)
@@ -1146,12 +1242,12 @@ class Kiwoom(QMainWindow, form_class):
     def which_thread(self, type, item_code) :
         th_num = 100
 
-        if type == 0 :
+        if type == 0 :      ## 비어있는 slot 반환
             for i in range(NUM_SLOT) :
                 if item_code == self.item_slot[i] :
                     th_num = i
                     break
-        elif type == 1 :
+        elif type == 1 :    ## 해당 item_code가 지정되어 있는 slot 반환
             for i in range(NUM_SLOT) :
                 if self.item_slot[i] == 0 :
                     th_num = i
