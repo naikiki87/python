@@ -74,7 +74,7 @@ class Kiwoom(QMainWindow, form_class):
         self.stay_print_time = {}
         self.flag_lock_init = 0
         self.flag_lock = {}
-        self.item_codes = []
+        # self.item_codes = []
         self.flag_checking = 0
 
         self.func_SET_db_table()        # db table 생성
@@ -454,10 +454,34 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
         print("restart : make order")
 
+    def restart_check(self, th_num, item_code) :
+        print("restart check : ", th_num, ":", item_code)
+        self.table_summary.clearContents()      ## table clear
+        self.flag_checking = 1
+        ## history load
+        today = self.func_GET_Today()
+        self.flag_HistoryData_Auto = 1
+        self.func_GET_TradeHistory(today)
+
+        ## deposit load
+        self.func_GET_Deposit()
+
+        ## daily profit load
+        self.func_GET_DailyProfit(0)
+
+        rqname = "RESET_" + str(th_num) + '_' + item_code
+
+        acc_no = ACCOUNT
+        acc_pw = PASSWORD
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00018", 0, "0101")
+        print("restart : make order")
+
     def func_SET_Items(self, rqname, trcode, recordname):
         print("Set Items")
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
-        self.item_codes = []
+        # self.item_codes = []
 
         for i in range(self.item_count) :
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
@@ -473,8 +497,30 @@ class Kiwoom(QMainWindow, form_class):
             self.item_slot[i] = item_code
             print("restart item_code : ", item_code)
             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
-            self.item_codes.append(item_code)
+            # self.item_codes.append(item_code)
         print("Set items end")
+
+    def func_RESET_Items(self, rqname, trcode, recordname, slot, code) :
+        print("func RESET Items : ", slot, ",", code)
+        item_count = int(self.func_GET_RepeatCount(trcode, rqname))
+
+        for i in range(item_count) :
+            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+            if item_code == code :
+                item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
+                owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
+                unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
+                break
+        
+        self.func_SET_TableData(1, slot, 0, item_code, 0)
+        self.func_SET_TableData(1, slot, 1, item_name, 0)
+        self.func_SET_TableData(1, slot, 2, str(int(owncount)), 0)
+        self.func_SET_TableData(1, slot, 3, str(round(float(unit_price), 1)), 0)
+
+        self.SetRealReg("0101", code, "10", 1)      ## 실시간 데이터 수신 등록
+
+        print("RESET Complete")
+
 
     def func_stop_check(self):
         print("stop checking")
@@ -597,49 +643,61 @@ class Kiwoom(QMainWindow, form_class):
             order_id = self.func_GET_Chejan_data(9203)      # 주문번호
             item_code = self.func_GET_Chejan_data(9001)     # 종목코드
             item_name = self.func_GET_Chejan_data(302)      # 종목명
-            # trade_price = self.func_GET_Chejan_data(931)    # 체결단가
             trade_amount = self.func_GET_Chejan_data(911)   # 체결량
             remained = self.func_GET_Chejan_data(902)       # 미체결
             trade_time = self.func_GET_Chejan_data(908)      # 주문체결시간
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
             if remained == '0':         # 체결시
-                # self.func_GET_Deposit()     ## 예수금 갱신
-
-                self.func_stop_check()
-                
                 item_code = item_code.replace('A', '').strip()
                 print("CHE RECEIVE : ", item_code)
 
-                th_num = self.which_thread(code)
+                self.SetRealRemove("ALL", item_code)        ## remove real
+
+                orderType = self.func_GET_db_item(item_code, 3)
+
+                if orderType == "none" :
+                    for i in range(NUM_SLOT) :
+                        if self.item_slot[i] == 0 :
+                            th_num = i
+                            self.item_slot[i] = item_code       ## assign slot
+                            break
+
+                print("th NUM : ", th_num)
+
+                self.func_INSERT_db_item(item_code, 0, 0, 0, 0)
+                # self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
+                self.restart_check(th_num, item_code)
+
+                # th_num = self.which_thread(code)
                 
-                print("th num : ", th_num)
+                # print("th num : ", th_num)
 
-                che_dict = {}
-                che_dict['th_num'] = th_num
-                che_dict['item_code'] = item_code
-                che_dict['order_id'] = order_id
-                che_dict['res'] = 1
+                # che_dict = {}
+                # che_dict['th_num'] = th_num
+                # che_dict['item_code'] = item_code
+                # che_dict['order_id'] = order_id
+                # che_dict['res'] = 1
 
-                print("trans che result")
-                self.che_dict.emit(che_dict)
+                # print("trans che result")
+                # self.che_dict.emit(che_dict)
 
-                self.text_edit.append("-- 체결완료 --")
-                self.text_edit.append("[" + trade_time+"]" + order_id + ':' + item_code + '/' + item_name + '/' + trade_amount + '(' + remained + ')')
-                self.text_edit.append("-------------")
+                # self.text_edit.append("-- 체결완료 --")
+                # self.text_edit.append("[" + trade_time+"]" + order_id + ':' + item_code + '/' + item_name + '/' + trade_amount + '(' + remained + ')')
+                # self.text_edit.append("-------------")
 
-                print("-- 체결완료 --")
-                print("[" + trade_time+"]" + order_id + ':' + item_code + '/' + item_name + '/' + trade_amount + '(' + remained + ')')
-                print("-------------")
-                # self.text_edit.append("체결시간 : " + trade_time)
-                # self.text_edit.append("주문번호 : " + order_id)
-                # self.text_edit.append("종목코드 : " + item_code)
-                # self.text_edit.append("종목명 : " + item_name)
-                # self.text_edit.append("체결량 : " + trade_amount)
-                # self.text_edit.append("미체결 : " + remained)
-                # self.text_edit.append("")
+                # print("-- 체결완료 --")
+                # print("[" + trade_time+"]" + order_id + ':' + item_code + '/' + item_name + '/' + trade_amount + '(' + remained + ')')
+                # print("-------------")
+                # # self.text_edit.append("체결시간 : " + trade_time)
+                # # self.text_edit.append("주문번호 : " + order_id)
+                # # self.text_edit.append("종목코드 : " + item_code)
+                # # self.text_edit.append("종목명 : " + item_name)
+                # # self.text_edit.append("체결량 : " + trade_amount)
+                # # self.text_edit.append("미체결 : " + remained)
+                # # self.text_edit.append("")
 
-                self.func_restart_check()
+                # self.func_restart_check()
                 
     def func_GET_Deposit(self) :
         acc_no = ACCOUNT
@@ -1018,6 +1076,16 @@ class Kiwoom(QMainWindow, form_class):
         # if comp_str in rqname:
         #     self.SET_hoga(rqname, trcode, recordname)
 
+        reset_str = "RESET_"
+
+        if reset_str in rqname:
+            item_slot = int(rqname[6:7])
+            item_code = rqname[8:]
+            print("TR RQname : ", rqname)
+            print("TR slot : ", item_slot)
+            print("TR item : ", item_code)
+            self.func_RESET_Items(rqname, trcode, recordname, item_slot, item_code)
+
         print("receive tr data : ", rqname)
         if rqname == "SET_hoga":
             self.SET_hoga(rqname, trcode, recordname)
@@ -1073,6 +1141,9 @@ class Kiwoom(QMainWindow, form_class):
                 pass
 
     def which_thread(self, item_code) :
+        print("Which thread")
+        th_num = 100
+        
         for i in range(NUM_SLOT) :
             if item_code == self.item_slot[i] :
                 th_num = i
