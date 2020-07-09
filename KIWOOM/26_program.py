@@ -74,7 +74,6 @@ class Kiwoom(QMainWindow, form_class):
         self.stay_print_time = {}
         self.flag_lock_init = 0
         self.flag_lock = {}
-        # self.item_codes = []
         self.flag_checking = 0
 
         self.func_SET_db_table()        # db table 생성
@@ -301,8 +300,12 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         print("btn test")
 
+        val = self.func_GET_db_item(0 , 0)
+        print("codes : ", val)
+
+
         # self.SetRealRemove("0101", "005930")
-        self.SetRealRemove("ALL", "001122")
+        # self.SetRealRemove("ALL", "001122")
         
         # acc_no = ACCOUNT
         # acc_pw = PASSWORD
@@ -415,6 +418,7 @@ class Kiwoom(QMainWindow, form_class):
             QtTest.QTest.qWait(500)
 
     def func_start_check(self) :
+        self.create_thread()
         self.table_summary.clearContents()      ## table clear
         self.flag_checking = 1
         ## history load
@@ -431,43 +435,44 @@ class Kiwoom(QMainWindow, form_class):
         ## daily profit load
         self.func_GET_DailyProfit(0)
 
-        ## create Thread(workers)
-        self.create_thread()
-
         acc_no = ACCOUNT
         acc_pw = PASSWORD
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
-    def func_restart_check(self, th_num, item_code) :
-        print("restart check : ", th_num, ":", item_code)
-        # self.table_summary.clearContents()      ## table clear
-        # self.flag_checking = 1
-        ## history load
-        today = self.func_GET_Today()
-        self.flag_HistoryData_Auto = 1
-        self.func_GET_TradeHistory(today)
-
-        ## deposit load
-        self.func_GET_Deposit()
-
-        ## daily profit load
-        self.func_GET_DailyProfit(0)
-
-        rqname = "RESET_" + str(th_num) + '_' + item_code
-        print("Restart rqname : ", rqname)
-
-        acc_no = ACCOUNT
-        acc_pw = PASSWORD
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00018", 0, "0102")
-        print("restart : make order")
 
     def func_SET_Items(self, rqname, trcode, recordname):
         print("Set Items")
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
-        # self.item_codes = []
+
+        print("[CODE SYNC] START")
+        db_codes = self.func_GET_db_item(0, 0)
+        print("[CODE SYNC] DB CODES : ", db_codes)
+
+        for i in range(self.item_count) :
+            try :
+                item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+                db_codes.remove(item_code)
+            except :
+                pass
+        print("[CODE SYNC] REMAIN : ", db_codes)
+
+        for i in range(len(db_codes)) :
+            self.func_DELETE_db_item(db_codes[i])
+        print("[CODE SYNC] REMOVE COMPLETE")
+
+        for i in range(self.item_count) :
+            try :
+                item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+                step = self.func_GET_db_item(item_code, 1)
+
+                if step == "none" :
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)
+            except :
+                pass
+        print("[CODE SYNC] FILL LACK COMPLETE")
+        print("[CODE SYNC] END")
+        
 
         for i in range(self.item_count) :
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
@@ -475,36 +480,19 @@ class Kiwoom(QMainWindow, form_class):
             owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
             unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
 
+            self.item_slot[i] = item_code
+
             self.func_SET_TableData(1, i, 0, item_code, 0)
             self.func_SET_TableData(1, i, 1, item_name, 0)
             self.func_SET_TableData(1, i, 2, str(int(owncount)), 0)
             self.func_SET_TableData(1, i, 3, str(round(float(unit_price), 1)), 0)
 
-            self.item_slot[i] = item_code
-            print("restart item_code : ", item_code)
             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
-            # self.item_codes.append(item_code)
+
         print("Set items end")
 
-    def func_RESET_Items(self, rqname, trcode, recordname, slot, code) :
-        print("func RESET Items : ", slot, ",", code)
-        item_count = int(self.func_GET_RepeatCount(trcode, rqname))
 
-        for i in range(item_count) :
-            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
-            if item_code == code :
-                item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
-                owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
-                unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
-                break
-        
-        self.func_SET_TableData(1, slot, 0, item_code, 0)
-        self.func_SET_TableData(1, slot, 1, item_name, 0)
-        self.func_SET_TableData(1, slot, 2, str(int(owncount)), 0)
-        self.func_SET_TableData(1, slot, 3, str(round(float(unit_price), 1)), 0)
-
-        print("RESET Complete")
-
+    
 
     def func_stop_check(self):
         print("stop checking")
@@ -627,6 +615,37 @@ class Kiwoom(QMainWindow, form_class):
         self.func_GET_Ordering(today)
         self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
 
+    def func_restart_check(self, th_num, item_code) :
+        print("[func_restart_check] START : ", th_num, ", ", item_code)
+        rqname = "RESET_" + str(th_num) + '_' + item_code
+        print("[func_restart_check] RQ Name : ", rqname)
+
+        acc_no = ACCOUNT
+        acc_pw = PASSWORD
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00018", 0, "0102")
+        print("[func_restart_check] ORDER COMPLETE")
+
+    def func_RESET_Items(self, rqname, trcode, recordname, slot, code) :
+        print("[func_RESET_Items] START : ", slot, ", ", code)
+        item_count = int(self.func_GET_RepeatCount(trcode, rqname))
+
+        for i in range(item_count) :
+            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+            if item_code == code :
+                item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
+                owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
+                unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
+                break
+        
+        self.func_SET_TableData(1, slot, 0, item_code, 0)
+        self.func_SET_TableData(1, slot, 1, item_name, 0)
+        self.func_SET_TableData(1, slot, 2, str(int(owncount)), 0)
+        self.func_SET_TableData(1, slot, 3, str(round(float(unit_price), 1)), 0)
+
+        print("[func_RESET_Items] Complete")
+
     def func_GET_Chejan_data(self, fid):
         ret = self.kiwoom.dynamicCall("GetChejanData(int)", fid)
         return ret
@@ -659,22 +678,19 @@ class Kiwoom(QMainWindow, form_class):
 
                 if orderType == "none" :        ## new item inserted
                     print("CHEJAN : NEW ITEM")
-                    self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
+                    slot_num = self.which_thread(1, 0)        ## find empty slot
+                    print("SLOT NUM : ", slot_num)
+                    self.item_slot[slot_num] = item_code      ## Assign Slot
+                    print("Slot Assign Complete)
+
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)     ## insert DB
+                    self.func_restart_check(slot_num, item_code)
                     
-                    for i in range(NUM_SLOT) :
-                        if self.item_slot[i] == 0 :
-                            th_num = i
-                            self.item_slot[i] = item_code       ## assign slot
-                            break
-
-                    print("th NUM : ", th_num)
-
-                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)
-                    self.func_restart_check(th_num, item_code)
+                    self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
                 elif orderType == 0 :           ## 기존 아이템 전체를 수동 삭제시
                     print("CHEJAN : DELETE AUTO")
-                    th_num = self.which_thread(item_code)
+                    th_num = self.which_thread(0, item_code)
                     print("0 th num : ", th_num)
                     
                     self.item_slot[th_num] = 0      ## slot 초기화
@@ -1062,7 +1078,7 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetRealRemove(QString, QString)", screenNo, item_code)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        print("receive tr data : ", rqname)
+        print("[receive_tr_data] ", rqname)
         reset_str = "RESET_"
 
         if reset_str in rqname:
@@ -1092,7 +1108,7 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
         print("Main Rcv Real Data : ", code)
-        th_num = self.which_thread(code)
+        th_num = self.which_thread(0, code)
         cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
         if cur_price != '' :
             try :
@@ -1127,12 +1143,19 @@ class Kiwoom(QMainWindow, form_class):
             except :
                 pass
 
-    def which_thread(self, item_code) :
+    def which_thread(self, type, item_code) :
         th_num = 100
 
-        for i in range(NUM_SLOT) :
-            if item_code == self.item_slot[i] :
-                th_num = i
+        if type == 0 :
+            for i in range(NUM_SLOT) :
+                if item_code == self.item_slot[i] :
+                    th_num = i
+                    break
+        elif type == 1 :
+            for i in range(NUM_SLOT) :
+                if self.item_slot[i] == 0 :
+                    th_num = i
+                    break
 
         return th_num
 
