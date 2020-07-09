@@ -30,6 +30,7 @@ PER_HI = 1
 MAKE_ORDER = 1
 
 THREAD_NUM = 2
+NUM_SLOT = 5
 
 class Kiwoom(QMainWindow, form_class):
     test_msg = pyqtSignal("PyQt_PyObject")
@@ -64,7 +65,7 @@ class Kiwoom(QMainWindow, form_class):
         ## flag setting
         self.set_deposit = 0
         self.cnt_thread = 0
-        self.item_slot = {}
+        self.item_slot = [0, 0, 0, 0, 0]
         self.list_th_connected = [0, 0, 0, 0, 0]
         self.cnt_call_hoga = 0
         self.cnt_tab_history = 0
@@ -299,27 +300,16 @@ class Kiwoom(QMainWindow, form_class):
 
     def btn_test(self) :
         print("btn test")
-        
-        self.worker = module_get_summary2.Worker(1)
-        self.worker.start()
 
-        QtTest.QTest.qWait(3000)
-
-        self.worker2 = module_get_summary2.Worker(2)
-        self.worker2.start()
-
-        QtTest.QTest.qWait(3000)
+        self.SetRealRemove("ALL", "005930")
 
     def btn_test_2(self):
         print("btn test2")
+        self.SetRealReg("0101", "005930", "10", 1)      ## 실시간 데이터 수신 등록
 
-        temp_dict = {}
-        temp_dict['a'] = 10
-        self.test_dict0.emit(temp_dict)
-
-    def delete_item(self, item_code, thread) :
-        self.SetRealRemove("0101", item_code)
-        del self.item_slot[thread]
+    # def delete_item(self, item_code, thread) :
+    #     self.SetRealRemove("0101", item_code)
+    #     del self.item_slot[thread]
 
     @pyqtSlot(dict)
     def notice_from_worker(self, data) :
@@ -328,7 +318,7 @@ class Kiwoom(QMainWindow, form_class):
         if noti_type == 0:
             item_code = data['item_code']
             thread = data['thread']
-            self.delete_item(item_code, thread)
+            # self.delete_item(item_code, thread)
     def create_thread(self) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "CREATE THREADS")
@@ -464,8 +454,6 @@ class Kiwoom(QMainWindow, form_class):
     def func_SET_Items(self, rqname, trcode, recordname):
         print("Set Items")
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
-
-        self.item_slot = {}
         self.item_codes = []
 
         for i in range(self.item_count) :
@@ -479,7 +467,6 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SET_TableData(1, i, 2, str(int(owncount)), 0)
             self.func_SET_TableData(1, i, 3, str(round(float(unit_price), 1)), 0)
 
-            # self.item_slot[item_code] = i       ## slot 번호 할당
             self.item_slot[i] = item_code
             print("restart item_code : ", item_code)
             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
@@ -620,9 +607,8 @@ class Kiwoom(QMainWindow, form_class):
                 
                 item_code = item_code.replace('A', '').strip()
                 print("CHE RECEIVE : ", item_code)
-                for slot, code in self.item_slot.items() :
-                    if code == item_code :
-                        th_num = slot
+
+                th_num = self.which_thread(code)
                 
                 print("th num : ", th_num)
 
@@ -1042,11 +1028,7 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00009_man":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
-        # th_num = self.item_slot[code]
-        for slot, item_code in self.item_slot.items() :
-            if item_code == code :
-                th_num = slot
-
+        th_num = self.which_thread(code)
         cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
         if cur_price != '' :
             try :
@@ -1080,6 +1062,13 @@ class Kiwoom(QMainWindow, form_class):
             
             except :
                 pass
+
+    def which_thread(self, item_code) :
+        for i in range(NUM_SLOT) :
+            if item_code == self.item_slot[i] :
+                th_num = i
+
+        return th_num
 
 if __name__=="__main__":
     app = QApplication(sys.argv)

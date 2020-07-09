@@ -100,7 +100,7 @@ class Worker(QThread):
     def dict_from_main(self, data) :
         item_code = data['item_code']
         deposit = data['deposit']
-        print("deposit : ", deposit)
+        # print("deposit : ", deposit)
         # print(self.seq, " Lock : ", self.lock)
         if self.lock == 0 :
             self.lock = 1       ## lock
