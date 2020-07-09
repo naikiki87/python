@@ -201,14 +201,26 @@ class Worker(QThread):
                         qty = res['sell_qty']
                         price = res['sell_price']
 
-                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                            if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
-                                if self.func_UPDATE_db_item(item_code, 4, qty) == 1:    ## 판매수량 -> trAmount
+                        if qty == 0 :
+                            print(item_code, "judge : 2 and 3")
+                            qty = own_count
+                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                                if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
                                     if MAKE_ORDER == 1:
                                         print("make order : ", item_code, "SELL")
-
+                                        
                                         self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
                                         self.indicate_ordered()         ## INDICATE : ordered
+
+                        elif qty >= 1 :
+                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                                if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
+                                    if self.func_UPDATE_db_item(item_code, 4, qty) == 1:    ## 판매수량 -> trAmount
+                                        if MAKE_ORDER == 1:
+                                            print("make order : ", item_code, "SELL")
+
+                                            self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                                            self.indicate_ordered()         ## INDICATE : ordered
 
                     elif judge_type == 3 :      ## full_sell
                         print(item_code, "judge : 3")
@@ -259,8 +271,8 @@ class Worker(QThread):
         # Sell & Buy
         elif percent > PER_HI and step < STEP_LIMIT :
             sell_qty = int(own_count / 2)
-            if sell_qty == 0 :
-                sell_qty = 1
+            # if sell_qty == 0 :
+            #     sell_qty = 1
             price = int(price_sell)
 
             res['judge'] = 2
