@@ -104,15 +104,22 @@ class Worker(QThread):
                     if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                         self.lock = 0           ## unlock
 
-            ## SELL(Manual)
+            ## BUY(Manual)
             elif orderType == 6 :
                 print("[th che_result] orderType : ", orderType)
                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                     if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                         self.lock = 0           ## unlock
 
-            ## FULL SELL(Manual)
+            ## SELL(Manual)
             elif orderType == 7 :
+                print("[th che_result] orderType : ", orderType)
+                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                    if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                        self.lock = 0           ## unlock
+
+            ## FULL SELL(Manual)
+            elif orderType == 8 :
                 print("[th che_result] orderType : ", orderType)
                 self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
                 self.lock = 0           ## unlock
@@ -120,36 +127,41 @@ class Worker(QThread):
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
-        print(self.seq, " dict : ", item_code)
+        # print(self.seq, " dict : ", item_code)
         deposit = data['deposit']
+        # print(self.seq, " deposit : ", deposit)
 
         if data['autoTrade'] == 0 :
+            print("Receive Manual dict")
             self.lock = 1
             orderType = data['orderType']
 
             if orderType == 5 :
+                print("manual new buy")
                 qty = data['qty']
                 price = data['price']
+
+                self.func_INSERT_db_item(item_code, 0, 0, 0, 0)     ## 신규 item db insert
 
                 if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                     if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
                         print(self.seq, " thread setting complete -> ordertype : 5")
                         if MAKE_ORDER == 1:
                             print("make order : ", item_code, "BUY(MANUAL)")
-                            
                             self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
-                            self.indicate_ordered()         ## INDICATE : ordered
 
             elif orderType == 6 :
+                print("manual gi buy")
                 qty = data['qty']
                 price = data['price']
 
-                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                    if self.func_UPDATE_db_item(item_code, 3, 6) == 1:  ## orderType 변경 -> 6(manual sell)
+                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                    if self.func_UPDATE_db_item(item_code, 3, 6) == 1:       ## orderType -> 6(manual gi buy)
+                        print(self.seq, " thread setting complete -> ordertype : 6")
                         if MAKE_ORDER == 1:
-                            print("make order : ", item_code, "SELL(MANUAL)")
+                            print("make order : ", item_code, "GI BUY(MANUAL)")
                             
-                            self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                            self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
                             self.indicate_ordered()         ## INDICATE : ordered
 
             elif orderType == 7 :
@@ -157,7 +169,19 @@ class Worker(QThread):
                 price = data['price']
 
                 if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                    if self.func_UPDATE_db_item(item_code, 3, 7) == 1:  ## orderType 변경 -> 7(manual sell full)
+                    if self.func_UPDATE_db_item(item_code, 3, 7) == 1:  ## orderType 변경 -> 7(manual sell)
+                        if MAKE_ORDER == 1:
+                            print("make order : ", item_code, "SELL(MANUAL)")
+                            
+                            self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
+                            self.indicate_ordered()         ## INDICATE : ordered
+
+            elif orderType == 8 :
+                qty = data['qty']
+                price = data['price']
+
+                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                    if self.func_UPDATE_db_item(item_code, 3, 8) == 1:  ## orderType 변경 -> 8(manual sell full)
                         if MAKE_ORDER == 1:
                             print("make order : ", item_code, "SELL FULL(MANUAL)")
                             
@@ -222,15 +246,14 @@ class Worker(QThread):
                         judge_type = res['judge']
 
                         if judge_type == 0 :        ## stay
-                            print(item_code, "judge : 0")
+                            # print(item_code, "judge : 0")
                             self.lock = 0
 
                         elif judge_type == 1 :      ## add water
-                            print(item_code, "judge : 1")
+                            # print(item_code, "judge : 1")
 
                             qty = res['buy_qty']
                             price = res['buy_price']
-                            deposit = res['deposit']
 
                             need_price = qty * price
 
@@ -249,13 +272,13 @@ class Worker(QThread):
                                 self.lock = 0
 
                         elif judge_type == 2 :      ## sell & buy
-                            print(item_code, "judge : 2")
+                            # print(item_code, "judge : 2")
 
                             qty = res['sell_qty']
                             price = res['sell_price']
 
                             if qty == 0 :
-                                print(item_code, "judge : 2 and 3")
+                                # print(item_code, "judge : 2 and 3")
                                 qty = own_count
                                 if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                                     if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
@@ -276,7 +299,7 @@ class Worker(QThread):
                                                 self.indicate_ordered()         ## INDICATE : ordered
 
                         elif judge_type == 3 :      ## full_sell
-                            print(item_code, "judge : 3")
+                            # print(item_code, "judge : 3")
 
                             qty = res['sell_qty']
                             price = res['sell_price']
