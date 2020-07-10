@@ -123,8 +123,6 @@ class Kiwoom(QMainWindow, form_class):
             elif data['percent'] == 0 :
                 self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 0)
             self.func_SET_TableData(1, data['seq'], 13, str(data['step']), 0)
-
-    
     
     @pyqtSlot(int)
     def th_connected(self, data) :
@@ -537,15 +535,14 @@ class Kiwoom(QMainWindow, form_class):
                     print("[MAIN CHEJAN] ADD Water")
                     th_num = self.which_thread(item_code)[1]
                     print("[1] THREAD NUM : ", th_num)
+
                     self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
-
-
                     self.func_restart_check(th_num, item_code)
 
                     che_dict = {}
                     che_dict['th_num'] = th_num
                     che_dict['item_code'] = item_code
-                    che_dict['delete'] = 0
+                    # che_dict['delete'] = 0
 
                     self.che_dict.emit(che_dict)
 
@@ -559,7 +556,7 @@ class Kiwoom(QMainWindow, form_class):
                     che_dict = {}
                     che_dict['th_num'] = th_num
                     che_dict['item_code'] = item_code
-                    che_dict['delete'] = 0
+                    # che_dict['delete'] = 0
 
                     self.che_dict.emit(che_dict)
 
@@ -576,7 +573,7 @@ class Kiwoom(QMainWindow, form_class):
 
                     che_dict = {}
                     che_dict['th_num'] = th_num
-                    che_dict['delete'] = 1
+                    # che_dict['delete'] = 1
                     che_dict['item_code'] = item_code
                     
                     self.che_dict.emit(che_dict)        ## 결과 
@@ -593,7 +590,7 @@ class Kiwoom(QMainWindow, form_class):
                     che_dict = {}
                     che_dict['th_num'] = th_num
                     che_dict['item_code'] = item_code
-                    che_dict['delete'] = 0
+                    # che_dict['delete'] = 0
 
                     self.che_dict.emit(che_dict)
 
@@ -608,7 +605,7 @@ class Kiwoom(QMainWindow, form_class):
                     che_dict = {}
                     che_dict['th_num'] = th_num
                     che_dict['item_code'] = item_code
-                    che_dict['delete'] = 0
+                    # che_dict['delete'] = 0
 
                     self.che_dict.emit(che_dict)
 
@@ -622,7 +619,7 @@ class Kiwoom(QMainWindow, form_class):
                     che_dict = {}
                     che_dict['th_num'] = th_num
                     che_dict['item_code'] = item_code
-                    che_dict['delete'] = 0
+                    # che_dict['delete'] = 0
 
                     self.che_dict.emit(che_dict)
 
@@ -639,7 +636,7 @@ class Kiwoom(QMainWindow, form_class):
                     che_dict = {}
                     che_dict['th_num'] = th_num
                     che_dict['item_code'] = item_code
-                    che_dict['delete'] = 0
+                    # che_dict['delete'] = 0
 
                     self.che_dict.emit(che_dict)
 
@@ -654,8 +651,8 @@ class Kiwoom(QMainWindow, form_class):
 
                     che_dict = {}
                     che_dict['th_num'] = th_num
-                    che_dict['delete'] = 1
                     che_dict['item_code'] = item_code
+                    # che_dict['delete'] = 1
                     
                     self.che_dict.emit(che_dict)        ## 결과 
 
