@@ -33,18 +33,13 @@ NUM_SLOT = 5
 tableSUMMARY_COL = 14
 
 class Kiwoom(QMainWindow, form_class):
-    test_msg = pyqtSignal("PyQt_PyObject")
-
-    test_dict = pyqtSignal(dict)
     test_dict0 = pyqtSignal(dict)
     test_dict1 = pyqtSignal(dict)
     test_dict2 = pyqtSignal(dict)
     test_dict3 = pyqtSignal(dict)
     test_dict4 = pyqtSignal(dict)
-
     che_dict = pyqtSignal(dict)
-
-    start_work = pyqtSignal(int)
+    start_work = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
@@ -242,13 +237,24 @@ class Kiwoom(QMainWindow, form_class):
             QtTest.QTest.qWait(500)
 
     def order_start(self) :
-        self.make_order = 1
-        self.start_work.emit(self.make_order)
+        try :
+            temp_dict = {}
+            temp_dict['start'] = 1
+            temp_dict['per_low'] = float(self.input_per_low.text())
+            temp_dict['per_hi'] = float(self.input_per_hi.text())
+            temp_dict['step_limit'] = int(self.input_step.text())
+            self.start_work.emit(temp_dict)
+            self.make_order = 1
+        except Exception as e : 
+            timestamp = self.func_GET_CurrentTime()
+            self.text_edit.append(timestamp + str(e))
         self.load_etc_data()
 
     def order_stop(self) :
         self.make_order = 0
-        self.start_work.emit(self.make_order)
+        temp_dict = {}
+        temp_dict['start'] = 0
+        self.start_work.emit(temp_dict)
         self.load_etc_data()
 
     def func_start_check(self) :
