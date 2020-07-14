@@ -59,6 +59,7 @@ class Kiwoom(QMainWindow, form_class):
     def init_ENV(self) :
         ## flag setting
         self.make_order = 0
+        self.possible_time = 0
         self.reset_time = 1000
         self.set_deposit = 0
         self.cnt_thread = 0
@@ -96,9 +97,10 @@ class Kiwoom(QMainWindow, form_class):
         self.func_SET_tableORDER()          # order 현황 table
         self.func_SET_table_dailyprofit()   # dailyprofit table
 
-    @pyqtSlot(str)
+    @pyqtSlot(dict)
     def update_times(self, data) :
-        self.text_edit4.setText(data)
+        self.text_edit4.setText(data['time'])
+        self.possible_time = data['possible']
 
     @pyqtSlot(dict)
     def rp_dict(self, data):
@@ -1156,43 +1158,49 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00009_man":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
-        th_num = self.which_thread(code)[1]
-        cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
-        if cur_price != '' :
-            try :
-                price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()
-                price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()
+        if self.possible_time == 1 :
+            th_num = self.which_thread(code)[1]
+            cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
+            if cur_price != '' :
+                try :
+                    price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()
+                    price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()
+                    
+                    item_name = self.table_summary.item(th_num, 1).text()
+                    own_count = self.table_summary.item(th_num, 2).text()
+                    unit_price = self.table_summary.item(th_num, 3).text()
+
+                    test_dict = {}
+                    
+                    test_dict['item_code'] = code
+                    test_dict['item_name'] = item_name
+                    test_dict['own_count'] = int(own_count)
+                    test_dict['unit_price'] = float(unit_price)
+                    test_dict['cur_price'] = int(cur_price)
+                    test_dict['price_buy'] = int(price_buy)
+                    test_dict['price_sell'] = int(price_sell)
+                    test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
+
+                    test_dict['autoTrade'] = 1
+
+                    if th_num == 0 :
+                        self.test_dict0.emit(test_dict)
+                    elif th_num == 1 :
+                        self.test_dict1.emit(test_dict)
+                    elif th_num == 2 :
+                        self.test_dict2.emit(test_dict)
+                    elif th_num == 3 :
+                        self.test_dict3.emit(test_dict)
+                    elif th_num == 4 :
+                        self.test_dict4.emit(test_dict)
                 
-                item_name = self.table_summary.item(th_num, 1).text()
-                own_count = self.table_summary.item(th_num, 2).text()
-                unit_price = self.table_summary.item(th_num, 3).text()
+                except :
+                    pass
+        
+        else :
+            timestamp = self.func_GET_CurrentTime()
+            self.text_edit.append(timestamp + "Market NOT OPEN")
 
-                test_dict = {}
-                
-                test_dict['item_code'] = code
-                test_dict['item_name'] = item_name
-                test_dict['own_count'] = int(own_count)
-                test_dict['unit_price'] = float(unit_price)
-                test_dict['cur_price'] = int(cur_price)
-                test_dict['price_buy'] = int(price_buy)
-                test_dict['price_sell'] = int(price_sell)
-                test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
-
-                test_dict['autoTrade'] = 1
-
-                if th_num == 0 :
-                    self.test_dict0.emit(test_dict)
-                elif th_num == 1 :
-                    self.test_dict1.emit(test_dict)
-                elif th_num == 2 :
-                    self.test_dict2.emit(test_dict)
-                elif th_num == 3 :
-                    self.test_dict3.emit(test_dict)
-                elif th_num == 4 :
-                    self.test_dict4.emit(test_dict)
-            
-            except :
-                pass
 
     def func_SET_db_table(self) :
         conn = sqlite3.connect("item_status.db")
