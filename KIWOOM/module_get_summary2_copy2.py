@@ -14,10 +14,6 @@ TAX = 0.0025
 FEE_BUY = 0.0035
 FEE_SELL = 0.0035
 GOAL_PER = -0.01
-MAKE_ORDER = 1
-PER_LOW = -2
-PER_HI = 1
-STEP_LIMIT = 5
 
 ACCOUNT = "8137639811"
 PASSWORD = "6458"
@@ -32,10 +28,10 @@ class Worker(QThread):
         super().__init__()
         self.seq = seq
         
-        # self.MAKE_ORDER = 0
-        # self.PER_LOW = -2
-        # self.PER_HI = 2
-        # self.STEP_LIMIT = 5
+        self.MAKE_ORDER = 0
+        self.PER_LOW = -2
+        self.PER_HI = 2
+        self.STEP_LIMIT = 5
         self.worker = QAxWidget()
         self.worker.setControl("KHOPENAPI.KHOpenAPICtrl.1")
         self.worker.dynamicCall("CommConnect()")
@@ -151,17 +147,17 @@ class Worker(QThread):
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
-        # print("th dict : ", item_code)
+        print("th dict : ", item_code)
         deposit = data['deposit']
 
         if data['autoTrade'] == 0 :
             self.lock = 1
             print("Receive Manual dict")
 
-            orderType = data['orderType']
+            if self.MAKE_ORDER == 1 :
+                orderType = data['orderType']
 
-            if orderType == 5 :         ## 신규 item 매수
-                if MAKE_ORDER == 1 :
+                if orderType == 5 :         ## 신규 item 매수
                     print("신규 바이")
                     qty = data['qty']
                     price = data['price']
@@ -174,8 +170,7 @@ class Worker(QThread):
                             print("make order : ", item_code, "BUY(MANUAL)")
                             self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
 
-            elif orderType == 6 :       ## 기존 item 수동 매수
-                if MAKE_ORDER == 1 :
+                elif orderType == 6 :       ## 기존 item 수동 매수
                     print("th 기 바이")
                     qty = data['qty']
                     price = data['price']
@@ -188,8 +183,7 @@ class Worker(QThread):
                             self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
                             self.indicate_ordered()         ## INDICATE : ordered
 
-            elif orderType == 7 :       ## 일부 sell manual
-                if MAKE_ORDER == 1 :
+                elif orderType == 7 :       ## 일부 sell manual
                     qty = data['qty']
                     price = data['price']
 
@@ -200,8 +194,7 @@ class Worker(QThread):
                             self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
                             self.indicate_ordered()         ## INDICATE : ordered
 
-            elif orderType == 8 :       ## full sell manual
-                if MAKE_ORDER == 1 :
+                elif orderType == 8 :       ## full sell manual
                     qty = data['qty']
                     price = data['price']
 
@@ -211,6 +204,9 @@ class Worker(QThread):
                             
                             self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
                             self.indicate_ordered()         ## INDICATE : ordered
+            elif self.MAKE_ORDER == 0 :
+                self.lock = 0
+                print("[NOT ORDERABLE] make_order : 0")
 
         elif data['autoTrade'] == 1 :
             if self.lock == 0 :
@@ -252,9 +248,8 @@ class Worker(QThread):
 
                 orderType = self.func_GET_db_item(item_code, 3)
 
-                # if self.MAKE_ORDER == 1 :
-                if orderType == 4 :
-                    if MAKE_ORDER == 1 :
+                if self.MAKE_ORDER == 1 :
+                    if orderType == 4 :
                         qty = self.func_GET_db_item(item_code, 4)       ## DB : qty <- trAmount
                         price = price_buy
 
@@ -262,45 +257,43 @@ class Worker(QThread):
                         self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
                         self.indicate_ordered()         ## INDICATE : ordered
 
-                else :
-                    res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation)
-                    judge_type = res['judge']
+                    else :
+                        res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation)
+                        judge_type = res['judge']
 
-                    if judge_type == 0 :        ## stay
-                        print(item_code, "judge : 0")
-                        self.lock = 0
+                        if judge_type == 0 :        ## stay
+                            # print(item_code, "judge : 0")
+                            self.lock = 0
 
-                    elif judge_type == 1 :      ## add water
-                        print(item_code, "judge : 1")
-                        if MAKE_ORDER == 1 :
+                        elif judge_type == 1 :      ## add water
+                            # print(item_code, "judge : 1")
 
                             qty = res['buy_qty']
                             price = res['buy_price']
 
-                            # need_price = qty * price
+                            need_price = qty * price
 
-                            # if deposit >= need_price :
-                                # print("CASE : deposit >= total")
-                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                                if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                                    print("make order : ", item_code, "BUY")
-                                    
-                                    self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
-                                    self.indicate_ordered()         ## INDICATE : ordered
+                            if deposit >= need_price :
+                                print("CASE : deposit >= total")
+                                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                                    if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                                        print("make order : ", item_code, "BUY")
+                                        
+                                        self.ORDER_BUY(item_code, qty, price)    # ORDER : BUY
+                                        self.indicate_ordered()         ## INDICATE : ordered
 
-                            # else :
-                            #     print("CASE : deposit < total")
-                            #     self.lock = 0
+                            else :
+                                print("CASE : deposit < total")
+                                self.lock = 0
 
-                    elif judge_type == 2 :      ## sell & buy
-                        print(item_code, "judge : 2")
-                        if MAKE_ORDER == 1 :
+                        elif judge_type == 2 :      ## sell & buy
+                            # print(item_code, "judge : 2")
 
                             qty = res['sell_qty']
                             price = res['sell_price']
 
                             if qty == 0 :
-                                print(item_code, "judge : 2 and 3")
+                                # print(item_code, "judge : 2 and 3")
                                 qty = own_count
                                 if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                                     if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
@@ -318,9 +311,8 @@ class Worker(QThread):
                                             self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
                                             self.indicate_ordered()         ## INDICATE : ordered
 
-                    elif judge_type == 3 :      ## full_sell
-                        print(item_code, "judge : 3")
-                        if MAKE_ORDER == 1 :
+                        elif judge_type == 3 :      ## full_sell
+                            # print(item_code, "judge : 3")
 
                             qty = res['sell_qty']
                             price = res['sell_price']
@@ -332,8 +324,8 @@ class Worker(QThread):
                                     self.ORDER_SELL(item_code, qty, price)  # ORDER : SELL
                                     self.indicate_ordered()         ## INDICATE : ordered
 
-                # elif self.MAKE_ORDER == 0 :
-                #     self.lock = 0
+                elif self.MAKE_ORDER == 0 :
+                    self.lock = 0
                         
     def indicate_ordered(self) :
         self.rp_dict['ordered'] = 1
@@ -350,7 +342,7 @@ class Worker(QThread):
     def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation) :
         res = {}
         # Add Water
-        if percent < PER_LOW and step < STEP_LIMIT :
+        if percent < self.PER_LOW and step < self.STEP_LIMIT :
             V = int(price_buy)          # 매도 최우선가
             A = total_purchase          # 총 매입금액
             B = total_evaluation        # 총 평가금액
@@ -368,7 +360,7 @@ class Worker(QThread):
             return res
 
         # Sell & Buy
-        elif percent > PER_HI and step < STEP_LIMIT :
+        elif percent > self.PER_HI and step < self.STEP_LIMIT :
             sell_qty = int(own_count / 2)
             # if sell_qty == 0 :
             #     sell_qty = 1
@@ -381,7 +373,7 @@ class Worker(QThread):
             return res
         
         # Full Sell
-        elif percent > PER_HI and step == STEP_LIMIT :
+        elif percent > self.PER_HI and step == self.STEP_LIMIT :
             sell_qty = own_count
             price = int(price_sell)
 

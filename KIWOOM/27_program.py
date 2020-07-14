@@ -82,10 +82,10 @@ class Kiwoom(QMainWindow, form_class):
         self.btn_BUY.clicked.connect(self.func_ORDER_BUY)
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL)
         self.btn_TEST.clicked.connect(self.btn_test)
-        self.btn_TEST_2.clicked.connect(self.btn_test_2)
-        # self.btn_START.clicked.connect(self.func_start_check)
-        self.btn_START.clicked.connect(self.order_start)
-        # self.btn_STOP.clicked.connect(self.func_stop_check)
+        # self.btn_TEST_2.clicked.connect(self.btn_test_2)
+        self.btn_START.clicked.connect(self.func_start_check)
+        # self.btn_START.clicked.connect(self.order_start)
+        self.btn_STOP.clicked.connect(self.func_stop_check)
         self.btn_STOP.clicked.connect(self.order_stop)
         self.btn_HISTORY.clicked.connect(self.func_GET_TradeHistory)
         self.btn_dailyprofit.clicked.connect(lambda: self.func_GET_DailyProfit(1))
@@ -132,11 +132,13 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         print("btn test")
 
-        acc_no = ACCOUNT
-        acc_pw = PASSWORD
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "RESET_1_005930", "opw00018", 0, 1000)
+        self.func_INSERT_db_item("220000", 0, 0, 0, 0)
+
+        # acc_no = ACCOUNT
+        # acc_pw = PASSWORD
+        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "RESET_1_005930", "opw00018", 0, 1000)
     def btn_test_2(self):
         print("btn test2")
         self.reset_real_receive()
@@ -352,56 +354,52 @@ class Kiwoom(QMainWindow, form_class):
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "Clicked : BUY")
         try:
-            if self.make_order == 1 :
-                item_code = self.code_edit.text()
+            item_code = self.code_edit.text()
 
-                already = self.which_thread(item_code)[0]
-                th_num = self.which_thread(item_code)[1]
+            already = self.which_thread(item_code)[0]
+            th_num = self.which_thread(item_code)[1]
 
-                qty = int(self.buy_sell_count.text())
-                price = int(self.wid_sell_price.text())
+            qty = int(self.buy_sell_count.text())
+            price = int(self.wid_sell_price.text())
 
-                print("itemcode : ", item_code)
-                print("qty : ", qty)
-                print("price : ", price)
+            print("itemcode : ", item_code)
+            print("qty : ", qty)
+            print("price : ", price)
+            print("th_num : ", th_num)
+            print("")
+
+            test_dict = {}
+            test_dict['autoTrade'] = 0
+            test_dict['item_code'] = item_code
+
+            if already == 0 :       ## 신규 item BUY
+                print("신규 BUY")
+                test_dict['orderType'] = 5
+            elif already == 1 :     ## 기존 item BUY
+                print("기 BUY")
+                test_dict['orderType'] = 6
+
+            test_dict['qty'] = qty
+            test_dict['price'] = price
+            test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
+            
+            self.item_slot[th_num] = item_code
+
+            if th_num == 0 :
                 print("th_num : ", th_num)
-                print("")
-
-                test_dict = {}
-                test_dict['autoTrade'] = 0
-                test_dict['item_code'] = item_code
-
-                if already == 0 :       ## 신규 item BUY
-                    print("신규 BUY")
-                    test_dict['orderType'] = 5
-                elif already == 1 :     ## 기존 item BUY
-                    print("기 BUY")
-                    test_dict['orderType'] = 6
-
-                test_dict['qty'] = qty
-                test_dict['price'] = price
-                test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
-                
-                self.item_slot[th_num] = item_code
-
-                if th_num == 0 :
-                    print("th_num : ", th_num)
-                    self.test_dict0.emit(test_dict)
-                elif th_num == 1 :
-                    print("th_num : ", th_num)
-                    self.test_dict1.emit(test_dict)
-                elif th_num == 2 :
-                    print("th_num : ", th_num)
-                    self.test_dict2.emit(test_dict)
-                elif th_num == 3 :
-                    print("th_num : ", th_num)
-                    self.test_dict3.emit(test_dict)
-                elif th_num == 4 :
-                    print("th_num : ", th_num)
-                    self.test_dict4.emit(test_dict)
-
-            elif self.make_order == 0 :
-                self.text_edit.append("Not Orderable")
+                self.test_dict0.emit(test_dict)
+            elif th_num == 1 :
+                print("th_num : ", th_num)
+                self.test_dict1.emit(test_dict)
+            elif th_num == 2 :
+                print("th_num : ", th_num)
+                self.test_dict2.emit(test_dict)
+            elif th_num == 3 :
+                print("th_num : ", th_num)
+                self.test_dict3.emit(test_dict)
+            elif th_num == 4 :
+                print("th_num : ", th_num)
+                self.test_dict4.emit(test_dict)
 
         except Exception as e:
             timestamp = self.func_GET_CurrentTime()
@@ -416,74 +414,70 @@ class Kiwoom(QMainWindow, form_class):
         self.text_edit.append(timestamp + "Clicked : SELL")
 
         try:
-            if self.make_order == 1 :
-                item_code = self.code_edit.text()
-                print("item code : ", item_code)
+            item_code = self.code_edit.text()
+            print("item code : ", item_code)
 
-                th_num = self.which_thread(item_code)[1]
-                print("Click SELL th_num : ", th_num)
+            th_num = self.which_thread(item_code)[1]
+            print("Click SELL th_num : ", th_num)
 
-                own_count = int(self.table_summary.item(th_num, 2).text())
-                print("Click SELL own_count : ", own_count)
+            own_count = int(self.table_summary.item(th_num, 2).text())
+            print("Click SELL own_count : ", own_count)
 
-                qty = int(self.buy_sell_count.text())
-                price = self.wid_buy_price.text()
-                print("itemcode : ", item_code)
-                print("qty : ", qty)
-                print("price : ", price)
+            qty = int(self.buy_sell_count.text())
+            price = self.wid_buy_price.text()
+            print("itemcode : ", item_code)
+            print("qty : ", qty)
+            print("price : ", price)
 
-                test_dict = {}
-                test_dict['autoTrade'] = 0
-                test_dict['item_code'] = item_code
-                test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
+            test_dict = {}
+            test_dict['autoTrade'] = 0
+            test_dict['item_code'] = item_code
+            test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
 
-                print("test_dict start")
+            print("test_dict start")
 
-                if qty > own_count :
-                    print("type : qty > own_count")
-                    timestamp = self.func_GET_CurrentTime()
-                    print(timestamp, " SELL Qty Exceed")
-                    
-                    # self.text_edit.append(timestamp, item_code, " Manual SELL Error - order-qty is bigger than own-qty")
-                elif qty < own_count :
-                    print("teyp : qty < own_count")
-                    test_dict['orderType'] = 7
-                    timestamp = self.func_GET_CurrentTime()
-                    print(timestamp, " MAN SELL")
-                    # self.text_edit.append(timestamp, item_code, " Manual SELL")
-                    
-                elif qty == own_count :
-                    print("type : qty = own_count")
-                    test_dict['orderType'] = 8
+            if qty > own_count :
+                print("type : qty > own_count")
+                timestamp = self.func_GET_CurrentTime()
+                print(timestamp, " SELL Qty Exceed")
+                
+                # self.text_edit.append(timestamp, item_code, " Manual SELL Error - order-qty is bigger than own-qty")
+            elif qty < own_count :
+                print("teyp : qty < own_count")
+                test_dict['orderType'] = 7
+                timestamp = self.func_GET_CurrentTime()
+                print(timestamp, " MAN SELL")
+                # self.text_edit.append(timestamp, item_code, " Manual SELL")
+                
+            elif qty == own_count :
+                print("type : qty = own_count")
+                test_dict['orderType'] = 8
 
-                    timestamp = self.func_GET_CurrentTime()
-                    print(timestamp, " MAN SELL FULL")
-                    # self.text_edit.append(timestamp, item_code, " Manual SELL FULL")
-                    
+                timestamp = self.func_GET_CurrentTime()
+                print(timestamp, " MAN SELL FULL")
+                # self.text_edit.append(timestamp, item_code, " Manual SELL FULL")
+                
 
-                test_dict['qty'] = qty
-                test_dict['price'] = price
+            test_dict['qty'] = qty
+            test_dict['price'] = price
 
-                print("test_dict complete")
+            print("test_dict complete")
 
-                if th_num == 0 :
-                    print("send dict -> ", th_num)
-                    self.test_dict0.emit(test_dict)
-                elif th_num == 1 :
-                    print("send dict -> ", th_num)
-                    self.test_dict1.emit(test_dict)
-                elif th_num == 2 :
-                    print("send dict -> ", th_num)
-                    self.test_dict2.emit(test_dict)
-                elif th_num == 3 :
-                    print("send dict -> ", th_num)
-                    self.test_dict3.emit(test_dict)
-                elif th_num == 4 :
-                    print("send dict -> ", th_num)
-                    self.test_dict4.emit(test_dict)
-
-            elif self.make_order == 0 :
-                self.text_edit.append("Not Orderable")
+            if th_num == 0 :
+                print("send dict -> ", th_num)
+                self.test_dict0.emit(test_dict)
+            elif th_num == 1 :
+                print("send dict -> ", th_num)
+                self.test_dict1.emit(test_dict)
+            elif th_num == 2 :
+                print("send dict -> ", th_num)
+                self.test_dict2.emit(test_dict)
+            elif th_num == 3 :
+                print("send dict -> ", th_num)
+                self.test_dict3.emit(test_dict)
+            elif th_num == 4 :
+                print("send dict -> ", th_num)
+                self.test_dict4.emit(test_dict)
 
         except Exception as e:
             timestamp = self.func_GET_CurrentTime()
@@ -1006,10 +1000,14 @@ class Kiwoom(QMainWindow, form_class):
                     break
                 QtTest.QTest.qWait(100)
 
-            self.func_start_check()          # Aloha
+            # self.func_start_check()          # Aloha
             
         else:
             print("Login Failed")
+            try :
+                self.kiwoom.dynamicCall("CommConnect()")        ## aloha
+            except :
+                pass
     
     def func_SET_tableSUMMARY(self):
         row_count = 5
