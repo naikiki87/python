@@ -16,8 +16,9 @@ FEE_SELL = 0.0035
 GOAL_PER = -0.01
 MAKE_ORDER = 1
 PER_LOW = -2
-PER_HI = 1
+# PER_HI = 1
 STEP_LIMIT = 5
+TA_UNIT = 30
 
 ACCOUNT = "8137639811"
 PASSWORD = "6458"
@@ -31,11 +32,15 @@ class Worker(QThread):
     def __init__(self, seq):
         super().__init__()
         self.seq = seq
+
+        self.jump_step = 0
+
+        self.PER_HI = 1
         
-        # self.MAKE_ORDER = 0
-        # self.PER_LOW = -2
-        # self.PER_HI = 2
-        # self.STEP_LIMIT = 5
+        self.prev_price = 0
+        self.value10 = []
+        self.trend_cnt = 0
+        self.df_trend = pd.DataFrame(columns = ['avg'])
         self.first_rcv = 1
         self.worker = QAxWidget()
         self.worker.setControl("KHOPENAPI.KHOpenAPICtrl.1")
@@ -209,6 +214,8 @@ class Worker(QThread):
 
         elif data['autoTrade'] == 1 :
             if self.first_rcv == 1 :
+                self.prev_price = data['cur_price']
+
                 ordered = self.func_GET_db_item(item_code, 2)
                 if ordered == 1 :
                     self.lock = 1
@@ -248,13 +255,40 @@ class Worker(QThread):
                     self.indicate_ordered()         ## INDICATE : ordered
                 
                 self.first_rcv = 0
-            
             else :
+                ## Trend Analysis
+                # cur_price = data['cur_price']
+
+                # print("price : ", cur_price, self.prev_price)
+                # comp_price = cur_price - self.prev_price
+
+                # if comp_price > 0 :
+                #     price_situ = 1
+                # elif comp_price == 0 :
+                #     price_situ = 0
+                # elif comp_price < 0 :
+                #     price_situ = -1
+
+                # len_value10 = len(self.value10)
+
+                # if len_value10 < TA_UNIT :
+                #     self.value10.append(price_situ)
+                # elif len_value10 == TA_UNIT :
+                #     print("SITU_10 : ", sum(self.value10))
+                #     self.value10[self.trend_cnt] = price_situ
+                #     self.trend_cnt = self.trend_cnt + 1
+                #     if self.trend_cnt == TA_UNIT :
+                #         self.trend_cnt = 0
+
+                # print(self.value10)
+                # self.prev_price = cur_price
+
+
                 if self.lock == 0 :
                     self.lock = 1       ## lock
                     step = self.func_GET_db_item(item_code, 1)
 
-                    ## SHOW ##
+                    ## SHOW -> TABLE ##
                     own_count = data['own_count']
                     unit_price = data['unit_price']
                     cur_price = data['cur_price']
@@ -274,7 +308,6 @@ class Worker(QThread):
 
                     self.rp_dict = {}
                     self.rp_dict.update(data)
-
                     self.rp_dict['ordered'] = 0
                     self.rp_dict['total_purchase'] = total_purchase
                     self.rp_dict['total_evaluation'] = total_evaluation
@@ -285,8 +318,21 @@ class Worker(QThread):
                     self.rp_dict['step'] = step
                     self.rp_dict['seq'] = self.seq
 
-                    self.trans_dict.emit(self.rp_dict)       ## SHOW
+                    self.trans_dict.emit(self.rp_dict)       
 
+                    ## Regulation
+                    comp_price = cur_price - self.prev_price
+
+                    if comp_price > 0 :
+                        self.jump_step = self.jump_step + 1
+                    elif comp_price < 0 :
+                        self.jump_step = self.jump_step - 1
+                    
+                    if self.jump_step >= 2 :
+                        print("jump 2")
+
+
+                    ## Make Order
                     orderType = self.func_GET_db_item(item_code, 3)
 
                     if orderType == 4 :
@@ -401,7 +447,7 @@ class Worker(QThread):
             return res
 
         # Sell & Buy
-        elif percent > PER_HI and step < STEP_LIMIT :
+        elif percent > self.PER_HI and step < STEP_LIMIT :
             sell_qty = int(own_count / 2)
             # if sell_qty == 0 :
             #     sell_qty = 1
@@ -414,7 +460,7 @@ class Worker(QThread):
             return res
         
         # Full Sell
-        elif percent > PER_HI and step == STEP_LIMIT :
+        elif percent > self.PER_HI and step == STEP_LIMIT :
             sell_qty = own_count
             price = int(price_sell)
 
