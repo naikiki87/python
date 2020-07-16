@@ -685,8 +685,10 @@ class Kiwoom(QMainWindow, form_class):
                     # che_dict['delete'] = 1
                     
                     self.che_dict.emit(che_dict)        ## 결과 
-
-            self.load_etc_data()
+                self.load_etc_data()
+                
+            today = self.func_GET_Today()
+            self.func_GET_Ordering(today)
                 
     def func_GET_Deposit(self) :
         acc_no = ACCOUNT
