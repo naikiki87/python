@@ -686,7 +686,7 @@ class Kiwoom(QMainWindow, form_class):
                     
                     self.che_dict.emit(che_dict)        ## 결과 
                 self.load_etc_data()
-                
+
             today = self.func_GET_Today()
             self.func_GET_Ordering(today)
                 
@@ -1160,6 +1160,13 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00009_man":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
+        # volume = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 15)
+        # total_volume = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 13)
+        # print("Real Data : ", code, volume, type(volume))
+        # volume2 = int(volume)
+        # print("Real Data : ", code, volume2, type(volume2), total_volume)
+        # self.possible_time = 0
+
         if self.possible_time == 1 :
             th_num = self.which_thread(code)[1]
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()

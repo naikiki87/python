@@ -9,6 +9,7 @@ from PyQt5.QAxContainer import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore
+from collections import deque
 
 TAX = 0.0025
 FEE_BUY = 0.0035
@@ -18,8 +19,8 @@ MAKE_ORDER = 1
 PER_LOW = -2
 # PER_HI = 1
 STEP_LIMIT = 5
-TA_UNIT = 30
-
+TA_UNIT = 10
+JUDGE_SHOW = 0
 ACCOUNT = "8137639811"
 PASSWORD = "6458"
 
@@ -36,6 +37,7 @@ class Worker(QThread):
         self.jump_step = 0
 
         self.PER_HI = 1
+        self.items = deque()
         
         self.prev_price = 0
         self.value10 = []
@@ -89,6 +91,49 @@ class Worker(QThread):
                 print("stop work")
         except :
             pass
+
+    def show_TREND(self) :
+        print(self.items)
+
+        if len(self.items) > 4 :
+            angle_5 = (self.items[4] - self.items[0]) / self.items[0]
+            print("ANGLE 5 : ", round(angle_5 * 100, 2))
+
+            if len(self.items) > 7 :
+                angle_8 = (self.items[7] - self.items[0]) / self.items[0]
+                print("ANGLE 8 : ", round(angle_8 * 100, 2))
+
+                if len(self.items) > 12 :
+                    angle_13 = (self.items[12] - self.items[0]) / self.items[0]
+                    print("ANGLE 13 : ", round(angle_13*100, 2))
+
+                    if len(self.items) > 20 :
+                        angle_21 = (self.items[20] - self.items[0]) / self.items[0]
+                        print("ANGLE 21 : ", round(angle_21*100, 2))
+
+                        if len(self.items) > 33 :
+                            angle_34 = (self.items[33] - self.items[0]) / self.items[0]
+                            print("ANGLE 34 : ", round(angle_34*100, 2))
+
+                            if len(self.items) > 54 :
+                                angle_55 = (self.items[54] - self.items[0]) / self.items[0]
+                                print("ANGLE 55 : ", round(angle_55 * 100, 2))
+
+                                if len(self.items) > 88 :
+                                    angle_89 = (self.items[88] - self.items[0]) / self.items[0]
+                                    print("ANGLE 89 : ", round(angle_89 * 100, 2))
+
+                                    if len(self.items) > 143 :
+                                        angle_144 = (self.items[143] - self.items[0]) / self.items[0]
+                                        print("ANGLE 144 : ", round(angle_144*100, 2))
+
+                                        if len(self.items) > 232 :
+                                            angle_233 = (self.items[232] - self.items[0]) / self.items[0]
+                                            print("ANGLE 233 : ", round(angle_233*100, 2))
+
+                                            if len(self.items) > 376 :
+                                                angle_377 = (self.items[376] - self.items[0]) / self.items[0]
+                                                print("ANGLE 377 : ", round(angle_377 * 100, 2))
 
     @pyqtSlot(dict)
     def che_result(self, data) :
@@ -215,6 +260,8 @@ class Worker(QThread):
         elif data['autoTrade'] == 1 :
             if self.first_rcv == 1 :
                 self.prev_price = data['cur_price']
+                self.TA_UNIT_SUM = 0
+                self.val_cnt = 0
 
                 ordered = self.func_GET_db_item(item_code, 2)
                 if ordered == 1 :
@@ -256,33 +303,24 @@ class Worker(QThread):
                 
                 self.first_rcv = 0
             else :
-                ## Trend Analysis
+                ## [START] Trend Analysis
                 # cur_price = data['cur_price']
 
-                # print("price : ", cur_price, self.prev_price)
-                # comp_price = cur_price - self.prev_price
+                # if self.val_cnt == TA_UNIT :
+                #     TA_UNIT_AVG = self.TA_UNIT_SUM / TA_UNIT
+                #     if len(self.items) == 377 :
+                #         self.items.pop()
+                #     self.items.appendleft(TA_UNIT_AVG)
 
-                # if comp_price > 0 :
-                #     price_situ = 1
-                # elif comp_price == 0 :
-                #     price_situ = 0
-                # elif comp_price < 0 :
-                #     price_situ = -1
+                #     self.show_TREND()
 
-                # len_value10 = len(self.value10)
+                #     self.val_cnt = 0
+                #     self.TA_UNIT_SUM = 0
+                
+                # self.TA_UNIT_SUM = self.TA_UNIT_SUM + cur_price
+                # self.val_cnt = self.val_cnt + 1
 
-                # if len_value10 < TA_UNIT :
-                #     self.value10.append(price_situ)
-                # elif len_value10 == TA_UNIT :
-                #     print("SITU_10 : ", sum(self.value10))
-                #     self.value10[self.trend_cnt] = price_situ
-                #     self.trend_cnt = self.trend_cnt + 1
-                #     if self.trend_cnt == TA_UNIT :
-                #         self.trend_cnt = 0
-
-                # print(self.value10)
-                # self.prev_price = cur_price
-
+                ## [END] Trend Analysis
 
                 if self.lock == 0 :
                     self.lock = 1       ## lock
@@ -321,15 +359,18 @@ class Worker(QThread):
                     self.trans_dict.emit(self.rp_dict)       
 
                     ## Regulation
-                    comp_price = cur_price - self.prev_price
+                    if percent >= 0.5 :
+                        print("Goal Regulation")
+                        
+                    # comp_price = cur_price - self.prev_price
 
-                    if comp_price > 0 :
-                        self.jump_step = self.jump_step + 1
-                    elif comp_price < 0 :
-                        self.jump_step = self.jump_step - 1
+                    # if comp_price > 0 :
+                    #     self.jump_step = self.jump_step + 1
+                    # elif comp_price < 0 :
+                    #     self.jump_step = self.jump_step - 1
                     
-                    if self.jump_step >= 2 :
-                        print("jump 2")
+                    # if self.jump_step >= 2 :
+                        # print("jump 2")
 
 
                     ## Make Order
@@ -349,11 +390,13 @@ class Worker(QThread):
                         judge_type = res['judge']
 
                         if judge_type == 0 :        ## stay
-                            print(item_code, "judge : 0")
+                            if JUDGE_SHOW == 1 :
+                                print(item_code, "judge : 0")
                             self.lock = 0
 
                         elif judge_type == 1 :      ## add water
-                            print(item_code, "judge : 1")
+                            if JUDGE_SHOW == 1 :
+                                print(item_code, "judge : 1")
                             if MAKE_ORDER == 1 :
 
                                 qty = res['buy_qty']
@@ -375,7 +418,8 @@ class Worker(QThread):
                                 #     self.lock = 0
 
                         elif judge_type == 2 :      ## sell & buy
-                            print(item_code, "judge : 2")
+                            if JUDGE_SHOW == 1 :
+                                print(item_code, "judge : 2")
                             if MAKE_ORDER == 1 :
 
                                 qty = res['sell_qty']
@@ -401,7 +445,8 @@ class Worker(QThread):
                                                 self.indicate_ordered()         ## INDICATE : ordered
 
                         elif judge_type == 3 :      ## full_sell
-                            print(item_code, "judge : 3")
+                            if JUDGE_SHOW == 1 :
+                                print(item_code, "judge : 3")
                             if MAKE_ORDER == 1 :
 
                                 qty = res['sell_qty']
