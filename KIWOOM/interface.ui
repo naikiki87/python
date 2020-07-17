@@ -24,9 +24,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>50</y>
+      <y>70</y>
       <width>1402</width>
-      <height>146</height>
+      <height>116</height>
      </rect>
     </property>
     <property name="rowCount">
@@ -121,7 +121,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>20</y>
       <width>591</width>
       <height>31</height>
      </rect>
@@ -211,7 +211,7 @@
     <property name="geometry">
      <rect>
       <x>660</x>
-      <y>10</y>
+      <y>20</y>
       <width>441</width>
       <height>31</height>
      </rect>
@@ -331,9 +331,9 @@
      <property name="geometry">
       <rect>
        <x>370</x>
-       <y>90</y>
+       <y>70</y>
        <width>181</width>
-       <height>161</height>
+       <height>171</height>
       </rect>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
@@ -464,7 +464,7 @@
      <property name="geometry">
       <rect>
        <x>420</x>
-       <y>60</y>
+       <y>40</y>
        <width>91</width>
        <height>20</height>
       </rect>
@@ -479,8 +479,8 @@
     <widget class="QPushButton" name="btn_TEST">
      <property name="geometry">
       <rect>
-       <x>370</x>
-       <y>20</y>
+       <x>10</x>
+       <y>30</y>
        <width>89</width>
        <height>31</height>
       </rect>
@@ -492,8 +492,8 @@
     <widget class="QPushButton" name="btn_TEST_2">
      <property name="geometry">
       <rect>
-       <x>460</x>
-       <y>20</y>
+       <x>120</x>
+       <y>30</y>
        <width>89</width>
        <height>31</height>
       </rect>
@@ -502,17 +502,38 @@
       <string>Test2</string>
      </property>
     </widget>
-    <widget class="QWidget" name="gridLayoutWidget">
+    <widget class="QWidget" name="gridLayoutWidget_2">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>20</y>
+       <y>65</y>
        <width>351</width>
-       <height>238</height>
+       <height>181</height>
       </rect>
      </property>
-     <layout class="QGridLayout" name="gridLayout_3">
-      <item row="4" column="0">
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="input_acc_pw">
+        <property name="echoMode">
+         <enum>QLineEdit::Password</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="code_edit">
+        <property name="enabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2" colspan="2">
+       <widget class="QPushButton" name="btn_ITEM_LOOKUP">
+        <property name="text">
+         <string>조회</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
        <widget class="QLabel" name="label">
         <property name="enabled">
          <bool>true</bool>
@@ -525,67 +546,38 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="1">
-       <widget class="QLineEdit" name="input_per_low">
-        <property name="echoMode">
-         <enum>QLineEdit::Normal</enum>
-        </property>
-        <property name="placeholderText">
-         <string>-2</string>
+      <item row="3" column="3">
+       <widget class="QPushButton" name="btn_BUY">
+        <property name="text">
+         <string>BUY</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="3">
-       <widget class="QLineEdit" name="input_step">
-        <property name="echoMode">
-         <enum>QLineEdit::Normal</enum>
-        </property>
-        <property name="placeholderText">
-         <string>5</string>
+      <item row="2" column="2">
+       <widget class="QLineEdit" name="wid_buy_price"/>
+      </item>
+      <item row="0" column="3">
+       <widget class="QPushButton" name="btn_STOP">
+        <property name="text">
+         <string>정지</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
-       <widget class="QLabel" name="label_29">
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="buy_sell_count">
         <property name="enabled">
          <bool>true</bool>
         </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QPushButton" name="btn_SELL">
         <property name="text">
-         <string>PER_LOW</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
+         <string>SELL</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="QLineEdit" name="input_per_hi">
-        <property name="echoMode">
-         <enum>QLineEdit::Normal</enum>
-        </property>
-        <property name="placeholderText">
-         <string>2</string>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="0">
-       <widget class="QLabel" name="label_2">
-        <property name="text">
-         <string>금액</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <widget class="QPushButton" name="btn_ITEM_LOOKUP">
-        <property name="text">
-         <string>조회</string>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="0">
+      <item row="3" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
          <string>수량</string>
@@ -595,67 +587,17 @@
         </property>
        </widget>
       </item>
-      <item row="3" column="1">
-       <widget class="QLineEdit" name="input_acc_pw">
-        <property name="echoMode">
-         <enum>QLineEdit::Password</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="3">
-       <widget class="QPushButton" name="btn_SELL">
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_2">
         <property name="text">
-         <string>매도</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="3">
-       <widget class="QLabel" name="label_28">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string>STEP</string>
+         <string>금액</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignCenter</set>
         </property>
        </widget>
       </item>
-      <item row="5" column="3">
-       <widget class="QLineEdit" name="wid_sell_price"/>
-      </item>
-      <item row="0" column="2">
-       <widget class="QLabel" name="label_27">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-        <property name="text">
-         <string>PER_HI</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignCenter</set>
-        </property>
-       </widget>
-      </item>
-      <item row="5" column="2">
-       <widget class="QLineEdit" name="wid_buy_price"/>
-      </item>
-      <item row="6" column="2">
-       <widget class="QPushButton" name="btn_BUY">
-        <property name="text">
-         <string>매수</string>
-        </property>
-       </widget>
-      </item>
-      <item row="4" column="1">
-       <widget class="QLineEdit" name="code_edit">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
+      <item row="0" column="0">
        <widget class="QLabel" name="label_18">
         <property name="enabled">
          <bool>true</bool>
@@ -668,7 +610,7 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
+      <item row="0" column="2">
        <widget class="QPushButton" name="btn_START">
         <property name="text">
          <string>실행</string>
@@ -676,30 +618,44 @@
        </widget>
       </item>
       <item row="2" column="3">
-       <widget class="QPushButton" name="btn_STOP">
-        <property name="text">
-         <string>정지</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="0">
-       <widget class="QLineEdit" name="input_acc_pw_5">
-        <property name="echoMode">
-         <enum>QLineEdit::Password</enum>
-        </property>
-        <property name="readOnly">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </item>
-      <item row="6" column="1">
-       <widget class="QLineEdit" name="buy_sell_count">
-        <property name="enabled">
-         <bool>true</bool>
-        </property>
-       </widget>
+       <widget class="QLineEdit" name="wid_sell_price"/>
       </item>
      </layout>
+    </widget>
+    <widget class="QLineEdit" name="input_show_status">
+     <property name="geometry">
+      <rect>
+       <x>270</x>
+       <y>30</y>
+       <width>89</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <weight>75</weight>
+       <italic>false</italic>
+       <bold>true</bold>
+       <underline>false</underline>
+       <strikeout>false</strikeout>
+       <kerning>true</kerning>
+      </font>
+     </property>
+     <property name="frame">
+      <bool>false</bool>
+     </property>
+     <property name="echoMode">
+      <enum>QLineEdit::Normal</enum>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="dragEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="readOnly">
+      <bool>true</bool>
+     </property>
     </widget>
    </widget>
    <widget class="QGroupBox" name="groupBox_2">

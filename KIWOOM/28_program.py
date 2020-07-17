@@ -19,18 +19,9 @@ import module_item_finder2
 form_class = uic.loadUiType("interface.ui")[0]
 ACCOUNT = "8137639811"
 PASSWORD = "6458"
-TAX = 0.0025
-FEE_BUY = 0.0035
-FEE_SELL = 0.0035
-GOAL_PER = -0.01
-STEP_LIMIT = 5
-
-PER_LOW = -1.5
-PER_HI = 1
-MAKE_ORDER = 1
 
 NUM_SLOT = 5
-tableSUMMARY_COL = 14
+tableSUMMARY_COL = 15
 
 class Kiwoom(QMainWindow, form_class):
     test_dict0 = pyqtSignal(dict)
@@ -39,7 +30,6 @@ class Kiwoom(QMainWindow, form_class):
     test_dict3 = pyqtSignal(dict)
     test_dict4 = pyqtSignal(dict)
     che_dict = pyqtSignal(dict)
-    start_work = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
@@ -58,7 +48,8 @@ class Kiwoom(QMainWindow, form_class):
 
     def init_ENV(self) :
         ## flag setting
-        self.make_order = 0
+        self.send_data = 0
+        self.input_show_status.setText("STOP")
         self.possible_time = 0
         self.reset_time = 1000
         self.set_deposit = 0
@@ -84,9 +75,9 @@ class Kiwoom(QMainWindow, form_class):
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL)
         self.btn_TEST.clicked.connect(self.btn_test)
         # self.btn_TEST_2.clicked.connect(self.btn_test_2)
-        self.btn_START.clicked.connect(self.func_start_check)
-        # self.btn_START.clicked.connect(self.order_start)
-        self.btn_STOP.clicked.connect(self.func_stop_check)
+        # self.btn_START.clicked.connect(self.func_start_check)
+        self.btn_START.clicked.connect(self.order_start)
+        # self.btn_STOP.clicked.connect(self.func_stop_check)
         self.btn_STOP.clicked.connect(self.order_stop)
         self.btn_HISTORY.clicked.connect(self.func_GET_TradeHistory)
         self.btn_dailyprofit.clicked.connect(lambda: self.func_GET_DailyProfit(1))
@@ -125,6 +116,7 @@ class Kiwoom(QMainWindow, form_class):
             elif data['percent'] == 0 :
                 self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 0)
             self.func_SET_TableData(1, data['seq'], 13, str(data['step']), 0)
+            self.func_SET_TableData(1, data['seq'], 14, str(data['high']), 0)
     
     @pyqtSlot(int)
     def th_connected(self, data) :
@@ -163,7 +155,6 @@ class Kiwoom(QMainWindow, form_class):
         self.worker0.th_con.connect(self.th_connected)
         self.test_dict0.connect(self.worker0.dict_from_main)
         self.che_dict.connect(self.worker0.che_result)
-        self.start_work.connect(self.worker0.start_work)
         self.worker0.trans_dict.connect(self.rp_dict)
         self.worker0.notice.connect(self.notice_from_worker)
         self.worker0.start()
@@ -180,7 +171,6 @@ class Kiwoom(QMainWindow, form_class):
         self.worker1.th_con.connect(self.th_connected)
         self.test_dict1.connect(self.worker1.dict_from_main)
         self.che_dict.connect(self.worker1.che_result)
-        self.start_work.connect(self.worker1.start_work)
         self.worker1.trans_dict.connect(self.rp_dict)
         self.worker1.notice.connect(self.notice_from_worker)
         self.worker1.start()
@@ -196,7 +186,6 @@ class Kiwoom(QMainWindow, form_class):
         self.worker2.th_con.connect(self.th_connected)
         self.test_dict2.connect(self.worker2.dict_from_main)
         self.che_dict.connect(self.worker2.che_result)
-        self.start_work.connect(self.worker2.start_work)
         self.worker2.trans_dict.connect(self.rp_dict)
         self.worker2.notice.connect(self.notice_from_worker)
         self.worker2.start()
@@ -212,7 +201,6 @@ class Kiwoom(QMainWindow, form_class):
         self.worker3.th_con.connect(self.th_connected)
         self.test_dict3.connect(self.worker3.dict_from_main)
         self.che_dict.connect(self.worker3.che_result)
-        self.start_work.connect(self.worker3.start_work)
         self.worker3.trans_dict.connect(self.rp_dict)
         self.worker3.notice.connect(self.notice_from_worker)
         self.worker3.start()
@@ -229,7 +217,6 @@ class Kiwoom(QMainWindow, form_class):
         self.worker4.th_con.connect(self.th_connected)
         self.test_dict4.connect(self.worker4.dict_from_main)
         self.che_dict.connect(self.worker4.che_result)
-        self.start_work.connect(self.worker4.start_work)
         self.worker4.trans_dict.connect(self.rp_dict)
         self.worker4.notice.connect(self.notice_from_worker)
         self.worker4.start()
@@ -242,23 +229,20 @@ class Kiwoom(QMainWindow, form_class):
 
     def order_start(self) :
         try :
-            temp_dict = {}
-            temp_dict['start'] = 1
-            temp_dict['per_low'] = float(self.input_per_low.text())
-            temp_dict['per_hi'] = float(self.input_per_hi.text())
-            temp_dict['step_limit'] = int(self.input_step.text())
-            self.start_work.emit(temp_dict)
-            self.make_order = 1
+            self.send_data = 1
+            self.input_show_status.setText("RUNNING")
         except Exception as e : 
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + str(e))
         self.load_etc_data()
 
     def order_stop(self) :
-        self.make_order = 0
-        temp_dict = {}
-        temp_dict['start'] = 0
-        self.start_work.emit(temp_dict)
+        try :
+            self.send_data = 0
+            self.input_show_status.setText("STOP")
+        except Exception as e : 
+            timestamp = self.func_GET_CurrentTime()
+            self.text_edit.append(timestamp + str(e))
         self.load_etc_data()
 
     def func_start_check(self) :
@@ -1023,6 +1007,11 @@ class Kiwoom(QMainWindow, form_class):
         for i in range(col_count):
             self.table_summary.setColumnWidth(i, 100)
         
+        self.table_summary.setColumnWidth(0, 75)
+        self.table_summary.setColumnWidth(2, 75)
+        self.table_summary.setColumnWidth(13, 75)
+        self.table_summary.setColumnWidth(14, 75)
+        
         self.table_summary.verticalHeader().setVisible(False)
         self.table_summary.verticalHeader().setDefaultSectionSize(1)
         
@@ -1040,6 +1029,7 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.setHorizontalHeaderItem(11, QTableWidgetItem("손익"))
         self.table_summary.setHorizontalHeaderItem(12, QTableWidgetItem("%"))
         self.table_summary.setHorizontalHeaderItem(13, QTableWidgetItem("단계"))
+        self.table_summary.setHorizontalHeaderItem(14, QTableWidgetItem("HIGH"))
         
 
         self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)
@@ -1160,14 +1150,7 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00009_man":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
-        # volume = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 15)
-        # total_volume = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 13)
-        # print("Real Data : ", code, volume, type(volume))
-        # volume2 = int(volume)
-        # print("Real Data : ", code, volume2, type(volume2), total_volume)
-        # self.possible_time = 0
-
-        if self.possible_time == 1 :
+        if self.possible_time == 1 and self.send_data == 1 :
             th_num = self.which_thread(code)[1]
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
             if cur_price != '' :
@@ -1209,7 +1192,6 @@ class Kiwoom(QMainWindow, form_class):
         else :
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Market NOT OPEN")
-
 
     def func_SET_db_table(self) :
         conn = sqlite3.connect("item_status.db")

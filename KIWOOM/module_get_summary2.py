@@ -17,7 +17,7 @@ FEE_SELL = 0.0035
 GOAL_PER = -0.01
 MAKE_ORDER = 1
 PER_LOW = -2
-# PER_HI = 1
+
 STEP_LIMIT = 5
 TA_UNIT = 10
 JUDGE_SHOW = 0
@@ -36,7 +36,7 @@ class Worker(QThread):
 
         self.jump_step = 0
 
-        self.PER_HI = 1
+        self.PER_HI = 2
         self.items = deque()
         
         self.prev_price = 0
@@ -73,24 +73,6 @@ class Worker(QThread):
                 time.sleep(1)
             except:
                 pass
-    @pyqtSlot(dict)
-    def start_work(self, data) :
-        try :
-            if data['start'] == 1 :
-                self.MAKE_ORDER = data['start']
-                self.PER_LOW = data['per_low']
-                self.PER_HI = data['per_hi']
-                self.STEP_LIMIT = data['step_limit']
-                print("start work")
-                print(self.PER_LOW)
-                print(self.PER_HI)
-                print(self.STEP_LIMIT)
-
-            elif data['start'] == 0 :
-                self.MAKE_ORDER = data['start']
-                print("stop work")
-        except :
-            pass
 
     def show_TREND(self) :
         print(self.items)
@@ -355,6 +337,7 @@ class Worker(QThread):
                     self.rp_dict['percent'] = percent
                     self.rp_dict['step'] = step
                     self.rp_dict['seq'] = self.seq
+                    self.rp_dict['high'] = self.PER_HI
 
                     self.trans_dict.emit(self.rp_dict)       
 
