@@ -2,19 +2,15 @@ import sys
 import sqlite3
 import time
 import math
-from time import localtime, strftime
 import pandas as pd
-
+from time import localtime, strftime
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore, QtWidgets, uic, QtGui
 import module_timer
-import module_get_summary
-import module_get_summary2
-import module_item_finder
-import module_item_finder2
+import module_worker
 
 form_class = uic.loadUiType("interface.ui")[0]
 ACCOUNT = "8137639811"
@@ -180,7 +176,7 @@ class Kiwoom(QMainWindow, form_class):
         print("create threads")
         ## 1st        
         self.th_seq = 0
-        self.worker0 = module_get_summary2.Worker(0)
+        self.worker0 = module_worker.Worker(0)
         self.worker0.th_con.connect(self.th_connected)
         self.test_dict0.connect(self.worker0.dict_from_main)
         self.che_dict.connect(self.worker0.che_result)
@@ -197,7 +193,7 @@ class Kiwoom(QMainWindow, form_class):
             QtTest.QTest.qWait(200)
         ## 2nd
         self.th_seq = 1
-        self.worker1 = module_get_summary2.Worker(1)
+        self.worker1 = module_worker.Worker(1)
         self.worker1.th_con.connect(self.th_connected)
         self.test_dict1.connect(self.worker1.dict_from_main)
         self.che_dict.connect(self.worker1.che_result)
@@ -213,7 +209,7 @@ class Kiwoom(QMainWindow, form_class):
             QtTest.QTest.qWait(200)
         ## 3rd
         self.th_seq = 2
-        self.worker2 = module_get_summary2.Worker(2)
+        self.worker2 = module_worker.Worker(2)
         self.worker2.th_con.connect(self.th_connected)
         self.test_dict2.connect(self.worker2.dict_from_main)
         self.che_dict.connect(self.worker2.che_result)
@@ -229,7 +225,7 @@ class Kiwoom(QMainWindow, form_class):
             QtTest.QTest.qWait(200)
         ## 4th
         self.th_seq = 3
-        self.worker3 = module_get_summary2.Worker(3)
+        self.worker3 = module_worker.Worker(3)
         self.worker3.th_con.connect(self.th_connected)
         self.test_dict3.connect(self.worker3.dict_from_main)
         self.che_dict.connect(self.worker3.che_result)
@@ -246,7 +242,7 @@ class Kiwoom(QMainWindow, form_class):
 
         ## 5th
         self.th_seq = 4
-        self.worker4 = module_get_summary2.Worker(4)
+        self.worker4 = module_worker.Worker(4)
         self.worker4.th_con.connect(self.th_connected)
         self.test_dict4.connect(self.worker4.dict_from_main)
         self.che_dict.connect(self.worker4.che_result)

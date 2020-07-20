@@ -20,10 +20,10 @@ ROE_LOW_LIMIT = 10
 class ItemFinder(QThread):
     def run(self):
         self.index = 0
-        while True:
-            print(self.index)
-            self.index = self.index + 1
-            QtTest.QTest.qWait(1000)
+        # while True:
+        print(self.index)
+        self.index = self.index + 1
+            # QtTest.QTest.qWait(1000)
 
     def finder_test(self) :
         code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
