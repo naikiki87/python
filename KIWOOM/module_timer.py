@@ -19,7 +19,7 @@ class Timer(QThread):
                 new_deal = {}
                 new_deal['item_code'] = "035720"
                 new_deal['qty'] = 2
-                self.new_deal.emit(new_deal)
+                # self.new_deal.emit(new_deal)
 
             now = datetime.datetime.now()
             mkt_open = now.replace(hour=9, minute=0, second=0)
