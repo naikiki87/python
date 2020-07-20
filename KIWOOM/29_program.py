@@ -15,7 +15,6 @@ import module_worker
 form_class = uic.loadUiType("interface.ui")[0]
 ACCOUNT = "8137639811"
 PASSWORD = "6458"
-
 NUM_SLOT = 5
 tableSUMMARY_COL = 15
 
@@ -85,10 +84,18 @@ class Kiwoom(QMainWindow, form_class):
         self.func_SET_table_dailyprofit()   # dailyprofit table
 
     @pyqtSlot(dict)
+    def buy_new_item(self, data) :
+        print("buy new item", data['item_code'], data['qty'])
+        item_code = data['item_code']
+        qty = data['qty']
+        self.code_edit.setText(item_code)
+        self.buy_sell_count.setText(str(qty))
+        self.GET_hoga(item_code)
+        self.func_ORDER_BUY()
+    @pyqtSlot(dict)
     def update_times(self, data) :
         self.text_edit4.setText(data['time'])
         self.possible_time = data['possible']
-
     @pyqtSlot(dict)
     def rp_dict(self, data):
         if data['ordered'] == 1 :
@@ -121,7 +128,6 @@ class Kiwoom(QMainWindow, form_class):
         #     sample4 = self.table_summary.item(4, 7).text()
         #     print("rp : ", sample0, type(sample0))
         #     print("rp4 : ", sample4, type(sample4))
-    
     @pyqtSlot(int)
     def th_connected(self, data) :
         print("th con : ", data)
@@ -190,7 +196,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 1 CREATED")
                 break
-            QtTest.QTest.qWait(200)
+            QtTest.QTest.qWait(100)
         ## 2nd
         self.th_seq = 1
         self.worker1 = module_worker.Worker(1)
@@ -206,7 +212,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 2 CREATED")
                 break
-            QtTest.QTest.qWait(200)
+            QtTest.QTest.qWait(100)
         ## 3rd
         self.th_seq = 2
         self.worker2 = module_worker.Worker(2)
@@ -222,7 +228,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 3 CREATED")
                 break
-            QtTest.QTest.qWait(200)
+            QtTest.QTest.qWait(100)
         ## 4th
         self.th_seq = 3
         self.worker3 = module_worker.Worker(3)
@@ -238,7 +244,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 4 CREATED")
                 break
-            QtTest.QTest.qWait(200)
+            QtTest.QTest.qWait(100)
 
         ## 5th
         self.th_seq = 4
@@ -255,7 +261,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 5 CREATED")
                 break
-            QtTest.QTest.qWait(200)
+            QtTest.QTest.qWait(100)
 
     def order_start(self) :
         try :
@@ -447,7 +453,6 @@ class Kiwoom(QMainWindow, form_class):
             self.text_edit.append(timestamp + str(e))
 
             pass
-    
     ## 매도 ##
     def func_ORDER_SELL(self) :
         print("Clicked SELL")
@@ -1023,15 +1028,6 @@ class Kiwoom(QMainWindow, form_class):
         today = year + month + day
 
         return today
-    @pyqtSlot(dict)
-    def buy_new_item(self, data) :
-        print("buy new item", data['item_code'], data['qty'])
-        item_code = data['item_code']
-        qty = data['qty']
-        self.code_edit.setText(item_code)
-        self.buy_sell_count.setText(str(qty))
-        self.GET_hoga(item_code)
-        self.func_ORDER_BUY()
 
     def event_connect(self, err_code):
         if err_code == 0:
