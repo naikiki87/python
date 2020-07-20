@@ -38,6 +38,7 @@ class Timer(QThread):
             now = datetime.datetime.now()
             mkt_open = now.replace(hour=9, minute=0, second=0)
             mkt_close = now.replace(hour=15, minute=20, second=0)
+            am10 = now.replace(hour=10, minute=00, second=0)
 
             item_finding = now.replace(hour=13, minute=53, second=30)
 
@@ -50,11 +51,11 @@ class Timer(QThread):
 
             if now >= mkt_open and now < mkt_close :
                 temp_time['possible'] = 1
-                if c_sec == "00" and self.item_checking == 0 :
+                if now >= am10 and c_sec == "00" and self.item_checking == 0 :
                     self.check_slot.emit(1)
             else :
                 temp_time['possible'] = 0
-                if c_sec == "00" and self.item_checking == 0 :
+                if now >= am10 and c_sec == "00" and self.item_checking == 0 :
                     self.check_slot.emit(1)
             self.cur_time.emit(temp_time)
             test_time = test_time + 1
