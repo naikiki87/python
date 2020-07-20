@@ -18,22 +18,22 @@ MKT_SUM_LIMIT = 3000
 class Timer(QThread):
     cur_time = pyqtSignal(dict)
     new_deal = pyqtSignal(dict)
+    check_slot = pyqtSignal(int)
+    recommend_candidate = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
         self.make_db_table()
+        self.item_checking = 0
 
     def run(self):
         temp_time = {}
         test_time = 0
         while True:
-            if test_time == 5 :
-                self.item_discovery()
-
-                # new_deal = {}
-                # new_deal['item_code'] = "035720"
-                # new_deal['qty'] = 2
-                # # self.new_deal.emit(new_deal)
+            # new_deal = {}
+            # new_deal['item_code'] = "035720"
+            # new_deal['qty'] = 2
+            # # self.new_deal.emit(new_deal)
 
             now = datetime.datetime.now()
             mkt_open = now.replace(hour=9, minute=0, second=0)
@@ -50,15 +50,22 @@ class Timer(QThread):
 
             if now >= mkt_open and now < mkt_close :
                 temp_time['possible'] = 1
+                if c_sec == "00" and self.item_checking == 0 :
+                    self.check_slot.emit(1)
             else :
                 temp_time['possible'] = 0
+                if c_sec == "00" and self.item_checking == 0 :
+                    self.check_slot.emit(1)
             self.cur_time.emit(temp_time)
-            print("Test Time : ", test_time)
             test_time = test_time + 1
-
             time.sleep(1)
-            if now == item_finding :
-                self.finder_test()
+
+    @pyqtSlot(int)
+    def res_check_slot(self, data) :
+        print("res check slot : ", data)
+        if data != 0 :
+            self.item_checking = 1
+            self.item_discovery()
 
     def item_discovery(self) :
         code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
@@ -159,6 +166,12 @@ class Timer(QThread):
                 pass
 
         print(df_last3)
+        if len(df_last3) != 0 :
+            candidate = df_last3.code[0]
+            print("candidate : ", candidate)
+            self.recommend_candidate.emit(candidate)
+
+        self.item_checking = 0
 
     def get_cur_price(self, item_code):
         url = "http://polling.finance.naver.com/api/realtime.nhn?query=SERVICE_ITEM:{}|SERVICE_RECENT_ITEM:{}&_callback=".format(item_code, item_code)

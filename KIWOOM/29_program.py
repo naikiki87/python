@@ -25,6 +25,7 @@ class Kiwoom(QMainWindow, form_class):
     test_dict3 = pyqtSignal(dict)
     test_dict4 = pyqtSignal(dict)
     che_dict = pyqtSignal(dict)
+    res_check_slot = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
@@ -1028,6 +1029,20 @@ class Kiwoom(QMainWindow, form_class):
         today = year + month + day
 
         return today
+    
+    @pyqtSlot(int)
+    def check_slot(self, data) :
+        print("check slot")
+        temp = 0
+        for i in range(NUM_SLOT) :
+            if self.item_slot[i] == 0 :
+                temp = temp + 1
+
+        self.res_check_slot.emit(temp)
+
+    @pyqtSlot(str)
+    def verify_candidate(self, data) :
+        print("Verify Candidate : ", datas)
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -1036,6 +1051,9 @@ class Kiwoom(QMainWindow, form_class):
             self.timer = module_timer.Timer()
             self.timer.cur_time.connect(self.update_times)
             self.timer.new_deal.connect(self.buy_new_item)
+            self.timer.check_slot.connect(self.check_slot)
+            self.timer.recommend_candidate.connect(self.verify_candidate)
+            self.res_check_slot.connect(self.timer.res_check_slot)
             self.timer.start()
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Timer Thread Started")
