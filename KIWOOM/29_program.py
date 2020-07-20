@@ -153,6 +153,27 @@ class Kiwoom(QMainWindow, form_class):
     def notice_from_worker(self, data) :
         print("notice from worker : ", data)
 
+    @pyqtSlot(dict)
+    def rq_order(self, data) :
+        print("receive rq order")
+        type = data['type']
+
+        if type == 0 :  ## BUY
+            item_code = data['item_code']
+            qty = data['qty']
+            price = data['price']
+
+            print(item_code, qty, price)
+            self.ORDER_BUY(item_code, qty, price)
+        
+        elif type == 1 :  ## SELL
+            item_code = data['item_code']
+            qty = data['qty']
+            price = data['price']
+
+            print(item_code, qty, price)
+            self.ORDER_SELL(item_code, qty, price)
+
     def create_thread(self) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "CREATE THREADS")
@@ -164,6 +185,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict0.connect(self.worker0.dict_from_main)
         self.che_dict.connect(self.worker0.che_result)
         self.worker0.trans_dict.connect(self.rp_dict)
+        self.worker0.rq_order.connect(self.rq_order)
         self.worker0.notice.connect(self.notice_from_worker)
         self.worker0.start()
         while True :
@@ -172,7 +194,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 1 CREATED")
                 break
-            QtTest.QTest.qWait(500)
+            QtTest.QTest.qWait(200)
         ## 2nd
         self.th_seq = 1
         self.worker1 = module_get_summary2.Worker(1)
@@ -180,6 +202,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict1.connect(self.worker1.dict_from_main)
         self.che_dict.connect(self.worker1.che_result)
         self.worker1.trans_dict.connect(self.rp_dict)
+        self.worker1.rq_order.connect(self.rq_order)
         self.worker1.notice.connect(self.notice_from_worker)
         self.worker1.start()
         while True :
@@ -187,7 +210,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 2 CREATED")
                 break
-            QtTest.QTest.qWait(500)
+            QtTest.QTest.qWait(200)
         ## 3rd
         self.th_seq = 2
         self.worker2 = module_get_summary2.Worker(2)
@@ -195,6 +218,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict2.connect(self.worker2.dict_from_main)
         self.che_dict.connect(self.worker2.che_result)
         self.worker2.trans_dict.connect(self.rp_dict)
+        self.worker2.rq_order.connect(self.rq_order)
         self.worker2.notice.connect(self.notice_from_worker)
         self.worker2.start()
         while True :
@@ -202,7 +226,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 3 CREATED")
                 break
-            QtTest.QTest.qWait(500)
+            QtTest.QTest.qWait(200)
         ## 4th
         self.th_seq = 3
         self.worker3 = module_get_summary2.Worker(3)
@@ -210,6 +234,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict3.connect(self.worker3.dict_from_main)
         self.che_dict.connect(self.worker3.che_result)
         self.worker3.trans_dict.connect(self.rp_dict)
+        self.worker3.rq_order.connect(self.rq_order)
         self.worker3.notice.connect(self.notice_from_worker)
         self.worker3.start()
         while True :
@@ -217,7 +242,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 4 CREATED")
                 break
-            QtTest.QTest.qWait(500)
+            QtTest.QTest.qWait(200)
 
         ## 5th
         self.th_seq = 4
@@ -226,6 +251,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict4.connect(self.worker4.dict_from_main)
         self.che_dict.connect(self.worker4.che_result)
         self.worker4.trans_dict.connect(self.rp_dict)
+        self.worker4.rq_order.connect(self.rq_order)
         self.worker4.notice.connect(self.notice_from_worker)
         self.worker4.start()
         while True :
@@ -233,7 +259,7 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 5 CREATED")
                 break
-            QtTest.QTest.qWait(500)
+            QtTest.QTest.qWait(200)
 
     def order_start(self) :
         try :
@@ -243,7 +269,6 @@ class Kiwoom(QMainWindow, form_class):
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + str(e))
         self.load_etc_data()
-
     def order_stop(self) :
         try :
             self.send_data = 0
@@ -342,7 +367,33 @@ class Kiwoom(QMainWindow, form_class):
         self.text_edit.append(timestamp + "Monitoring STOP")
 
         self.load_etc_data()
-
+    def ORDER_BUY(self, item_code, qty, price) :
+        rqname = "RQ_TEST"
+        screen_no = "0101"
+        acc_no = ACCOUNT
+        order_type = 1
+        hogagb = "00"
+        orgorderno = ""
+        order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+                     [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
+        
+        self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
+        timestamp = self.func_GET_CurrentTime()
+        print(timestamp + "ORDER : BUY", item_code, " / ", qty)
+    def ORDER_SELL(self, item_code, qty, price) :
+        rqname = "RQ_TEST"
+        screen_no = "0101"
+        acc_no = ACCOUNT
+        order_type = 2
+        hogagb = "00"
+        orgorderno = ""
+        
+        order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+                     [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
+        
+        self.func_UPDATE_db_item(item_code, 2, 1)       # oerdered -> 1
+        timestamp = self.func_GET_CurrentTime()
+        print(timestamp + "ORDER : SELL", item_code, " / ", qty)
     ## 매수 ##
     def func_ORDER_BUY(self) :
         timestamp = self.func_GET_CurrentTime()
@@ -976,13 +1027,23 @@ class Kiwoom(QMainWindow, form_class):
         today = year + month + day
 
         return today
-    
+    @pyqtSlot(dict)
+    def buy_new_item(self, data) :
+        print("buy new item", data['item_code'], data['qty'])
+        item_code = data['item_code']
+        qty = data['qty']
+        self.code_edit.setText(item_code)
+        self.buy_sell_count.setText(str(qty))
+        self.GET_hoga(item_code)
+        self.func_ORDER_BUY()
+
     def event_connect(self, err_code):
         if err_code == 0:
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Login Complete")
             self.timer = module_timer.Timer()
             self.timer.cur_time.connect(self.update_times)
+            self.timer.new_deal.connect(self.buy_new_item)
             self.timer.start()
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Timer Thread Started")
