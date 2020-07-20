@@ -124,9 +124,7 @@ class Timer(QThread):
             price_ratio = round(float(cur_price / p_avr), 2)
 
             if price_ratio < 0.99 :
-            # if (p_avr - cur_price) >= 0:
                 idx = len(df_last2)
-                # price_ratio = round(float(cur_price / p_avr), 2)
                 df_last2.loc[idx] = [code, p_avr, stdev, cur_price, price_ratio]
 
         df_last2 = df_last2.sort_values(by=['price_ratio'], axis=0)  # sorting by stdev(descending)
@@ -139,7 +137,6 @@ class Timer(QThread):
         idx = 0
 
         for i in range(data_cnt):
-            # print(i)
             try:
                 if i % SHOW_SCALE == 0:
                     complete_ratio = round(i/data_cnt * 100, 1)
