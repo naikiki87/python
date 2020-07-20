@@ -9,16 +9,6 @@ import requests
 import threading
 from bs4 import BeautifulSoup
 
-# idx = 0
-# idx2 = 0
-# idx3 = 0
-# VOL_YESTERDAY = 1000000
-# VOL_RATIO_YESTERDAY = 5
-# VOL_RATIO_TODAY_LOW = 0.7
-# VOL_RATIO_TODAY_HI = 10
-# PER_LIMIT = 15
-# ROE_LOW_LIMIT = 10
-
 SHOW_SCALE = 5
 VOL_FIN_PAGE = 3    # 평균 volume을 구할 표본 수 -> 1 당 10일치
 STDEV_LIMIT = 0.25
@@ -69,7 +59,6 @@ class Timer(QThread):
             time.sleep(1)
             if now == item_finding :
                 self.finder_test()
-    
 
     def item_discovery(self) :
         code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
@@ -99,7 +88,6 @@ class Timer(QThread):
                     url = 'http://finance.naver.com/item/sise_day.nhn?code={code}&page={page}'.format(code=code, page=page) 
                     df = df.append(pd.read_html(url, header=0)[0], ignore_index=True) 
             
-                # df = df.rename(columns={'날짜':'date', '종가':'end', '전일비':'gap', '시가':'start', '고가':'high', '저가':'low', '거래량' : 'vol'})
                 df = df.rename(columns={'종가':'end', '거래량' : 'vol'})
                 df = df.dropna()
 
