@@ -23,7 +23,6 @@ class Timer(QThread):
     new_deal = pyqtSignal(dict)
     check_slot = pyqtSignal(int)
     refresh_status = pyqtSignal(int)
-    # recommend = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -35,6 +34,8 @@ class Timer(QThread):
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
         self.kiwoom.dynamicCall("CommConnect()")
+
+        # self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
 
     def run(self):
         temp_time = {}
@@ -90,7 +91,6 @@ class Timer(QThread):
             recommend = item_code[0]
 
             print("Checking : ", recommend)
-            # self.recommend.emit(recommend)
     
     # @pyqtSlot(int)
     # def item_check_complete(self, data) :
