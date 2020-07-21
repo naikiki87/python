@@ -26,6 +26,7 @@ class Kiwoom(QMainWindow, form_class):
     test_dict4 = pyqtSignal(dict)
     che_dict = pyqtSignal(dict)
     res_check_slot = pyqtSignal(int)
+    # check_complete = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
@@ -44,7 +45,7 @@ class Kiwoom(QMainWindow, form_class):
 
     def init_ENV(self) :
         ## flag setting
-        self.send_data = 0
+        self.send_data = 1
         self.input_show_status.setText("STOP")
         self.possible_time = 0
         self.reset_time = 1000
@@ -137,13 +138,20 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         print("btn test")
 
-        self.func_INSERT_db_item("220000", 0, 0, 0, 0)
+        acc_no = ACCOUNT
+        start_day = "20200701"
+        end_day = "20200721"
 
-        # acc_no = ACCOUNT
-        # acc_pw = PASSWORD
+        item_code = "005930"
+
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
+
         # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "RESET_1_005930", "opw00018", 0, 1000)
+        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시작일자", start_day)
+        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종료일자", end_day)
+        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_DailyProfit", "opt10074", 0, "0101")
+
     def btn_test_2(self):
         print("btn test2")
         self.reset_real_receive()
@@ -342,6 +350,7 @@ class Kiwoom(QMainWindow, form_class):
             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
         print("Set items end")
+    
     def load_etc_data(self) :
         ## deposit load
         self.func_GET_Deposit()
@@ -356,6 +365,7 @@ class Kiwoom(QMainWindow, form_class):
 
         ## daily profit load
         self.func_GET_DailyProfit(0)
+
     def reset_real_receive(self) :
         print("reset real receive")
         self.SetRealRemove("ALL", "ALL")
@@ -824,8 +834,7 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", "0")
-        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_man", "opw00009", 0, "0101")
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "opw00009_man", "opw00009", 0, self.reset_time)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_History", "opw00009", 0, self.reset_time)
     def func_SHOW_TradeHistory(self, rqname, trcode, recordname):
         data_cnt = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "조회건수")
 
@@ -1019,6 +1028,16 @@ class Kiwoom(QMainWindow, form_class):
         now = "[" + year + "/" + month +"/" + day + " " + hour + ":" + cmin + ":" + sec + "] "
 
         return now
+    def func_GET_CurrentTime2(self) :
+        month = strftime("%m", localtime())
+        day = strftime("%d", localtime())
+        hour = strftime("%H", localtime())
+        cmin = strftime("%M", localtime())
+        sec = strftime("%S", localtime())
+
+        now = month +"/" + day + " " + hour + ":" + cmin + ":" + sec
+
+        return now
     def func_GET_RepeatCount(self, trcode, rqname):
         ret = self.kiwoom.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
         return ret
@@ -1042,8 +1061,20 @@ class Kiwoom(QMainWindow, form_class):
 
     @pyqtSlot(str)
     def verify_candidate(self, data) :
-        print("Verify Candidate : ", datas)
+        print("Verify Candidate : ", data)
+        item_code = data
 
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
+
+        # if ok == 1 :
+        self.check_complete.emit(1)
+    @pyqtSlot(int)
+    def refresh_status(self, data) :
+        now = self.func_GET_CurrentTime2()
+        self.load_etc_data()
+        self.wid_refresh_order.setText(now)
+        
     def event_connect(self, err_code):
         if err_code == 0:
             timestamp = self.func_GET_CurrentTime()
@@ -1052,7 +1083,9 @@ class Kiwoom(QMainWindow, form_class):
             self.timer.cur_time.connect(self.update_times)
             self.timer.new_deal.connect(self.buy_new_item)
             self.timer.check_slot.connect(self.check_slot)
-            self.timer.recommend_candidate.connect(self.verify_candidate)
+            self.timer.refresh_status.connect(self.refresh_status)
+            # self.timer.recommend.connect(self.verify_candidate)
+            # self.check_complete.connect(self.timer.item_check_complete)
             self.res_check_slot.connect(self.timer.res_check_slot)
             self.timer.start()
             timestamp = self.func_GET_CurrentTime()
@@ -1226,7 +1259,7 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "opw00018_req":
             # print("DATA : CHECK BALANCE")
             self.func_SHOW_CheckBalance(rqname, trcode, recordname)
-        if rqname == "opw00009_man":
+        if rqname == "GET_History":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
         if self.possible_time == 1 and self.send_data == 1 :

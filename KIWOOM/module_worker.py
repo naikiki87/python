@@ -37,7 +37,7 @@ class Worker(QThread):
 
         self.jump_step = 0
 
-        self.PER_HI = 1
+        self.PER_HI = 0.8
         self.items = deque()
         
         self.prev_price = 0
@@ -184,7 +184,7 @@ class Worker(QThread):
     def dict_from_main(self, data) :
         
         item_code = data['item_code']
-        print(self.seq, "RCV : ", item_code)
+        # print(self.seq, "RCV : ", item_code)
         deposit = data['deposit']
 
         if data['autoTrade'] == 0 :
@@ -317,21 +317,13 @@ class Worker(QThread):
             else :
                 if self.lock == 0 :
                     self.lock = 1       ## lock
-                    cur_price = data['cur_price']
-                    # print("cur : ", cur_price)
-
-                    # if cur_price == self.prev_price :
-                    #     self.prev_price = cur_price
-                    #     print("same price")
-                    #     self.lock = 0
-
-                    # else :
+                    
                     step = self.func_GET_db_item(item_code, 1)
 
                     ## SHOW -> TABLE ##
                     own_count = data['own_count']
                     unit_price = data['unit_price']
-                    
+                    cur_price = data['cur_price']
                     price_buy = data['price_buy']
                     price_sell = data['price_sell']
 
@@ -349,11 +341,11 @@ class Worker(QThread):
                     self.rp_dict = {}
                     self.rp_dict.update(data)
                     self.rp_dict['ordered'] = 0
-                    self.rp_dict['total_purchase'] = total_purchase
-                    self.rp_dict['total_evaluation'] = total_evaluation
-                    self.rp_dict['temp_total'] = temp_total
-                    self.rp_dict['total_fee'] = total_fee
-                    self.rp_dict['total_sum'] = total_sum
+                    self.rp_dict['total_purchase'] = int(total_purchase)
+                    self.rp_dict['total_evaluation'] = int(total_evaluation)
+                    self.rp_dict['temp_total'] = int(temp_total)
+                    self.rp_dict['total_fee'] = int(total_fee)
+                    self.rp_dict['total_sum'] = int(total_sum)
                     self.rp_dict['percent'] = percent
                     self.rp_dict['step'] = step
                     self.rp_dict['seq'] = self.seq
@@ -467,7 +459,6 @@ class Worker(QThread):
                             if JUDGE_SHOW == 1 :
                                 print(item_code, "judge : 3")
                             if MAKE_ORDER == 1 :
-
                                 qty = res['sell_qty']
                                 price = res['sell_price']
 
@@ -519,7 +510,8 @@ class Worker(QThread):
             #     sell_qty = 1
             price = int(price_sell)
 
-            res['judge'] = 2
+            # res['judge'] = 2
+            res['judge'] = 3
             res['sell_qty'] = sell_qty
             res['sell_price'] = price
 
