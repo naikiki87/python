@@ -142,15 +142,14 @@ class Kiwoom(QMainWindow, form_class):
         start_day = "20200701"
         end_day = "20200721"
 
-        item_code = "005930"
+        # item_code = "005930"
+        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
 
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
-
-        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시작일자", start_day)
-        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종료일자", end_day)
-        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_DailyProfit", "opt10074", 0, "0101")
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시작일자", start_day)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종료일자", end_day)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_DailyProfit", "opt10074", 0, "0101")
 
     def btn_test_2(self):
         print("btn test2")

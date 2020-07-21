@@ -74,7 +74,7 @@ class Timer(QThread):
         print("res check slot : ", data)
         if data != 0 :
             self.item_checking = 1
-            self.finder.start()
+            # self.finder.start()
     
     @pyqtSlot(dict)
     def check_candidate(self, data) :
