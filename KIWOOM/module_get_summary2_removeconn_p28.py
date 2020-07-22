@@ -342,8 +342,8 @@ class Worker(QThread):
                     self.trans_dict.emit(self.rp_dict)       
 
                     ## Regulation
-                    if percent >= 0.5 :
-                        print("Goal Regulation")
+                    # if percent >= 0.5 :
+                    #     print("Goal Regulation")
 
                     # comp_price = cur_price - self.prev_price
 

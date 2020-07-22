@@ -64,18 +64,25 @@ class Timer(QThread):
                     self.check_slot.emit(1)
             else :
                 temp_time['possible'] = 0
-                if now >= am10 and c_sec == "00" and self.item_checking == 0 :
-                    self.check_slot.emit(1)
             self.cur_time.emit(temp_time)
             test_time = test_time + 1
             time.sleep(1)
 
-    @pyqtSlot(int)
+    @pyqtSlot(list)
     def res_check_slot(self, data) :
         print("res check slot : ", data)
-        if data != 0 :
+        self.cur_items = data
+        empty = 0
+
+        for i in range(5) :
+            if data[i] == 0 :
+                empty = empty + 1
+
+        print("empty : ", empty)
+
+        if empty != 0 :
             self.item_checking = 1
-            # self.finder.start()
+            self.finder.start()
     
     @pyqtSlot(dict)
     def check_candidate(self, data) :
@@ -84,15 +91,16 @@ class Timer(QThread):
         empty = data['empty']
 
         if empty == 1 :     ## item discovery 결과 적정한 item 이 없는 경우
+            print("No candidate")
             self.item_checking = 0
         
         elif empty == 0 :   ## 적정 item이 있는 경우
             item_code = data['item_code']
-            recommend = item_code[0]
+            item_cnt = len(item_code)
+            candidate = item_code[0]
 
-            print("Checking : ", recommend)
-    
-    # @pyqtSlot(int)
-    # def item_check_complete(self, data) :
-    #     print("item check complete")
-    #     self.item_checking = 0
+            for i in range(item_cnt) :
+                if candidate in self.cur_items :
+                    print("Checking : ", candidate)
+
+            # self.item_checking = 0

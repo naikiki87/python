@@ -25,7 +25,8 @@ class Kiwoom(QMainWindow, form_class):
     test_dict3 = pyqtSignal(dict)
     test_dict4 = pyqtSignal(dict)
     che_dict = pyqtSignal(dict)
-    res_check_slot = pyqtSignal(int)
+    # res_check_slot = pyqtSignal(int)
+    res_check_slot = pyqtSignal(list)
     # check_complete = pyqtSignal(int)
 
     def __init__(self):
@@ -1051,12 +1052,15 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(int)
     def check_slot(self, data) :
         print("check slot")
-        temp = 0
-        for i in range(NUM_SLOT) :
-            if self.item_slot[i] == 0 :
-                temp = temp + 1
 
-        self.res_check_slot.emit(temp)
+        self.res_check_slot.emit(self.item_slot)
+
+        # temp = 0
+        # for i in range(NUM_SLOT) :
+        #     if self.item_slot[i] == 0 :
+        #         temp = temp + 1
+
+        # self.res_check_slot.emit(temp)
 
     @pyqtSlot(str)
     def verify_candidate(self, data) :

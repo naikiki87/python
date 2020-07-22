@@ -354,8 +354,8 @@ class Worker(QThread):
                     self.trans_dict.emit(self.rp_dict)       
 
                     ## Regulation
-                    if percent >= 0.5 :
-                        print("Goal Regulation")
+                    # if percent >= 0.5 :
+                    #     print("Goal Regulation")
 
                     ## Make Order
                     orderType = self.func_GET_db_item(item_code, 3)
