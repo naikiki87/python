@@ -2,6 +2,7 @@ from socket import *
 
 HOST = ''
 PORT = 5126
+
 BUFSIZE = 1024
 ADDR = (HOST, PORT)
 

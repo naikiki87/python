@@ -16,7 +16,7 @@ FEE_BUY = 0.0035
 FEE_SELL = 0.0035
 GOAL_PER = -0.01
 MAKE_ORDER = 1
-PER_LOW = -1.4
+PER_LOW = -2
 
 STEP_LIMIT = 5
 TA_UNIT = 10
@@ -325,9 +325,11 @@ class Worker(QThread):
                     cur_price = data['cur_price']
                     price_buy = data['price_buy']
                     price_sell = data['price_sell']
+                    chegang = data['chegang']
 
                     total_purchase = own_count * unit_price
-                    total_evaluation = own_count * cur_price
+                    # total_evaluation = own_count * cur_price
+                    total_evaluation = own_count * price_sell
                     temp_total = total_evaluation - total_purchase
                     fee_buy = FEE_BUY * total_purchase
                     fee_sell = FEE_SELL * total_evaluation
@@ -352,10 +354,6 @@ class Worker(QThread):
 
                     self.trans_dict.emit(self.rp_dict)       
 
-                    ## Regulation
-                    # if percent >= 0.5 :
-                    #     print("Goal Regulation")
-
                     ## Make Order
                     orderType = self.func_GET_db_item(item_code, 3)
 
@@ -375,7 +373,7 @@ class Worker(QThread):
                             self.indicate_ordered()         ## INDICATE : ordered
 
                     else :
-                        res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation)
+                        res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
                         judge_type = res['judge']
 
                         if judge_type == 0 :        ## stay
@@ -482,7 +480,7 @@ class Worker(QThread):
 
 
         ################## judgement ###################
-    def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation) :
+    def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
         res = {}
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
@@ -518,6 +516,18 @@ class Worker(QThread):
         
         # Full Sell
         elif percent > self.PER_HI and step == STEP_LIMIT :
+            sell_qty = own_count
+            price = int(price_sell)
+
+            res['judge'] = 3
+            res['sell_qty'] = sell_qty
+            res['sell_price'] = price
+
+            return res
+
+        # # 손절 1단계
+        elif percent < PER_LOW and step == STEP_LIIT :
+            # if chegang >= 90 :
             sell_qty = own_count
             price = int(price_sell)
 

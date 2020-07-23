@@ -1078,7 +1078,10 @@ class Kiwoom(QMainWindow, form_class):
         now = self.func_GET_CurrentTime2()
         self.load_etc_data()
         self.wid_refresh_order.setText(now)
-        
+    @pyqtSlot(dict)
+    def auto_buy(self, data) :
+        print("auto buy requested : ", data)
+
     def event_connect(self, err_code):
         if err_code == 0:
             timestamp = self.func_GET_CurrentTime()
@@ -1087,6 +1090,7 @@ class Kiwoom(QMainWindow, form_class):
             self.timer.cur_time.connect(self.update_times)
             self.timer.new_deal.connect(self.buy_new_item)
             self.timer.check_slot.connect(self.check_slot)
+            self.timer.req_buy.connect(self.auto_buy)
             self.timer.refresh_status.connect(self.refresh_status)
             # self.timer.recommend.connect(self.verify_candidate)
             # self.check_complete.connect(self.timer.item_check_complete)

@@ -1,5 +1,6 @@
 import sys
 import time
+import math
 import datetime
 import sqlite3
 from PyQt5.QtCore import *
@@ -12,22 +13,21 @@ import module_finder
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 
-SHOW_SCALE = 5
-VOL_FIN_PAGE = 3    # 평균 volume을 구할 표본 수 -> 1 당 10일치
-STDEV_LIMIT = 0.25
-VOL_AVERAGE = 1000000    # 평균 volume filtering 하한치
-MKT_SUM_LIMIT = 3000
+UNIT_PRICE_LIMIT = 70000
+AUTO_BUY_PRICE_LIMIT = 200000
 
 class Timer(QThread):
     cur_time = pyqtSignal(dict)
     new_deal = pyqtSignal(dict)
     check_slot = pyqtSignal(int)
     refresh_status = pyqtSignal(int)
+    req_buy = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
         # self.make_db_table()
         self.item_checking = 0
+        self.candidate = ""
         self.finder = module_finder.Finder()
         self.finder.candidate.connect(self.check_candidate)
 
@@ -35,7 +35,7 @@ class Timer(QThread):
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
         self.kiwoom.dynamicCall("CommConnect()")
 
-        # self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
+        self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
 
     def run(self):
         temp_time = {}
@@ -82,7 +82,7 @@ class Timer(QThread):
 
         if empty != 0 :
             self.item_checking = 1
-            # self.finder.start()
+            self.finder.start()
     
     @pyqtSlot(dict)
     def check_candidate(self, data) :
@@ -97,10 +97,58 @@ class Timer(QThread):
         elif empty == 0 :   ## 적정 item이 있는 경우
             item_code = data['item_code']
             item_cnt = len(item_code)
-            candidate = item_code[0]
 
             for i in range(item_cnt) :
-                if candidate in self.cur_items :
-                    print("Checking : ", candidate)
+                self.candidate = item_code[i]
+                if self.candidate in self.cur_items :
+                    continue
+                break
 
-            # self.item_checking = 0
+            print("chekcing item info : ", self.candidate)
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
+            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
+
+    def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
+        print("[receive_tr_data] ", rqname)
+
+        if rqname == "GET_ItemInfo":
+            self.func_GET_ItemInfo(rqname, trcode, recordname)
+        if rqname == "GET_hoga":
+            self.func_GET_hoga(rqname, trcode, recordname)
+
+    def func_GET_ItemInfo(self, rqname, trcode, recordname) :
+        print("timer func_GET_ItemInfo")
+        item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
+        name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
+        volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
+        percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
+        current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
+        current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가").replace('+', '').replace('-', '').strip()
+
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
+
+    def func_GET_hoga(self, rqname, trcode, recordname) :
+        print("timer func_GET_hoga")
+        hoga_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
+        hoga_sell = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', ''))
+
+        
+
+        if hoga_sell > UNIT_PRICE_LIMIT :
+            print("단가 너무 쎔")
+        
+        elif hoga_sell <= UNIT_PRICE_LIMIT :
+            print("단가 적당")
+            qty = math.floor(AUTO_BUY_PRICE_LIMIT / hoga_sell)
+
+        print("candidate : ", self.candidate)
+        print("단가 : ", hoga_sell)
+        print("수량 : ", qty)
+
+        temp = {}
+        temp['item_code'] = self.candidate
+        temp['qty'] = qty
+        temp['buy_price'] = hoga_sell
+
+        self.req_buy.emit(temp)
