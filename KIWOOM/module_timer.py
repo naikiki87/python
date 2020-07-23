@@ -133,8 +133,6 @@ class Timer(QThread):
         hoga_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
         hoga_sell = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', ''))
 
-        
-
         if hoga_sell > UNIT_PRICE_LIMIT :
             print("단가 너무 쎔")
         
@@ -142,13 +140,13 @@ class Timer(QThread):
             print("단가 적당")
             qty = math.floor(AUTO_BUY_PRICE_LIMIT / hoga_sell)
 
-        print("candidate : ", self.candidate)
-        print("단가 : ", hoga_sell)
-        print("수량 : ", qty)
+            print("candidate : ", self.candidate)
+            print("단가 : ", hoga_sell)
+            print("수량 : ", qty)
 
-        temp = {}
-        temp['item_code'] = self.candidate
-        temp['qty'] = qty
-        temp['buy_price'] = hoga_sell
+            temp = {}
+            temp['item_code'] = self.candidate
+            temp['qty'] = qty
+            temp['buy_price'] = hoga_sell
 
-        self.req_buy.emit(temp)
+            self.req_buy.emit(temp)
