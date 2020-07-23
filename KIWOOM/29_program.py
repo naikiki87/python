@@ -16,7 +16,7 @@ form_class = uic.loadUiType("interface.ui")[0]
 ACCOUNT = "8137639811"
 PASSWORD = "6458"
 NUM_SLOT = 5
-tableSUMMARY_COL = 15
+tableSUMMARY_COL = 16
 
 class Kiwoom(QMainWindow, form_class):
     test_dict0 = pyqtSignal(dict)
@@ -122,6 +122,7 @@ class Kiwoom(QMainWindow, form_class):
                 self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 0)
             self.func_SET_TableData(1, data['seq'], 13, str(data['step']), 0)
             self.func_SET_TableData(1, data['seq'], 14, str(data['high']), 0)
+            self.func_SET_TableData(1, data['seq'], 15, str(data['chegang']), 0)
 
         # purchase = []
         # try :
@@ -1123,9 +1124,12 @@ class Kiwoom(QMainWindow, form_class):
             self.table_summary.setColumnWidth(i, 100)
         
         self.table_summary.setColumnWidth(0, 75)
-        self.table_summary.setColumnWidth(2, 75)
-        self.table_summary.setColumnWidth(13, 75)
-        self.table_summary.setColumnWidth(14, 75)
+        self.table_summary.setColumnWidth(2, 65)
+        self.table_summary.setColumnWidth(12, 65)
+        self.table_summary.setColumnWidth(13, 65)
+        self.table_summary.setColumnWidth(14, 65)
+        self.table_summary.setColumnWidth(15, 65)
+
         
         self.table_summary.verticalHeader().setVisible(False)
         self.table_summary.verticalHeader().setDefaultSectionSize(1)
@@ -1145,6 +1149,7 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.setHorizontalHeaderItem(12, QTableWidgetItem("%"))
         self.table_summary.setHorizontalHeaderItem(13, QTableWidgetItem("단계"))
         self.table_summary.setHorizontalHeaderItem(14, QTableWidgetItem("HIGH"))
+        self.table_summary.setHorizontalHeaderItem(15, QTableWidgetItem("체강"))
         
 
         self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)
@@ -1272,6 +1277,7 @@ class Kiwoom(QMainWindow, form_class):
                 try :
                     price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()
                     price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()
+                    chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
                     
                     item_name = self.table_summary.item(th_num, 1).text()
                     own_count = self.table_summary.item(th_num, 2).text()
@@ -1286,6 +1292,7 @@ class Kiwoom(QMainWindow, form_class):
                     test_dict['cur_price'] = int(cur_price)
                     test_dict['price_buy'] = int(price_buy)
                     test_dict['price_sell'] = int(price_sell)
+                    test_dict['chegang'] = float(chegang)
                     test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
 
                     test_dict['autoTrade'] = 1

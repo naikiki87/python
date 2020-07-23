@@ -182,9 +182,7 @@ class Worker(QThread):
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
-        
         item_code = data['item_code']
-        # print(self.seq, "RCV : ", item_code)
         deposit = data['deposit']
 
         if data['autoTrade'] == 0 :
@@ -285,6 +283,7 @@ class Worker(QThread):
                     cur_price = data['cur_price']
                     price_buy = data['price_buy']
                     price_sell = data['price_sell']
+                    chegang = data['chegang']
 
                     total_purchase = own_count * unit_price
                     total_evaluation = own_count * cur_price
