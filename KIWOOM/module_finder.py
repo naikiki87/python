@@ -27,7 +27,7 @@ class Finder(QThread):
         df_last = pd.DataFrame(columns = ['code', 'p_avr', 'stdev'])
 
         # cnt_code = len(code_df)
-        cnt_code = 200
+        cnt_code = 1000
         idx = 0
 
         for i in range(0, cnt_code):

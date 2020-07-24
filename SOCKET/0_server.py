@@ -1,10 +1,13 @@
 from socket import *
+import pandas as pd
 
 HOST = ''
 PORT = 5126
 
 BUFSIZE = 1024
 ADDR = (HOST, PORT)
+
+df_acc = pd.DataFrame(columns = ['a', 'b', 'c', 'd', 'cnt'])
 
 # 소켓 생성
 serverSocket = socket(AF_INET, SOCK_STREAM)

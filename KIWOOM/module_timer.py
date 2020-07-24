@@ -150,3 +150,4 @@ class Timer(QThread):
             temp['buy_price'] = hoga_sell
 
             self.req_buy.emit(temp)
+            # self.item_checking = 0

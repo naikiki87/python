@@ -1088,11 +1088,11 @@ class Kiwoom(QMainWindow, form_class):
 
         self.code_edit.setText(item_code)
         self.buy_sell_count.setText(str(qty))
-        self.wid_buy_price.setText(str(hoga_sell))
-        self.wid_sell_price.setText(str(hoga_sell))
+        self.wid_buy_price.setText(str(price))
+        self.wid_sell_price.setText(str(price))
 
         print("ready to buy")
-        # self.func_ORDER_BUY()
+        self.func_ORDER_BUY()
 
     def event_connect(self, err_code):
         if err_code == 0:
