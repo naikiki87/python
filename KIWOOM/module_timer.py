@@ -13,8 +13,8 @@ import module_finder
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 
-UNIT_PRICE_LIMIT = 70000
-AUTO_BUY_PRICE_LIMIT = 200000
+UNIT_PRICE_LIMIT = 50000
+AUTO_BUY_PRICE_LIMIT = 100000
 
 class Timer(QThread):
     cur_time = pyqtSignal(dict)
@@ -82,7 +82,7 @@ class Timer(QThread):
 
         if empty != 0 :
             self.item_checking = 1
-            self.finder.start()
+            # self.finder.start()
     
     @pyqtSlot(dict)
     def check_candidate(self, data) :
@@ -96,17 +96,41 @@ class Timer(QThread):
         
         elif empty == 0 :   ## 적정 item이 있는 경우
             item_code = data['item_code']
-            item_cnt = len(item_code)
+            
+            self.candidate_queue = []       ## queue initialize
+            self.candidate_queue = data['item_code']    ## fill candidates in queue
+            self.candidate_seq = 0          ## first candidate
+            self.investigate_items()
 
-            for i in range(item_cnt) :
-                self.candidate = item_code[i]
-                if self.candidate in self.cur_items :
-                    continue
-                break
+            # item_cnt = len(item_code)
 
-            print("chekcing item info : ", self.candidate)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
-            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
+            # for i in range(item_cnt) :
+            #     self.candidate = item_code[i]
+            #     if self.candidate in self.cur_items :
+            #         continue
+            #     break
+
+            # print("chekcing item info : ", self.candidate)
+            # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
+            # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
+    
+    def investigate_items(self) :
+        print("investigating items : ", self.candidate_queue)
+        print("seq : ", self.candidate_seq)
+
+        if self.candidate_seq >= len(self.candidate_queue) :
+            print("candidate seq overflow : Finish Checking")
+            self.item_checking = 0
+        else :
+            self.candidate = self.candidate_queue[self.candidate_seq]
+
+            if self.candidate in self.cur_items :
+                self.candidate_seq = self.candidate_seq + 1
+                self.investigate_items()
+            else :
+                print("checking item : ", self.candidate)
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
+                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("[receive_tr_data] ", rqname)
@@ -129,12 +153,14 @@ class Timer(QThread):
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
 
     def func_GET_hoga(self, rqname, trcode, recordname) :
-        print("timer func_GET_hoga")
+        print("timer func_GET_hoga : ", self.candidate)
         hoga_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
         hoga_sell = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', ''))
 
         if hoga_sell > UNIT_PRICE_LIMIT :
             print("단가 너무 쎔")
+            self.candidate_seq = self.candidate_seq + 1
+            self.investigate_items()
         
         elif hoga_sell <= UNIT_PRICE_LIMIT :
             print("단가 적당")
