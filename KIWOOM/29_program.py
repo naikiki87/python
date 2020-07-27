@@ -333,7 +333,6 @@ class Kiwoom(QMainWindow, form_class):
                 pass
         print("[CODE SYNC] FILL LACK COMPLETE")
         print("[CODE SYNC] END")
-        
 
         for i in range(self.item_count) :
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
@@ -341,6 +340,7 @@ class Kiwoom(QMainWindow, form_class):
             owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
             unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
 
+            print("item : ", i)
             self.item_slot[i] = item_code
 
             self.func_SET_TableData(1, i, 0, item_code, 0)
@@ -1286,6 +1286,7 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "GET_History":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
+        print("receive real : ", code)
         if self.possible_time == 1 and self.send_data == 1 :
             th_num = self.which_thread(code)[1]
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()

@@ -45,11 +45,6 @@ class Worker(QThread):
         self.trend_cnt = 0
         self.df_trend = pd.DataFrame(columns = ['avg'])
         self.first_rcv = 1
-        # self.worker = QAxWidget()
-        # self.worker.setControl("KHOPENAPI.KHOpenAPICtrl.1")
-        # self.worker.dynamicCall("CommConnect()")
-
-        # self.worker.OnEventConnect.connect(self.event_connect)
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -308,6 +303,7 @@ class Worker(QThread):
                     self.rp_dict['percent'] = percent
                     self.rp_dict['step'] = step
                     self.rp_dict['seq'] = self.seq
+                    self.rp_dict['high'] = self.PER_HI
 
                     self.trans_dict.emit(self.rp_dict)       ## SHOW
                     self.indicate_ordered()         ## INDICATE : ordered
