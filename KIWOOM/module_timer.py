@@ -45,6 +45,7 @@ class Timer(QThread):
             mkt_open = now.replace(hour=9, minute=0, second=0)
             mkt_close = now.replace(hour=15, minute=20, second=0)
             am10 = now.replace(hour=10, minute=00, second=0)
+            pm230 = now.replace(hour=14, minute=30, second=0)
 
             item_finding = now.replace(hour=13, minute=53, second=30)
 
@@ -60,7 +61,7 @@ class Timer(QThread):
                 if now >= am10 and c_sec == "00" :
                     self.refresh_status.emit(1)
 
-                if now >= am10 and c_sec == "00" and self.item_checking == 0 :
+                if now >= am10 and now<=pm230 and c_sec == "00" and self.item_checking == 0 :
                     self.check_slot.emit(1)
             else :
                 temp_time['possible'] = 0
@@ -176,4 +177,8 @@ class Timer(QThread):
             temp['buy_price'] = hoga_sell
 
             self.req_buy.emit(temp)
-            self.item_checking = 0
+
+    @pyqtSlot(int)
+    def reply_buy(self, data) :
+        if data == 1:
+            self.item_checking = 0      ## request 후 구매 완료

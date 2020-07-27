@@ -480,15 +480,16 @@ class Worker(QThread):
         res = {}
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
-            V = int(price_buy)          # 매도 최우선가
-            A = total_purchase          # 총 매입금액
-            B = total_evaluation        # 총 평가금액
+            V = int(price_buy)              # 매도 최우선가
+            V_1st_buy = int(price_sell)     # 메수 최우선가
+            A = total_purchase              # 총 매입금액
+            B = total_evaluation            # 총 평가금액
             T = TAX
             FB = FEE_BUY
             FS = FEE_SELL
             P = GOAL_PER
 
-            buy_qty = math.ceil((B-A-B*T-A*FB-B*FS-A*P) / (V*P + V*T + FB + FS))
+            buy_qty = math.ceil((B-A-B*T-A*FB-B*FS-A*P) / (V_1st_buy*P + V*T + FB + FS))
 
             res['judge'] = 1
             res['buy_qty'] = buy_qty
@@ -498,7 +499,8 @@ class Worker(QThread):
 
         # Sell & Buy
         elif percent > self.PER_HI and step < STEP_LIMIT :
-            sell_qty = int(own_count / 2)
+            # sell_qty = int(own_count / 2)
+            sell_qty = own_count
             # if sell_qty == 0 :
             #     sell_qty = 1
             price = int(price_sell)

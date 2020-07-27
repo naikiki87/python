@@ -28,6 +28,7 @@ class Kiwoom(QMainWindow, form_class):
     # res_check_slot = pyqtSignal(int)
     res_check_slot = pyqtSignal(list)
     # check_complete = pyqtSignal(int)
+    reply_buy = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
@@ -47,6 +48,7 @@ class Kiwoom(QMainWindow, form_class):
     def init_ENV(self) :
         ## flag setting
         self.send_data = 1
+        self.buying_item = 0
         self.input_show_status.setText("STOP")
         self.possible_time = 0
         self.reset_time = 1000
@@ -596,6 +598,9 @@ class Kiwoom(QMainWindow, form_class):
                 item_code = item_code.replace('A', '').strip()
                 print("CHE RECEIVE : ", item_code)
 
+                if item_code == self.buying_item :
+                    self.reply_buy.emit(1)
+
                 timestamp = self.func_GET_CurrentTime()
                 # self.text_edit.append(timestamp + "[체결완료")
                 # print(timestamp + "[체결완료")
@@ -1092,6 +1097,8 @@ class Kiwoom(QMainWindow, form_class):
         self.wid_sell_price.setText(str(price))
 
         print("ready to buy")
+        self.buying_item = item_code
+
         self.func_ORDER_BUY()
 
     def event_connect(self, err_code):
@@ -1107,6 +1114,7 @@ class Kiwoom(QMainWindow, form_class):
             # self.timer.recommend.connect(self.verify_candidate)
             # self.check_complete.connect(self.timer.item_check_complete)
             self.res_check_slot.connect(self.timer.res_check_slot)
+            self.reply_buy.connect(self.timer.reply_buy)
             self.timer.start()
             timestamp = self.func_GET_CurrentTime()
             self.text_edit.append(timestamp + "Timer Thread Started")
@@ -1286,7 +1294,7 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "GET_History":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
-        print("receive real : ", code)
+        # print("receive real : ", code)
         if self.possible_time == 1 and self.send_data == 1 :
             th_num = self.which_thread(code)[1]
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
