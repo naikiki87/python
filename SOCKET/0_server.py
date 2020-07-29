@@ -53,7 +53,7 @@ while True :
 
                 item_length = len(item)
                 temp_str = ""
-                for k in range(item_length-1) :
+                for k in range(item_length-1) :     ## data transactionalizer
                     temp_str = temp_str + str(item[k])
                 count = int(item[item_length-1])
                 print(j, ' : ', temp_str, ' / ', count)

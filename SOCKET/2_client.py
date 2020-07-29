@@ -6,7 +6,8 @@ import socket
 # HOST = '127.0.0.1'  
 HOST = '165.132.105.40'  
 # 서버에서 지정해 놓은 포트 번호입니다. 
-PORT = 10033
+PORT = 10036
+
 
 
 # 소켓 객체를 생성합니다. 
@@ -17,60 +18,25 @@ client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((HOST, PORT))
 print("connected")
 
-a = [1, 1, 1, 1]
-b = [1, 2, 1, 2]
+# a = [1, 1, 1, 1]
+# b = [1, 2, 1, 2]
 
-temp1 = list(map(str, a))
-temp1 = '\t'.join(temp1)
+# temp1 = list(map(str, a))
+# temp1 = '\t'.join(temp1)
+# temp1 = temp1 + '\n'
+
+# temp2 = list(map(str, b))
+# temp2 = '\t'.join(temp2)
+# temp2 = temp2 + '\n'
+
+temp1 = "a"
 temp1 = temp1 + '\n'
 
-temp2 = list(map(str, b))
-temp2 = '\t'.join(temp2)
-temp2 = temp2 + '\n'
-
 try :
-    print("data send")
-    client_socket.sendall(temp1.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp2.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp1.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp2.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp1.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp2.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp1.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp2.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp1.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp2.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp1.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp2.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp1.encode())
-    time.sleep(1)
-    print("data send")
-    client_socket.sendall(temp2.encode())
-    time.sleep(1)
+    while True :
+        print("data send : ", temp1)
+        client_socket.sendall(temp1.encode())
+        time.sleep(1)
 except :
     client_socket.close()
 
