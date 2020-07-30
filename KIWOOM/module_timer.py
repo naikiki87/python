@@ -77,7 +77,7 @@ class Timer(QThread):
                 self.waiting_time = self.waiting_time + 1
                 print("item finding waiting : ", self.waiting_time)
 
-            if self.waiting_time == 60 :        ## item finding 중 1분 이상 응답이 없을 경우
+            if self.waiting_time == 60 :        ## item finding 중 100 이상 응답이 없을 경우
                 self.finder.terminate()         ## 쓰레드 종료
                 self.item_checking = 0          ## item checking 해제
 

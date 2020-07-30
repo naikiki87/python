@@ -419,8 +419,8 @@ class Worker(QThread):
         if percent < PER_LOW and step < STEP_LIMIT :
             # V = int(price_buy)              # 매도 최우선가
             # V_1st_buy = int(price_sell)     # 매수 최우선가
-            PS = int(price_sell)
-            PB = int(price_buy)
+            PS = int(price_sell)                # 매도 최우선가
+            PB = int(price_buy)                 # 매수 최우선가
             A = total_purchase              # 총 매입금액
             B = total_evaluation            # 총 평가금액
             T = TAX

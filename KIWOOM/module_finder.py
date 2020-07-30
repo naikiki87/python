@@ -106,6 +106,8 @@ class Finder(QThread):
                     print()
                     print(str(i) + "/" + str(data_cnt) + "(" + str(complete_ratio) + "%) is completed")
                     print()
+                    
+                    self.alive.emit(1)
                 
                 code = df_last2.code[i]
                 mkt_sum = self.get_market_sum(code)
