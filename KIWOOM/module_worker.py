@@ -320,8 +320,7 @@ class Worker(QThread):
                         #     self.indicate_ordered()         ## INDICATE : ordered
 
                     else :
-                        print("before judge")
-                        print(own_count, price_sell, price_buy)
+                        
                         res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
                         judge_type = res['judge']
 
@@ -416,7 +415,6 @@ class Worker(QThread):
 
         ################## judgement ###################
     def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
-        print("judge start")
         res = {}
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
@@ -462,7 +460,6 @@ class Worker(QThread):
         
         # Full Sell
         elif percent > self.PER_HI and step < STEP_LIMIT :
-            print("judge : 33333")
             sell_qty = own_count
             # price = int(price_sell)
 
