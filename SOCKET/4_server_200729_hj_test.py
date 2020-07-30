@@ -25,11 +25,11 @@ print('listen : ', PORT)
 clientSocket, addr_info = serverSocket.accept()
 print('connected')
 
-HOST_NEXT = '165.132.105.40'  
-PORT_NEXT = 10048
+# HOST_NEXT = '165.132.105.40'  
+# PORT_NEXT = 10048
 
-client_next = socket(AF_INET, SOCK_STREAM)
-client_next.connect((HOST_NEXT, PORT_NEXT))
+# client_next = socket(AF_INET, SOCK_STREAM)
+# client_next.connect((HOST_NEXT, PORT_NEXT))
 
 seq = 1
 receive = []
@@ -53,18 +53,19 @@ while True :
 
         for i in range(len(receive)) :
             row = receive[i].split('\t')
-            print(row)
+            if int(row[3]) > int(row[1]) :
+                print(row)
 
-            row = list(map(str, row))
-            str_row = '\t'.join(row)
+            # row = list(map(str, row))
+            # str_row = '\t'.join(row)
 
-            try :
-                str_row = str_row + '\n'
-                print("send : ", str_row)
-                client_next.sendall(str_row.encode())
+            # try :
+            #     str_row = str_row + '\n'
+            #     print("send : ", str_row)
+            #     client_next.sendall(str_row.encode())
             
-            except :
-                client_next.close()
+            # except :
+            #     client_next.close()
 
         receive = []
 

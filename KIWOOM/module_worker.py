@@ -37,7 +37,7 @@ class Worker(QThread):
 
         self.jump_step = 0
 
-        self.PER_HI = 0.3
+        self.PER_HI = 0.5
         self.items = deque()
         
         self.prev_price = 0
