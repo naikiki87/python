@@ -37,7 +37,7 @@ class Worker(QThread):
 
         self.jump_step = 0
 
-        self.PER_HI = 0.8
+        self.PER_HI = 0.3
         self.items = deque()
         
         self.prev_price = 0
@@ -320,6 +320,8 @@ class Worker(QThread):
                         #     self.indicate_ordered()         ## INDICATE : ordered
 
                     else :
+                        print("before judge")
+                        print(own_count, price_sell, price_buy)
                         res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
                         judge_type = res['judge']
 
@@ -389,6 +391,8 @@ class Worker(QThread):
                             if JUDGE_SHOW == 1 :
                                 print(item_code, "judge : 3")
                             if MAKE_ORDER == 1 :
+                                qty = res['qty']
+                                print("qty : ", qty)
                                 # qty = res['sell_qty']
                                 # price = res['sell_price']
 
@@ -412,6 +416,7 @@ class Worker(QThread):
 
         ################## judgement ###################
     def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
+        print("judge start")
         res = {}
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
@@ -441,22 +446,23 @@ class Worker(QThread):
             return res
 
         # Sell & Buy
-        elif percent > self.PER_HI and step < STEP_LIMIT :
-            # sell_qty = int(own_count / 2)
-            sell_qty = own_count
-            # if sell_qty == 0 :
-            #     sell_qty = 1
-            price = int(price_sell)
+        # elif percent > self.PER_HI and step < STEP_LIMIT :
+        #     # sell_qty = int(own_count / 2)
+        #     sell_qty = own_count
+        #     # if sell_qty == 0 :
+        #     #     sell_qty = 1
+        #     price = int(price_sell)
 
-            # res['judge'] = 2
-            res['judge'] = 3
-            res['sell_qty'] = sell_qty
-            res['sell_price'] = price
+        #     # res['judge'] = 2
+        #     res['judge'] = 3
+        #     res['qty'] = own_count
+        #     res['price'] = int(price_buy)
 
-            return res
+        #     return res
         
         # Full Sell
-        elif percent > self.PER_HI and step == STEP_LIMIT :
+        elif percent > self.PER_HI and step < STEP_LIMIT :
+            print("judge : 33333")
             sell_qty = own_count
             # price = int(price_sell)
 
