@@ -17,8 +17,11 @@ MKT_SUM_LIMIT = 3000
 
 class Finder(QThread):
     candidate = pyqtSignal(dict)
+    alive = pyqtSignal(int)
 
     def run(self):
+        print("-- [START] Item Discovering --")
+
         code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
         code_df.종목코드 = code_df.종목코드.map('{:06d}'.format) 
         code_df = code_df[['회사명', '종목코드']]
@@ -37,6 +40,8 @@ class Finder(QThread):
                     print()
                     print(str(i) + "/" + str(cnt_code) + "(" + str(complete_ratio) + "%) is completed")
                     print()
+                    
+                    self.alive.emit(1)
                 
                 code = code_df['code'][i]
                 url = 'http://finance.naver.com/item/sise_day.nhn?code={code}'.format(code=code) 

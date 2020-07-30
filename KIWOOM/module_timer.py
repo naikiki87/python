@@ -28,7 +28,12 @@ class Timer(QThread):
         # self.make_db_table()
         self.item_checking = 0
         self.candidate = ""
+
+        self.waiting_time = 0
+        self.waiting_check = 0
+
         self.finder = module_finder.Finder()
+        self.finder.alive.connect(self.finder_alive_checking)
         self.finder.candidate.connect(self.check_candidate)
 
         self.kiwoom = QAxWidget()
@@ -67,7 +72,33 @@ class Timer(QThread):
                 temp_time['possible'] = 0
             self.cur_time.emit(temp_time)
             test_time = test_time + 1
+
+            if self.waiting_check == 1 :
+                self.waiting_time = self.waiting_time + 1
+                print("item finding waiting : ", self.waiting_time)
+
+            if self.waiting_time == 60 :        ## item finding 중 1분 이상 응답이 없을 경우
+                self.finder.terminate()         ## 쓰레드 종료
+                self.item_checking = 0          ## item checking 해제
+
+                self.finder = module_finder.Finder()        ## 신규 쓰레드 생성
+                self.finder.alive.connect(self.finder_alive_checking)
+                self.finder.candidate.connect(self.check_candidate)
+
             time.sleep(1)
+
+    @pyqtSlot(int)
+    def finder_alive_checking(self, data) :
+        print("finder alive checking")
+
+        if data == 1 :      ## item finding is alive
+            self.waiting_check = 1      ## waiting check start
+            self.waiting_time = 0
+        
+        elif data == 2 :    ## item finding finish
+            self.waiting_check = 0      ## waiting check stop
+            print("item finder alive checking end")
+
 
     @pyqtSlot(list)
     def res_check_slot(self, data) :
@@ -102,18 +133,6 @@ class Timer(QThread):
             self.candidate_queue = data['item_code']    ## fill candidates in queue
             self.candidate_seq = 0          ## first candidate
             self.investigate_items()
-
-            # item_cnt = len(item_code)
-
-            # for i in range(item_cnt) :
-            #     self.candidate = item_code[i]
-            #     if self.candidate in self.cur_items :
-            #         continue
-            #     break
-
-            # print("chekcing item info : ", self.candidate)
-            # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
-            # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo", "opt10001", 0, "0101")
     
     def investigate_items(self) :
         print("investigating items : ", self.candidate_queue)
