@@ -320,7 +320,6 @@ class Worker(QThread):
                         #     self.indicate_ordered()         ## INDICATE : ordered
 
                     else :
-                        
                         res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
                         judge_type = res['judge']
 
