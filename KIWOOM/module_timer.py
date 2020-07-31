@@ -50,7 +50,8 @@ class Timer(QThread):
             now = datetime.datetime.now()
             mkt_open = now.replace(hour=9, minute=0, second=0)
             mkt_close = now.replace(hour=15, minute=20, second=0)
-            am10 = now.replace(hour=10, minute=00, second=0)
+            # am10 = now.replace(hour=10, minute=00, second=0)
+            am930 = now.replace(hour=9, minute=30, second=0)
             pm230 = now.replace(hour=14, minute=30, second=0)
 
             item_finding = now.replace(hour=13, minute=53, second=30)
@@ -64,10 +65,10 @@ class Timer(QThread):
 
             if now >= mkt_open and now < mkt_close :
                 temp_time['possible'] = 1
-                if now >= am10 and c_sec == "00" :
+                if now >= am930 and c_sec == "00" :
                     self.refresh_status.emit(1)
 
-                if now >= am10 and now<=pm230 and c_sec == "00" and self.item_checking == 0 :
+                if now >= am930 and now<=pm230 and c_sec == "00" and self.item_checking == 0 :
                     self.check_slot.emit(1)
             else :
                 temp_time['possible'] = 0
@@ -77,6 +78,10 @@ class Timer(QThread):
             if self.waiting_check == 1 :
                 self.waiting_time = self.waiting_time + 1
                 print(now, "[TIMER]", "item finding waiting : ", self.waiting_time)
+            
+            elif self.waiting_check == 0 :
+                self.waiting_time = 0       ## waiting time initialize
+                print(now, "[TIMER]", "item finder alive checking end")
 
             if self.waiting_time == 60 :        ## item finding 중 100 이상 응답이 없을 경우
                 self.finder.terminate()         ## 쓰레드 종료
@@ -99,8 +104,6 @@ class Timer(QThread):
         
         elif data == 2 :    ## item finding finish
             self.waiting_check = 0      ## waiting check stop
-            print(now, "[TIMER]", "item finder alive checking end")
-
 
     @pyqtSlot(list)
     def res_check_slot(self, data) :

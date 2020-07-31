@@ -135,6 +135,7 @@ class Finder(QThread):
             temp['empty'] = 1
         print(now, "[FINDER]", "send candidate")
         self.candidate.emit(temp)
+        self.alive.emit(2)
 
     def get_cur_price(self, item_code):
         now = self.now()
