@@ -8,7 +8,7 @@ BUFSIZE = 1024
 ADDR = (HOST, PORT)
 
 df_acc = pd.DataFrame(columns = ['item', 'cnt'])
-df_acc_2 = pd.DataFrame(columns = ['item', 'cnt'])
+df_acc_2 = pd.DataFrame(columns = ['item1', 'item2', 'cnt', 'total', 'support'])
 
 # 소켓 생성
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -54,7 +54,36 @@ while True :
         for i in range(len(receive)) :
             row = receive[i].split('\t')
             if int(row[3]) > int(row[1]) :
-                print(row)
+                # print("row : ", row)
+
+                updated2 = 0
+
+                for m in range(len(df_acc_2)) :
+                    if row[1] == df_acc_2.item1[m] :
+                        if row[3] == df_acc_2.item2[m] :
+                            # df_acc_2.total[0] = df_acc_2.total[0] + 1     ## total 증가
+                            temp_count = df_acc_2.cnt[m]
+                            new_count = temp_count + 1
+                            df_acc_2.cnt[m] = new_count
+                            updated2 = 1
+
+                if updated2 == 0 :
+                    print("new insert")
+                    df_acc_2.loc[len(df_acc_2)] = [row[1], row[3], 1, '', '']
+
+                total = 0
+                for n in range(len(df_acc_2)) :
+                    total = total + df_acc_2.cnt[n]
+
+                df_acc_2.total[0] = total
+
+                for n in range(len(df_acc_2)) :
+                    cnt = df_acc_2.cnt[n]
+                    support = cnt / total
+                    df_acc_2.support[n] = support
+
+        print("누적")
+        print(df_acc_2)
 
             # row = list(map(str, row))
             # str_row = '\t'.join(row)

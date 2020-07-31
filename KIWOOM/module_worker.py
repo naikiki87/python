@@ -1,5 +1,6 @@
 import sys
 import time
+import datetime
 import pandas as pd
 import sqlite3
 import math
@@ -32,6 +33,7 @@ class Worker(QThread):
     rq_order = pyqtSignal(dict)
 
     def __init__(self, seq):
+        now = self.now()
         super().__init__()
         self.seq = seq
 
@@ -47,20 +49,22 @@ class Worker(QThread):
         self.first_rcv = 1
 
     def event_connect(self, err_code):
+        now = self.now()
         if err_code == 0:
             self.connected = 1
         else:
-            print("thread disconnected")
+            print(now, "[ TH", self.seq, "]", "thread disconnected")
 
     def run(self):
+        now = self.now()
         self.lock = 0       ## lock variable initialize
         self.cnt = 0
-        print(self.seq, "connected")
+        print(now, "[ TH", self.seq, "]", "connected")
         self.th_con.emit(1)
 
         # while True:
         #     try:
-        #         print("con : ", self.connected)
+        #         print(now, "[ TH", self.seq, "]", "con : ", self.connected)
         #         if self.connected == 1:
         #             self.th_con.emit(1)
         #             break
@@ -70,15 +74,16 @@ class Worker(QThread):
     
     @pyqtSlot(dict)
     def che_result(self, data) :
+        now = self.now()
         if data['th_num'] == self.seq :
-            print(self.seq, " CHEJAN DATA RECEIVED")
+            print(now, "[ TH", self.seq, "]", " CHEJAN DATA RECEIVED")
 
             item_code = data['item_code']
             orderType = self.func_GET_db_item(item_code, 3)
             
             ## Add water
             if orderType == 1 :
-                print("[th che_result] orderType : ", orderType)
+                print(now, "[ TH", self.seq, "]", "[th che_result] orderType : ", orderType)
                 cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
                 new_step = cur_step + 1
                 if self.func_UPDATE_db_item(item_code, 1, new_step) == 1 :   ## update step
@@ -88,62 +93,63 @@ class Worker(QThread):
 
             ## Sell & Buy(SELL)
             elif orderType == 2 :
-                print("[th che_result] orderType : ", orderType)
+                print(now, "[ TH", self.seq, "]", "[th che_result] orderType : ", orderType)
                 if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       ## orderType -> 4
                     self.lock = 0           ## unlock
 
             ## full sell
             elif orderType == 3 :
-                print("[th che_result] orderType : ", orderType)
+                print(now, "[ TH", self.seq, "]", "[th che_result] orderType : ", orderType)
                 self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
                 self.lock = 0           ## unlock
 
             ## Sell & Buy(BUY)
             elif orderType == 4 :
-                print("[th che_result] orderType : ", orderType)
+                print(now, "[ TH", self.seq, "]", "[th che_result] orderType : ", orderType)
                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                     if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                         self.lock = 0           ## unlock
 
             ## BUY(Manual)
             elif orderType == 5 :
-                print("[th che_result] orderType : ", orderType)
+                print(now, "[ TH", self.seq, "]", "[th che_result] orderType : ", orderType)
                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                     if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                         self.lock = 0           ## unlock
 
             ## BUY(Manual)
             elif orderType == 6 :
-                print("[th che_result] orderType : ", orderType)
+                print(now, "[ TH", self.seq, "]", "[th che_result] orderType : ", orderType)
                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                     if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                         self.lock = 0           ## unlock
 
             ## SELL(Manual)
             elif orderType == 7 :
-                print("[th che_result] orderType : ", orderType)
+                print(now, "[ TH", self.seq, "]", "[th che_result] orderType : ", orderType)
                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                     if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                         self.lock = 0           ## unlock
 
             ## FULL SELL(Manual)
             elif orderType == 8 :
-                print("[th che_result] orderType : ", orderType)
+                print(now, "[ TH", self.seq, "]", "[th che_result] orderType : ", orderType)
                 self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
                 self.lock = 0           ## unlock
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
+        now = self.now()
         item_code = data['item_code']
         deposit = data['deposit']
 
         if data['autoTrade'] == 0 :
             self.lock = 1
-            print("Receive Manual dict")
+            print(now, "[ TH", self.seq, "]", "Receive Manual dict")
             orderType = data['orderType']
             if orderType == 5 :         ## 신규 item 매수
                 if MAKE_ORDER == 1 :
-                    print("신규 바이")
+                    print(now, "[ TH", self.seq, "]", "신규 바이")
                     qty = data['qty']
                     price = data['price']
 
@@ -151,8 +157,8 @@ class Worker(QThread):
 
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
-                            print(self.seq, " thread setting complete -> ordertype : 5")
-                            print("make order : ", item_code, "BUY(MANUAL)")
+                            print(now, "[ TH", self.seq, "]", " thread setting complete -> ordertype : 5")
+                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "BUY(MANUAL)")
 
                             order = {}
                             order['type'] = 0       ## buy
@@ -162,14 +168,14 @@ class Worker(QThread):
                             self.rq_order.emit(order)
             elif orderType == 6 :       ## 기존 item 수동 매수
                 if MAKE_ORDER == 1 :
-                    print("th 기 바이")
+                    print(now, "[ TH", self.seq, "]", "th 기 바이")
                     qty = data['qty']
                     price = data['price']
 
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 6) == 1:       ## orderType -> 6(manual gi buy)
-                            print(self.seq, " thread setting complete -> ordertype : 6")
-                            print("make order : ", item_code, "GI BUY(MANUAL)")
+                            print(now, "[ TH", self.seq, "]", " thread setting complete -> ordertype : 6")
+                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "GI BUY(MANUAL)")
 
                             order = {}
                             order['type'] = 0       ## buy
@@ -185,7 +191,7 @@ class Worker(QThread):
 
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 7) == 1:  ## orderType 변경 -> 7(manual sell)
-                            print("make order : ", item_code, "SELL(MANUAL)")
+                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "SELL(MANUAL)")
 
                             order = {}
                             order['type'] = 1       ## sell
@@ -201,7 +207,7 @@ class Worker(QThread):
 
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 8) == 1:  ## orderType 변경 -> 8(manual sell full)
-                            print("make order : ", item_code, "SELL FULL(MANUAL)")
+                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "SELL FULL(MANUAL)")
 
                             order = {}
                             order['type'] = 1      ## sell
@@ -213,7 +219,7 @@ class Worker(QThread):
 
         elif data['autoTrade'] == 1 :
             if self.first_rcv == 1 :
-                print("First Receive")
+                print(now, "[ TH", self.seq, "]", "First Receive")
                 self.prev_price = data['cur_price']
                 self.TA_UNIT_SUM = 0
                 self.val_cnt = 0
@@ -305,12 +311,12 @@ class Worker(QThread):
                     orderType = self.func_GET_db_item(item_code, 3)
 
                     if orderType == 4 :
-                        print("sell and buy - sell : terminated")
+                        print(now, "[ TH", self.seq, "]", "sell and buy - sell : terminated")
                         # if MAKE_ORDER == 1 :
                         #     qty = self.func_GET_db_item(item_code, 4)       ## DB : qty <- trAmount
                         #     price = price_buy
 
-                        #     print("make order : ", item_code, "SELL & BUY(BUY")
+                        #     print(now, "[ TH", self.seq, "]", "make order : ", item_code, "SELL & BUY(BUY")
                         #     order = {}
                         #     order['type'] = 0       ## buy
                         #     order['item_code'] = item_code
@@ -325,18 +331,18 @@ class Worker(QThread):
 
                         if judge_type == 0 :        ## stay
                             if JUDGE_SHOW == 1 :
-                                print(item_code, "judge : 0")
+                                print(now, "[ TH", self.seq, "]", item_code, "judge : 0")
                             self.lock = 0
 
                         elif judge_type == 1 :      ## add water
                             if JUDGE_SHOW == 1 :
-                                print(item_code, "judge : 1")
+                                print(now, "[ TH", self.seq, "]", item_code, "judge : 1")
                             if MAKE_ORDER == 1 :
                                 # qty = res['buy_qty']
                                 # price = res['buy_price']
                                 if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                                     if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                                        print("make order : ", item_code, "BUY")
+                                        print(now, "[ TH", self.seq, "]", "make order : ", item_code, "BUY")
 
                                         order = {}
                                         order['type'] = 0       ## buy
@@ -350,18 +356,18 @@ class Worker(QThread):
 
                         elif judge_type == 2 :      ## sell & buy
                             if JUDGE_SHOW == 1 :
-                                print(item_code, "judge : 2")
+                                print(now, "[ TH", self.seq, "]", item_code, "judge : 2")
                             if MAKE_ORDER == 1 :
 
                                 qty = res['sell_qty']
                                 price = res['sell_price']
 
                                 if qty == 0 :
-                                    print(item_code, "judge : 2 and 3")
+                                    print(now, "[ TH", self.seq, "]", item_code, "judge : 2 and 3")
                                     qty = own_count
                                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                                         if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
-                                            print("make order : ", item_code, "SELL & BUY(SELL")
+                                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "SELL & BUY(SELL")
 
                                             order = {}
                                             order['type'] = 1       ## sell
@@ -375,7 +381,7 @@ class Worker(QThread):
                                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                                         if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
                                             if self.func_UPDATE_db_item(item_code, 4, qty) == 1:    ## 판매수량 -> trAmount
-                                                print("make order : ", item_code, "SELL")
+                                                print(now, "[ TH", self.seq, "]", "make order : ", item_code, "SELL")
 
                                                 order = {}
                                                 order['type'] = 1       ## sell
@@ -387,16 +393,16 @@ class Worker(QThread):
 
                         elif judge_type == 3 :      ## full_sell
                             if JUDGE_SHOW == 1 :
-                                print(item_code, "judge : 3")
+                                print(now, "[ TH", self.seq, "]", item_code, "judge : 3")
                             if MAKE_ORDER == 1 :
                                 qty = res['qty']
-                                print("qty : ", qty)
+                                print(now, "[ TH", self.seq, "]", "qty : ", qty)
                                 # qty = res['sell_qty']
                                 # price = res['sell_price']
 
                                 if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                                     if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
-                                        print("make order : ", item_code, "SELL")
+                                        print(now, "[ TH", self.seq, "]", "make order : ", item_code, "SELL")
 
                                         order = {}
                                         order['type'] = 1       ## sell
@@ -414,6 +420,7 @@ class Worker(QThread):
 
         ################## judgement ###################
     def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
+        now = self.now()
         res = {}
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
@@ -484,14 +491,12 @@ class Worker(QThread):
 
         # STAY
         else :
-            # cur_time = time.time()
-            # stay_time = int(self.stay_print_time[code])
-
             res['judge'] = 0
 
             return res
             
     def func_GET_db_item(self, code, col):
+        now = self.now()
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
         if col == 0:        # get all codes
@@ -529,14 +534,16 @@ class Worker(QThread):
             else:
                 return row[0]
     def func_INSERT_db_item(self, code, step, ordered, orderType, trAmount):
+        now = self.now()
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
         sql = "insert into STATUS (code, step, ordered, orderType, trAmount) values(:CODE, :STEP, :ORDERED, :ORDERTYPE, :TRAMOUNT)"
         cur.execute(sql, {"CODE" : code, "STEP" : step, "ORDERED" : ordered, "ORDERTYPE" : orderType, "TRAMOUNT" : trAmount})
         conn.commit()
         conn.close()
-        print("data INSERTED")
+        print(now, "[ TH", self.seq, "]", "data INSERTED")
     def func_UPDATE_db_item(self, code, col, data) :
+        now = self.now()
         conn = sqlite3.connect("item_status.db", timeout=10)
         cur = conn.cursor()
         if col == 1:    # update step
@@ -561,31 +568,23 @@ class Worker(QThread):
         conn.commit()
         conn.close()
         success = cur.rowcount
-        # print("UPDATED")
+        # print(now, "[ TH", self.seq, "]", "UPDATED")
         return success
     def func_DELETE_db_item(self, code):
+        now = self.now()
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
         sql = "delete from STATUS where code = :CODE"
         cur.execute(sql, {"CODE" : code})
         conn.commit()
         conn.close()
-        print("data DELETED")
-
-    def func_GET_CurrentTime(self) :
-        year = strftime("%Y", localtime())
-        month = strftime("%m", localtime())
-        day = strftime("%d", localtime())
-        hour = strftime("%H", localtime())
-        cmin = strftime("%M", localtime())
-        sec = strftime("%S", localtime())
-
-        now = "[" + year + "/" + month +"/" + day + " " + hour + ":" + cmin + ":" + sec + "] "
-
-        return now
+        print(now, "[ TH", self.seq, "]", "data DELETED")
 
     def indicate_ordered(self) :
+        now = self.now()
         self.rp_dict['ordered'] = 1
         self.rp_dict['seq'] = self.seq
         self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
-        
+    
+    def now(self) :
+        return datetime.datetime.now()

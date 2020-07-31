@@ -20,7 +20,8 @@ class Finder(QThread):
     alive = pyqtSignal(int)
 
     def run(self):
-        print("-- [START] Item Discovering --")
+        now = self.now()
+        print(now, "[FINDER]", "-- [START] Item Discovering --")
 
         code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
         code_df.종목코드 = code_df.종목코드.map('{:06d}'.format) 
@@ -37,9 +38,9 @@ class Finder(QThread):
             try:
                 if i%50 == 0:
                     complete_ratio = round(i/cnt_code * 100, 1)
-                    print()
-                    print(str(i) + "/" + str(cnt_code) + "(" + str(complete_ratio) + "%) is completed")
-                    print()
+                    print(now, "[FINDER]", )
+                    print(now, "[FINDER]", str(i) + "/" + str(cnt_code) + "(" + str(complete_ratio) + "%) is completed")
+                    print(now, "[FINDER]", )
                     
                     self.alive.emit(1)
                 
@@ -72,7 +73,7 @@ class Finder(QThread):
 
         df_last = df_last.sort_values(by=['stdev'], axis=0, ascending=True)  # sorting by std(descending)
         df_last = df_last.reset_index(drop=True, inplace=False)     # re-indexing
-        print(df_last)
+        print(now, "[FINDER]", df_last)
 
         data_cnt = len(df_last)
         df_last2 = pd.DataFrame(columns = ['code', 'p_avr', 'stdev', 'cur_price', 'price_ratio'])
@@ -92,8 +93,8 @@ class Finder(QThread):
 
         df_last2 = df_last2.sort_values(by=['price_ratio'], axis=0)  # sorting by stdev(descending)
         df_last2 = df_last2.reset_index(drop=True, inplace=False)     # re-indexing
-        print(df_last2)
-        print("")
+        print(now, "[FINDER]", df_last2)
+        print(now, "[FINDER]", "")
 
         data_cnt = len(df_last2)
         df_last3 = pd.DataFrame(columns = ['code', 'p_avr', 'stdev', 'cur_price', 'price_ratio', 'mkt_sum'])
@@ -103,9 +104,9 @@ class Finder(QThread):
             try:
                 if i % SHOW_SCALE == 0:
                     complete_ratio = round(i/data_cnt * 100, 1)
-                    print()
-                    print(str(i) + "/" + str(data_cnt) + "(" + str(complete_ratio) + "%) is completed")
-                    print()
+                    print(now, "[FINDER]", )
+                    print(now, "[FINDER]", str(i) + "/" + str(data_cnt) + "(" + str(complete_ratio) + "%) is completed")
+                    print(now, "[FINDER]", )
                     
                     self.alive.emit(1)
                 
@@ -123,7 +124,7 @@ class Finder(QThread):
             except:
                 pass
 
-        print(df_last3)
+        print(now, "[FINDER]", df_last3)
 
         temp = {}
         if len(df_last3) != 0 :
@@ -132,10 +133,11 @@ class Finder(QThread):
             temp['item_code'] = item_code
         elif len(df_last3) == 0 :
             temp['empty'] = 1
-        print("send candidate")
+        print(now, "[FINDER]", "send candidate")
         self.candidate.emit(temp)
 
     def get_cur_price(self, item_code):
+        now = self.now()
         url = "http://polling.finance.naver.com/api/realtime.nhn?query=SERVICE_ITEM:{}|SERVICE_RECENT_ITEM:{}&_callback=".format(item_code, item_code)
         source = requests.get(url)
         data = source.json()
@@ -145,6 +147,7 @@ class Finder(QThread):
         return value
 
     def get_market_sum(self, item_code):
+        now = self.now()
         get_last_3 = 1
         cnt_0_digit = 0
 
@@ -177,3 +180,6 @@ class Finder(QThread):
         market_sum = int("".join(nextstr))
 
         return market_sum
+
+    def now(self) :
+        return datetime.datetime.now()
