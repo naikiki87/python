@@ -165,14 +165,14 @@ class Kiwoom(QMainWindow, form_class):
             for i in range(tableSUMMARY_COL) :
                 self.func_SET_TableData(1, slot, i, "", 0)
             print(now, "[MAIN]", "delete summary table finish : ", slot)
-            print(now, "[MAIN]", "delete summary table finish checking : ", slot)
-            for i in range(tableSUMMARY_COL) :
-                if self.table_summary.item(slot, i) != "" :
-                    print(now, "[MAIN]", "delete summary table finish not properly : ", slot, i)
-                    self.DELETE_Table_Summary_item(slot)
-                    break
+            # print(now, "[MAIN]", "delete summary table finish checking : ", slot)
+            # for i in range(tableSUMMARY_COL) :
+            #     if self.table_summary.item(slot, i) != "" :
+            #         print(now, "[MAIN]", "delete summary table finish not properly : ", slot, i)
+            #         self.DELETE_Table_Summary_item(slot)
+            #         break
 
-            print(now, "[MAIN]", "delete summary table finished and return 0")
+            # print(now, "[MAIN]", "delete summary table finished and return 0")
 
             return 0
 
@@ -529,26 +529,18 @@ class Kiwoom(QMainWindow, form_class):
 
             if qty > own_count :
                 print(now, "[MAIN]", "type : qty > own_count")
-                timestamp = self.func_GET_CurrentTime()
-                print(now, "[MAIN]", timestamp, " SELL Qty Exceed")
+                print(now, "[MAIN]", " SELL Qty Exceed")
                 
-                # self.text_edit.append(timestamp, item_code, " Manual SELL Error - order-qty is bigger than own-qty")
             elif qty < own_count :
                 print(now, "[MAIN]", "teyp : qty < own_count")
                 test_dict['orderType'] = 7
-                timestamp = self.func_GET_CurrentTime()
-                print(now, "[MAIN]", timestamp, " MAN SELL")
-                # self.text_edit.append(timestamp, item_code, " Manual SELL")
+                print(now, "[MAIN]", " MAN SELL")
                 
             elif qty == own_count :
                 print(now, "[MAIN]", "type : qty = own_count")
                 test_dict['orderType'] = 8
-
-                timestamp = self.func_GET_CurrentTime()
-                print(now, "[MAIN]", timestamp, " MAN SELL FULL")
-                # self.text_edit.append(timestamp, item_code, " Manual SELL FULL")
+                print(now, "[MAIN]", " MAN SELL FULL")
                 
-
             test_dict['qty'] = qty
             test_dict['price'] = price
 
@@ -611,7 +603,12 @@ class Kiwoom(QMainWindow, form_class):
         self.func_SET_TableData(1, slot, 3, str(round(float(unit_price), 1)), 0)
 
         print(now, "[MAIN]", "[func_RESET_Items] Complete")
-        self.reset_slot[slot] = 0               ## reset slot을 0으로 setting 하여 reset이 완료되었음을 확인
+        che_dict = {}
+        che_dict['th_num'] = slot
+        che_dict['item_code'] = item_code
+
+        self.che_dict.emit(che_dict)
+        # self.reset_slot[slot] = 0               ## reset slot을 0으로 setting 하여 reset이 완료되었음을 확인
 
     def func_GET_Chejan_data(self, fid):
         now = self.now()
@@ -673,23 +670,23 @@ class Kiwoom(QMainWindow, form_class):
                     # self.che_dict.emit(che_dict)
 
                     if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
-                        self.reset_slot[th_num] = 1                         ## reset slot을 1로 setting
-                        print(now, "[MAIN]", "[CHEJAN] reset slot set to 1")
+                        # self.reset_slot[th_num] = 1                         ## reset slot을 1로 setting
+                        # print(now, "[MAIN]", "[CHEJAN] reset slot set to 1")
                         self.func_restart_check(th_num, item_code)
 
-                        while True :
-                            if self.reset_slot[th_num] == 0 :               ## reset이 완료되었을 경우 thread에 체결완료 되었음을 알림
-                                print(now, "[MAIN]", "[CHEJAN] reset complete / reset slot set to 0")
-                                che_dict = {}
-                                che_dict['th_num'] = th_num
-                                che_dict['item_code'] = item_code
+                        # while True :
+                        #     if self.reset_slot[th_num] == 0 :               ## reset이 완료되었을 경우 thread에 체결완료 되었음을 알림
+                        #         print(now, "[MAIN]", "[CHEJAN] reset complete / reset slot set to 0")
+                        #         che_dict = {}
+                        #         che_dict['th_num'] = th_num
+                        #         che_dict['item_code'] = item_code
 
-                                self.che_dict.emit(che_dict)
-                                print(now, "[MAIN]", "[CHEJAN] che dict sent to worker")
+                        #         self.che_dict.emit(che_dict)
+                        #         print(now, "[MAIN]", "[CHEJAN] che dict sent to worker")
 
-                            elif self.reset_Slot[th_num] == 1 :             ## reset이 진행중인 경우 stay
-                                print(now, "[MAIN]", "[CHEJAN] reset slot is 1 / stay")
-                                QtTest.QTest.qWait(100)                     ## 100ms 대기
+                        #     elif self.reset_slot[th_num] == 1 :             ## reset이 진행중인 경우 stay
+                        #         print(now, "[MAIN]", "[CHEJAN] reset slot is 1 / stay")
+                        #         QtTest.QTest.qWait(1000)                     ## 1s 대기
                     
 
                 elif orderType == 2 :
@@ -757,29 +754,50 @@ class Kiwoom(QMainWindow, form_class):
                     th_num = self.which_thread(item_code)[1]
                     print(now, "[MAIN]", "[6] THREAD NUM : ", th_num)
 
-                    self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
+                    if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
+                        self.func_restart_check(th_num, item_code)
+                    # self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
 
-                    che_dict = {}
-                    che_dict['th_num'] = th_num
-                    che_dict['item_code'] = item_code
+                    # che_dict = {}
+                    # che_dict['th_num'] = th_num
+                    # che_dict['item_code'] = item_code
 
-                    self.che_dict.emit(che_dict)
+                    # self.che_dict.emit(che_dict)
 
-                    self.func_restart_check(th_num, item_code)
+                    # self.func_restart_check(th_num, item_code)
 
                 elif orderType == 7 :       ## sell(manual)
                     print(now, "[MAIN]", "[CHEJAN] SELL(MANUAL)")
                     th_num = self.which_thread(item_code)[1]
                     print(now, "[MAIN]", "[7] THREAD NUM : ", th_num)
-                    self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
                     
-                    self.func_restart_check(th_num, item_code)
+                    # self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
+                    # self.func_restart_check(th_num, item_code)
 
-                    che_dict = {}
-                    che_dict['th_num'] = th_num
-                    che_dict['item_code'] = item_code
+                    # che_dict = {}
+                    # che_dict['th_num'] = th_num
+                    # che_dict['item_code'] = item_code
 
-                    self.che_dict.emit(che_dict)
+                    # self.che_dict.emit(che_dict)
+
+                    if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
+                        # self.reset_slot[th_num] = 1                         ## reset slot을 1로 setting
+                        # print(now, "[MAIN]", "[CHEJAN] reset slot set to 1")
+                        self.func_restart_check(th_num, item_code)
+
+                        # while True :
+                        #     if self.reset_slot[th_num] == 0 :               ## reset이 완료되었을 경우 thread에 체결완료 되었음을 알림
+                        #         print(now, "[MAIN]", "[CHEJAN] reset complete / reset slot set to 0")
+                        #         che_dict = {}
+                        #         che_dict['th_num'] = th_num
+                        #         che_dict['item_code'] = item_code
+
+                        #         self.che_dict.emit(che_dict)
+                        #         print(now, "[MAIN]", "[CHEJAN] che dict sent to worker")
+
+                        #     elif self.reset_slot[th_num] == 1 :             ## reset이 진행중인 경우 stay
+                        #         print(now, "[MAIN]", "[CHEJAN] reset slot is 1 / stay")
+                        #         QtTest.QTest.qWait(1000)                     ## 1s 대기
 
                 elif orderType == 8 :       ## manual Sell Full
                     print(now, "[MAIN]", "[CHEJAN] FULL SELL(MANUAL)")
