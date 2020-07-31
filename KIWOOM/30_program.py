@@ -644,34 +644,23 @@ class Kiwoom(QMainWindow, form_class):
 
                 orderType = self.func_GET_db_item(item_code, 3)
 
-                if orderType == "none" :        ## new item inserted
-                    print(now, "[MAIN]", "[CHEJAN] NEW ITEM")
-                    slot_num = self.which_thread("0")[1]
-                    print(now, "[MAIN]", "SLOT NUM : ", slot_num)
-                    self.item_slot[slot_num] = item_code      ## Assign Slot
-                    print(now, "[MAIN]", "Slot Assign Complete")
+                # if orderType == "none" :        ## new item inserted
+                #     print(now, "[MAIN]", "[CHEJAN] NEW ITEM")
+                #     slot_num = self.which_thread("0")[1]
+                #     print(now, "[MAIN]", "SLOT NUM : ", slot_num)
+                #     self.item_slot[slot_num] = item_code      ## Assign Slot
+                #     print(now, "[MAIN]", "Slot Assign Complete")
 
-                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)     ## insert DB
-                    self.func_restart_check(slot_num, item_code)
+                #     self.func_INSERT_db_item(item_code, 0, 0, 0, 0)     ## insert DB
+                #     self.func_restart_check(slot_num, item_code)
                     
-                    self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
+                #     self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
-                elif orderType == 1 :
+                if orderType == 1 :
                     th_num = self.which_thread(item_code)[1]
                     print(now, "[MAIN]", "[CHEJAN] ADD Water / slot : ", th_num)
 
-                    # self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
-                    # self.func_restart_check(th_num, item_code)
-
-                    # che_dict = {}
-                    # che_dict['th_num'] = th_num
-                    # che_dict['item_code'] = item_code
-
-                    # self.che_dict.emit(che_dict)
-
                     if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
-                        # self.reset_slot[th_num] = 1                         ## reset slot을 1로 setting
-                        # print(now, "[MAIN]", "[CHEJAN] reset slot set to 1")
                         self.func_restart_check(th_num, item_code)
 
                         # while True :
@@ -693,15 +682,15 @@ class Kiwoom(QMainWindow, form_class):
                     print(now, "[MAIN]", "[CHEJAN] SELL & BUY(SELL)")
                     th_num = self.which_thread(item_code)[1]
                     print(now, "[MAIN]", "[2] THREAD NUM : ", th_num)
-                    self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
-                    
-                    self.func_restart_check(th_num, item_code)
-                    che_dict = {}
-                    che_dict['th_num'] = th_num
-                    che_dict['item_code'] = item_code
-                    # che_dict['delete'] = 0
+                    # self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
+                    # self.func_restart_check(th_num, item_code)
+                    # che_dict = {}
+                    # che_dict['th_num'] = th_num
+                    # che_dict['item_code'] = item_code
+                    # self.che_dict.emit(che_dict)
 
-                    self.che_dict.emit(che_dict)
+                    if self.DELETE_Table_Summary_item(th_num) == 0 :
+                        self.func_restart_check(th_num, item_code)
 
                 elif orderType == 3 :       ## Full Sell 일 경우
                     print(now, "[MAIN]", "[CHEJAN] FULL SELL(Auto)")
@@ -710,44 +699,39 @@ class Kiwoom(QMainWindow, form_class):
                     self.item_slot[th_num] = 0      ## unassign slot
                     print(now, "[MAIN]", "[3] Slot unassign Complete")
                     
-                    self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
+                    if self.DELETE_Table_Summary_item(th_num) == 0 :  ## table data 삭제
+                        self.SetRealRemove("ALL", item_code)        ## 실시간 데이터 감시 해제
 
-                    self.SetRealRemove("ALL", item_code)        ## 실시간 데이터 감시 해제
-
-                    che_dict = {}
-                    che_dict['th_num'] = th_num
-                    che_dict['item_code'] = item_code
-                    
-                    self.che_dict.emit(che_dict)        ## 결과 
+                        che_dict = {}
+                        che_dict['th_num'] = th_num
+                        che_dict['item_code'] = item_code
+                        self.che_dict.emit(che_dict)        ## 결과 전송
 
                 elif orderType == 4 :
                     print(now, "[MAIN]", "[CHEJAN] SELL & BUY(BUY)")
                     th_num = self.which_thread(item_code)[1]
                     print(now, "[MAIN]", "[4] THREAD NUM : ", th_num)
                     
-                    self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
-                    
-                    self.func_restart_check(th_num, item_code)
+                    # self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
+                    # self.func_restart_check(th_num, item_code)
 
-                    che_dict = {}
-                    che_dict['th_num'] = th_num
-                    che_dict['item_code'] = item_code
+                    # che_dict = {}
+                    # che_dict['th_num'] = th_num
+                    # che_dict['item_code'] = item_code
 
-                    self.che_dict.emit(che_dict)
+                    # self.che_dict.emit(che_dict)
+
+                    if self.DELETE_Table_Summary_item(th_num) == 0 :
+                        self.func_restart_check(th_num, item_code)
 
                 elif orderType == 5 :       ## buy new (manual)
                     print(now, "[MAIN]", "[CHEJAN] BUY(MANUAL)")
                     th_num = self.which_thread(item_code)[1]
                     print(now, "[MAIN]", "[5] THREAD NUM : ", th_num)
-                    self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
-                    self.func_restart_check(th_num, item_code)
-                    self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
-                    che_dict = {}
-                    che_dict['th_num'] = th_num
-                    che_dict['item_code'] = item_code
-
-                    self.che_dict.emit(che_dict)
+                    if self.DELETE_Table_Summary_item(th_num) == 0 :
+                        self.func_restart_check(th_num, item_code)
+                        self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
                 elif orderType == 6 :       ## gi buy (manual)
                     print(now, "[MAIN]", "[CHEJAN] GI BUY(MANUAL)")
@@ -756,48 +740,14 @@ class Kiwoom(QMainWindow, form_class):
 
                     if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
                         self.func_restart_check(th_num, item_code)
-                    # self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
-
-                    # che_dict = {}
-                    # che_dict['th_num'] = th_num
-                    # che_dict['item_code'] = item_code
-
-                    # self.che_dict.emit(che_dict)
-
-                    # self.func_restart_check(th_num, item_code)
 
                 elif orderType == 7 :       ## sell(manual)
                     print(now, "[MAIN]", "[CHEJAN] SELL(MANUAL)")
                     th_num = self.which_thread(item_code)[1]
                     print(now, "[MAIN]", "[7] THREAD NUM : ", th_num)
                     
-                    # self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
-                    # self.func_restart_check(th_num, item_code)
-
-                    # che_dict = {}
-                    # che_dict['th_num'] = th_num
-                    # che_dict['item_code'] = item_code
-
-                    # self.che_dict.emit(che_dict)
-
                     if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
-                        # self.reset_slot[th_num] = 1                         ## reset slot을 1로 setting
-                        # print(now, "[MAIN]", "[CHEJAN] reset slot set to 1")
                         self.func_restart_check(th_num, item_code)
-
-                        # while True :
-                        #     if self.reset_slot[th_num] == 0 :               ## reset이 완료되었을 경우 thread에 체결완료 되었음을 알림
-                        #         print(now, "[MAIN]", "[CHEJAN] reset complete / reset slot set to 0")
-                        #         che_dict = {}
-                        #         che_dict['th_num'] = th_num
-                        #         che_dict['item_code'] = item_code
-
-                        #         self.che_dict.emit(che_dict)
-                        #         print(now, "[MAIN]", "[CHEJAN] che dict sent to worker")
-
-                        #     elif self.reset_slot[th_num] == 1 :             ## reset이 진행중인 경우 stay
-                        #         print(now, "[MAIN]", "[CHEJAN] reset slot is 1 / stay")
-                        #         QtTest.QTest.qWait(1000)                     ## 1s 대기
 
                 elif orderType == 8 :       ## manual Sell Full
                     print(now, "[MAIN]", "[CHEJAN] FULL SELL(MANUAL)")
@@ -805,14 +755,14 @@ class Kiwoom(QMainWindow, form_class):
                     print(now, "[MAIN]", "[8] THREAD NUM : ", th_num)
                     self.item_slot[th_num] = 0      ## unassign slot
                     print(now, "[MAIN]", "[8] Slot unassign Complete")
-                    self.DELETE_Table_Summary_item(th_num)  ## table data 삭제
-                    self.SetRealRemove("ALL", item_code)        ## 실시간 데이터 감시 해제
 
-                    che_dict = {}
-                    che_dict['th_num'] = th_num
-                    che_dict['item_code'] = item_code
-                    
-                    self.che_dict.emit(che_dict)        ## 결과 
+                    if self.DELETE_Table_Summary_item(th_num) == 0 :
+                        self.SetRealRemove("ALL", item_code)        ## 실시간 데이터 감시 해제
+
+                        che_dict = {}
+                        che_dict['th_num'] = th_num
+                        che_dict['item_code'] = item_code
+                        self.che_dict.emit(che_dict)        ## 결과 
 
                 self.load_etc_data()
 
