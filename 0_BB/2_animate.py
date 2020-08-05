@@ -59,11 +59,16 @@ def simPoints(simData):
     line.set_data(x, y)
     return line, time_text
 
-fig = plt.figure()
-ax = fig.add_subplot()
+fig = plt.figure(figsize=(10,10))
+
+ax = fig.add_subplot(121)
+ax2 = fig.add_subplot(122)
 line, = ax.plot([], [], 'bo', ms=10)
 ax.set_ylim(0, 50)
 ax.set_xlim(-20, 130)
+
+ax2.set_ylim(0, 100)
+ax2.set_xlim(0, 100)
 
 time_template = 'Time = %.1f s'
 v0_template = 'v0 = %.1f m/s'
@@ -74,7 +79,6 @@ pos_y_template = 'Y = %.1f m'
 v0_text = ax.text(0.1, 0.9, '', transform=ax.transAxes)
 angle_text = ax.text(0.1, 0.85, '', transform=ax.transAxes)
 time_text = ax.text(0.1, 0.8, '', transform=ax.transAxes)
-
 pos_x_text = ax.text(0.5, 0.85, '', transform=ax.transAxes)
 pos_y_text = ax.text(0.5, 0.8, '', transform=ax.transAxes)
 
