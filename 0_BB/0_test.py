@@ -1,45 +1,44 @@
-# import pitcher
+import matplotlib.pyplot as plt
+import random
+import math
+import numpy as np
 
-# p1 = pitcher.Pitcher(10)
+Gravity = 9.8
 
-# p1.test_func()
+v0_km = random.randint(80, 130)
+v0_m = v0_km * 1000 / 3600
+angle = random.randint(1, 170)
+print('v0_km : ', round(v0_m, 1), ", angle : ", angle)
 
-import pandas as pd 
-import requests
-import threading
-import time
-from bs4 import BeautifulSoup
-import urllib.request
+radian = math.radians(angle)
+sin = math.sin(radian)
+cos = math.cos(radian)
 
-url = "http://www.kbreport.com/leader/pitcher/advanced?teamId=&pitcher_type=&year_from=&year_to=&split01=&split02_1=&split02_2=&inning_count=#/1"
-source = requests.get(url)
-# soup = BeautifulSoup(source.content, 'html.parser')
-soup = BeautifulSoup(source.content, 'lxml')
+t2 = (2 * v0_m * sin) / Gravity
+times = np.arange(0, t2+0.1, 0.01)
 
-# print(soup)
-# print(soup.p.string)
-# print(soup.find_all("tr"))
-print(soup.find("td"))
+ball_pos = []
+xs = []
+ys = []
 
-# table = soup.find('table', {'class' : 'ltb-table iterative'})
-# # table = soup.select('#resultListDiv > table')
-# print(table)
-# trs = table.find_all('tr')
-# trs = soup.findAll('tr')
-# print(len(trs))
-# print(trs)
-# data = soup.find('#resultListDiv > table > tbody > tr:nth-child(2) > td:nth-child(4)')
-# print(data.get_text())
-# data = soup.select('#resultListDiv > table > tbody > tr:nth-child(2) > td:nth-child(4)').text
-# print(data)
+for t in times :
+    temp = []
+    x = v0_m * cos * t                              
+    y = v0_m * sin * t - 0.5 * Gravity * t * t
 
+    if y < 0 :
+        break
+    else :
+        xs.append(round(x, 1))
+        ys.append(round(y, 1))
+        # temp = [round(x, 1), round(y, 1)]
+        # ball_pos.append(temp)
 
-# table = soup.find('table', {'class': 'grid'})
-# trs = table.find_all('tr')
-# for idx, tr in enumerate(trs): # enumerate를 사용하면 해당 값의 인덱스를 알 수 있다.
-# if idx > 0:
-# tds = tr.find_all('td')
-# sequence = tds[0].text.strip() # 앞뒤 여백이 있어 strip()을 사용했다.
-# description = tds[1].text.strip()
-# solved_num = tds[2].text.strip()
-# print(sequence, description, solved_num)
+# print("xs : ", xs)
+# print("ys : ", ys)
+
+# plt.figure(figsize=(60, 100))
+plt.xlim(-20, 150)
+plt.ylim(0, 70)
+plt.plot(xs, ys)
+plt.show()
