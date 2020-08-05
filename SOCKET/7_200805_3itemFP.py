@@ -47,12 +47,13 @@ while True :
                 receive.append(data[i])
             receive.remove('')
 
-            print("receive : ", receive)
+            # print("receive : ", receive)
 
             for i in range(len(receive)) :
                 row = receive[i].split('\t')
                 # row[3] = bs2.iid2
                 # row[5] = bs1.iid1
+                # if int(row[3]) == int(row[5]) :
                 if row[3] == row[5] :
                     # print("row : ", row)
 
@@ -61,26 +62,25 @@ while True :
                     for m in range(len(df_acc_3)) :
                         if row[2] == df_acc_3.item1[m] :
                             if row[4] == df_acc_3.item2[m] :
-                                if row[6] == df_acc_3.item3[m] :
+                                if row[8] == df_acc_3.item3[m] :
                                     temp_count = df_acc_3.cnt[m]
                                     new_count = temp_count + 1
                                     df_acc_3.cnt[m] = new_count
                                     updated = 1
                         
-                        if updated == 0 :
-                            print("new item inserted")
-                            df_acc_3.loc[len(df_acc_3)] = [row[2], row[4], row[6], 1, '', '']
+                    if updated == 0 :
+                        df_acc_3.loc[len(df_acc_3)] = [row[2], row[4], row[8], 1, '', '']
 
-                        total = 0
+                    total = 0
 
-                        for n in range(len(df_acc_3)) :
-                            total = total + df_acc_3.cnt[n]
+                    for n in range(len(df_acc_3)) :
+                        total = total + df_acc_3.cnt[n]
 
-                        df_acc_3.total[0] = total
+                    df_acc_3.total[0] = total
 
-                        for n in range(len(df_acc3)) :
-                            support = df_acc_3.cnt[n] / total
-                            df_acc_3.support[n] = support
+                    for n in range(len(df_acc_3)) :
+                        support = df_acc_3.cnt[n] / total
+                        df_acc_3.support[n] = round(support, 3)
 
             print("누적")
             print(df_acc_3)
