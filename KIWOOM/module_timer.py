@@ -77,7 +77,8 @@ class Timer(QThread):
 
             if self.waiting_check == 1 :
                 self.waiting_time = self.waiting_time + 1
-                print(now, "[TIMER]", "item finding waiting : ", self.waiting_time)
+                if self.waiting_time % 2 == 0 :
+                    print(now, "[TIMER]", "item finding waiting : ", self.waiting_time)
 
             elif self.waiting_check == 2 :
                 self.waiting_time = 0       ## waiting time initialize
@@ -87,7 +88,9 @@ class Timer(QThread):
             # elif self.waiting_check == 0 :
             #     self.waiting_time = 0       ## waiting time initialize
 
-            if self.waiting_time == 60 :        ## item finding 중 100 이상 응답이 없을 경우
+            if self.waiting_time == 100 :        ## item finding 중 100 이상 응답이 없을 경우
+                print(now, "[TIMER]", "item finder alive checking end - over 100")
+                self.waiting_check = 0
                 self.finder.terminate()         ## 쓰레드 종료
                 self.item_checking = 0          ## item checking 해제
 

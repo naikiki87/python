@@ -8,7 +8,7 @@ BUFSIZE = 1024
 ADDR = (HOST, PORT)
 
 df_acc = pd.DataFrame(columns = ['item', 'cnt'])
-df_acc_2 = pd.DataFrame(columns = ['item1', 'item2', 'cnt', 'total', 'support'])
+df_acc_2 = pd.DataFrame(columns = ['iid1', 'item1', 'iid2', 'item2', 'cnt', 'total', 'support'])
 
 # 소켓 생성
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -17,7 +17,7 @@ serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind(ADDR)
 print('bind')
 
-# 연결 수신 대기 상태
+# 연결 수신 대기 상태python
 serverSocket.listen(100)
 print('listen : ', PORT)
 
@@ -53,6 +53,7 @@ while True :
 
         for i in range(len(receive)) :
             row = receive[i].split('\t')
+            print("row : ", row)
             if int(row[3]) > int(row[1]) :
                 # print("row : ", row)
 
@@ -69,7 +70,7 @@ while True :
 
                 if updated2 == 0 :
                     print("new insert")
-                    df_acc_2.loc[len(df_acc_2)] = [row[1], row[3], 1, '', '']
+                    df_acc_2.loc[len(df_acc_2)] = [row[0], row[1], row[2], row[3], 1, '', '']
 
                 total = 0
                 for n in range(len(df_acc_2)) :

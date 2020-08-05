@@ -452,6 +452,8 @@ class Worker(QThread):
             # res['buy_price'] = V
             res['price'] = int(price_sell)      ## 매도 최우선가
 
+            print(now, "[ TH", self.seq, "]", "JUDGE : 1", buy_qty)
+
             return res
 
         # Sell & Buy
@@ -470,7 +472,7 @@ class Worker(QThread):
         #     return res
         
         # Full Sell
-        elif percent > self.PER_HI and step < STEP_LIMIT :
+        elif percent > self.PER_HI and step <= STEP_LIMIT :
             sell_qty = own_count
             # price = int(price_sell)
 

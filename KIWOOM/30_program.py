@@ -366,43 +366,45 @@ class Kiwoom(QMainWindow, form_class):
         print(now, "[MAIN]", "[CODE SYNC] Code Sync - Fill Lack Item Complete")
         print(now, "[MAIN]", "[CODE SYNC] Code Sync END")
 
-        # for i in range(self.item_count) :
-        #     item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
-        #     item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
-        #     owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
-        #     unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
-
-        #     print("item : ", i)
-        #     self.item_slot[i] = item_code
-
-        #     self.func_SET_TableData(1, i, 0, item_code, 0)
-        #     self.func_SET_TableData(1, i, 1, item_name, 0)
-        #     self.func_SET_TableData(1, i, 2, str(int(owncount)), 0)
-        #     self.func_SET_TableData(1, i, 3, str(round(float(unit_price), 1)), 0)
-
-        #     self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
-
-        # print("Set items end")
-
-        own_items = []
+        time.sleep(2)
 
         for i in range(self.item_count) :
-            temp = []
-
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
             item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
-            own_count = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량"))
-            unit_price = round(float(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")), 1)
+            owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
+            unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
 
-            temp.append(item_code)
-            temp.append(item_name)
-            temp.append(own_count)
-            temp.append(unit_price)
+            print("item : ", i)
+            self.item_slot[i] = item_code
 
-            own_items.append(temp)
+            self.func_SET_TableData(1, i, 0, item_code, 0)
+            self.func_SET_TableData(1, i, 1, item_name, 0)
+            self.func_SET_TableData(1, i, 2, str(int(owncount)), 0)
+            self.func_SET_TableData(1, i, 3, str(round(float(unit_price), 1)), 0)
 
-        if self.set_items_in_table(own_items) == 0 :
-            print(now, "[MAIN]", "Set Items in Table End")
+            self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
+
+        print("Set items end")
+
+        # own_items = []
+
+        # for i in range(self.item_count) :
+        #     temp = []
+
+        #     item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+        #     item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
+        #     own_count = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량"))
+        #     unit_price = round(float(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")), 1)
+
+        #     temp.append(item_code)
+        #     temp.append(item_name)
+        #     temp.append(own_count)
+        #     temp.append(unit_price)
+
+        #     own_items.append(temp)
+
+        # if self.set_items_in_table(own_items) == 0 :
+        #     print(now, "[MAIN]", "Set Items in Table End")
 
     def set_items_in_table(self, own_items) :
         print("seeeeetttttt : ", own_items)
