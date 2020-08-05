@@ -9,9 +9,9 @@ pause = False
 
 Gravity = 9.8
 
-v0_km = random.randint(120, 140)
+v0_km = random.randint(70, 110)
 v0_m = v0_km * 1000 / 3600
-angle = random.randint(35, 50)
+angle = random.randint(20, 45)
 print('v0_km : ', round(v0_m, 1), ", angle : ", angle)
 
 radian = math.radians(angle)
@@ -31,18 +31,13 @@ def simData():
         
         if y >= 0 :
             yield x, y, t
-        # if not pause:
-        #     x = v0_m * cos * t
-        #     y = v0_m * sin * t - 0.5 * Gravity * t * t
-        #     t = t + dt
-        # yield x, y, t
 
 def onClick(event):
     global v0_m, angle, sin, cos, t_max
 
-    v0_km = random.randint(120, 140)
+    v0_km = random.randint(70, 110)
     v0_m = v0_km * 1000 / 3600
-    angle = random.randint(35, 50)
+    angle = random.randint(20, 45)
     radian = math.radians(angle)
     sin = math.sin(radian)
     cos = math.cos(radian)
@@ -89,4 +84,5 @@ def show_animation() :
     ani = animation.FuncAnimation(fig, simPoints, simData, blit=False, interval=10, repeat=False)
     plt.show()
 
-show_animation()
+# show_animation()
+onClick('button_press_event')
