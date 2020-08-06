@@ -51,32 +51,60 @@ def create_df(item_cnt) :
 
         globals()['item_{}_fp'.format(i)] = pd.DataFrame(columns = cols)
 
+def forloop(receive, item_cnt, temp_df, times) :
+    if times == item_cnt :
+        print("times == iten_cnt")
+        for j in range(len(temp_df)) :
+            update = 0
+            item = receive[j][2]
+
+            if item_cnt == 1 :
+                for k in range(len(temp_df)) :
+                    if item == temp_df.item2[k] :
+                        temp_cnt = temp_df.cnt[k]
+                        new_cnt = temp_cnt + 1
+                        temp_df.cnt[k] = new_cnt
+                        update = 1
+            
+            if update == 0 :
+                insert = []
+                for x in range(1, item_cnt) :
+                    insert.append("anchor_"+str(x))
+                insert.append(item)
+                insert.append(1)
+                insert.append('')
+                insert.append('')
+
+                temp_df.loc[len(temp_df)] = insert
+
+
 def item_test(receive, item_cnt) :
     temp_df = globals()['item_{}_fp'.format(item_cnt)]
+    times = 1
 
-    
+    forloop(receive, item_cnt, temp_df, times)
 
-    for i1 in range(len(receive)) :
-        item = receive[i1][2]
-        update = 0
+    # for i1 in range(len(receive)) :
+    #     item = receive[i1][2]
+    #     update = 0
 
-        for j in range(len(temp_df)) :
-            if item == temp_df.item1[j] :
-                temp_cnt = temp_df.cnt[j]
-                new_cnt = temp_cnt + 1
-                temp_df.cnt[j] = new_cnt
-                update = 1
+    #     for j in range(len(temp_df)) :
+    #         if item == temp_df.item1[j] :
+    #             temp_cnt = temp_df.cnt[j]
+    #             new_cnt = temp_cnt + 1
+    #             temp_df.cnt[j] = new_cnt
+    #             update = 1
         
-        if update == 0 :        ## data 신규 insert
-            insert = []
-            for x in range(1, item_cnt) :
-                insert.append("anchor_"+str(x))
-            insert.append(item)
-            insert.append(1)
-            insert.append('')
-            insert.append('')
+    #     if update == 0 :        ## data 신규 insert
+    #         insert = []
+    #         for x in range(1, item_cnt) :
+    #             insert.append("anchor_"+str(x))
+    #         insert.append(item)
+    #         insert.append(1)
+    #         insert.append('')
+    #         insert.append('')
 
-            temp_df.loc[len(temp_df)] = insert
+    #         temp_df.loc[len(temp_df)] = insert
         
     total = 0
 
