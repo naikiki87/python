@@ -1,11 +1,7 @@
-temp = []
+temp = 1
 
-for i in range(5) :
-    print(i)
-    item = "item" + str(i)
-    temp.append(item)
-    # print(globals()['item{}.format(i)'])
-    # item = globals()['item{}.format(i)']
-    # temp.append(item)
+def forloop(a, b) :
+    for i in range(a) :
+        
 
-print(temp)
+for i in range(temp) :
