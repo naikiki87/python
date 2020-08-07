@@ -34,6 +34,7 @@ def insert_new(item_cnt, items) :
     insert.append('')
 
     return insert
+    
 def looping(item_cnt, start, for_cnt, receive, temp_df, items) :
     if for_cnt == item_cnt :
         for i in range(start, len(receive)) :
@@ -70,6 +71,7 @@ def looping(item_cnt, start, for_cnt, receive, temp_df, items) :
             items.pop()
 
         return temp_df
+
 def fp_finder(item_cnt, receive) :
     temp_df = globals()['item_{}_fp'.format(item_cnt)]
     items = []
@@ -85,6 +87,7 @@ def fp_finder(item_cnt, receive) :
         temp_df.support[x] = support
 
     globals()['item_{}_fp'.format(item_cnt)] = temp_df
+
 def create_df(item_cnt) :
     for i in range(1, item_cnt+1) :
         cols = []
@@ -97,6 +100,7 @@ def create_df(item_cnt) :
         cols.append("support")
 
         globals()['item_{}_fp'.format(i)] = pd.DataFrame(columns = cols)
+
 while True :
     data = clientSocket.recv(65535)
     data = data.decode()        ## bytes -> string

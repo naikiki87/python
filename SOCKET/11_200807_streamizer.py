@@ -1,6 +1,5 @@
 from socket import *
 import pandas as pd
-import sys
 
 HOST = ''
 PORT = 5128
@@ -22,16 +21,11 @@ print('connected')
 
 HOST_NEXT = '165.132.105.36'  
 PORT_NEXT = 5129
-# # HOST_NEXT = sys.argv[1]
-# # PORT_NEXT = sys.argv[2]
 
 client_next = socket(AF_INET, SOCK_STREAM)
 client_next.connect((HOST_NEXT, PORT_NEXT))
 
-seq = 1
-receive = []
 send = []
-tid = 0
 # 클라이언트로부터 메시지를 가져옴
 while True :
     data = clientSocket.recv(65535)
@@ -58,7 +52,4 @@ while True :
         except :
             client_next.close()
 
-        # print("streamizer : ", send)
-        # print("streamizer str : ", str_send)
-            
         send = []
