@@ -6,7 +6,7 @@ import sys
 HOST = ''
 PORT = int(sys.argv[2])
 
-BUFSIZE = 1024
+BUFSIZE = 65535
 ADDR = (HOST, PORT)
 
 serverSocket = socket(AF_INET, SOCK_STREAM)
@@ -18,9 +18,6 @@ print('connected')
 
 while True :
     data = clientSocket.recv(65535)
-    # data = pickle.loads(data)
-    # data = data.decode()        ## bytes -> string
     if data != "" :
         data = pickle.loads(data)
-        print(type(data))
         print(data)

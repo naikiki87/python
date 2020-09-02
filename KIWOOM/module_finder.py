@@ -1,4 +1,5 @@
 import sys
+import random
 import time
 import datetime
 import sqlite3
@@ -30,8 +31,17 @@ class Finder(QThread):
 
         df_last = pd.DataFrame(columns = ['code', 'p_avr', 'stdev'])
 
-        cnt_code = len(code_df)
-        # cnt_code = 1000
+        code_df2 = pd.DataFrame(columns={'name', 'code'}) 
+        
+        subs_cnt = 300
+
+        rand_index = [random.randint(0, len(code_df)) for r in range(subs_cnt)]
+
+        for i in range(subs_cnt) :
+            code_df2.loc[i] = code_df.loc[rand_index[i]]
+
+        cnt_code = len(code_df2)
+        # cnt_code = 200
         idx = 0
 
         for i in range(0, cnt_code):
@@ -44,7 +54,8 @@ class Finder(QThread):
                     
                     self.alive.emit(1)
                 
-                code = code_df['code'][i]
+                # code = code_df['code'][i]
+                code = code_df2['code'][i]
                 url = 'http://finance.naver.com/item/sise_day.nhn?code={code}'.format(code=code) 
                 df = pd.read_html(url, header=0)[0]
 

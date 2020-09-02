@@ -18,9 +18,13 @@ print('connected')
 
 while True :
     data = clientSocket.recv(65535)
-    # data = pickle.loads(data)
-    # data = data.decode()        ## bytes -> string
-    if data != "" :
+    # data = pickle.load(data)
+    # print(data)
+    if not data : break
+    # if data != "" :
+    try :
         data = pickle.loads(data)
-        print(type(data))
+        # data = cPickle.loads(data)
         print(data)
+    except :
+        pass
