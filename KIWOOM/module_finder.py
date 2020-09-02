@@ -33,7 +33,7 @@ class Finder(QThread):
 
         code_df2 = pd.DataFrame(columns={'name', 'code'}) 
         
-        subs_cnt = 300
+        subs_cnt = 200
 
         rand_index = [random.randint(0, len(code_df)) for r in range(subs_cnt)]
 
