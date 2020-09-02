@@ -38,7 +38,10 @@ class Finder(QThread):
         rand_index = [random.randint(0, len(code_df)) for r in range(subs_cnt)]
 
         for i in range(subs_cnt) :
-            code_df2.loc[i] = code_df.loc[rand_index[i]]
+            try :
+                code_df2.loc[i] = code_df.loc[rand_index[i]]
+            except :
+                pass
 
         cnt_code = len(code_df2)
         # cnt_code = 200
