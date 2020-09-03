@@ -14,7 +14,8 @@ import module_timer
 import module_worker
 
 form_class = uic.loadUiType("interface.ui")[0]
-ACCOUNT = "8137639811"
+# ACCOUNT = "8137639811"
+ACCOUNT = "8144126111"
 PASSWORD = "6458"
 NUM_SLOT = 5
 tableSUMMARY_COL = 16
