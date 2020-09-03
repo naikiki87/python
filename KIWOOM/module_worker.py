@@ -158,7 +158,7 @@ class Worker(QThread):
         item_code = data['item_code']
         deposit = data['deposit']
 
-        if data['autoTrade'] == 0 :
+        if data['autoTrade'] == 0 :             ## manual trading 시
             self.lock = 1
             print(now, "[ TH", self.seq, "]", "Receive Manual dict")
             orderType = data['orderType']
@@ -180,6 +180,7 @@ class Worker(QThread):
                             order['item_code'] = item_code
                             order['qty'] = qty
                             order['price'] = price
+                            order['order_type'] = orderType
                             self.rq_order.emit(order)
             elif orderType == 6 :       ## 기존 item 수동 매수
                 if MAKE_ORDER == 1 :
@@ -197,6 +198,7 @@ class Worker(QThread):
                             order['item_code'] = item_code
                             order['qty'] = qty
                             order['price'] = price
+                            order['order_type'] = orderType
                             self.rq_order.emit(order)
                             self.indicate_ordered()         ## INDICATE : ordered
             elif orderType == 7 :       ## 일부 sell manual
@@ -213,6 +215,7 @@ class Worker(QThread):
                             order['item_code'] = item_code
                             order['qty'] = qty
                             order['price'] = price
+                            order['order_type'] = orderType
                             self.rq_order.emit(order)
                             self.indicate_ordered()         ## INDICATE : ordered
             elif orderType == 8 :       ## full sell manual
@@ -229,10 +232,11 @@ class Worker(QThread):
                             order['item_code'] = item_code
                             order['qty'] = qty
                             order['price'] = price
+                            order['order_type'] = orderType
                             self.rq_order.emit(order)
                             self.indicate_ordered()         ## INDICATE : ordered
 
-        elif data['autoTrade'] == 1 :
+        elif data['autoTrade'] == 1 :                   ## auto trading 시
             if self.first_rcv == 1 :
                 print(now, "[ TH", self.seq, "]", "First Receive")
                 self.prev_price = data['cur_price']
@@ -371,6 +375,7 @@ class Worker(QThread):
                                             order['qty'] = qty
                                             # order['price'] = res['price']   ## 매도 최우선가로 구매
                                             order['price'] = price
+                                            order['order_type'] = judge_type
                                             self.rq_order.emit(order)       ## make order to master
                                             self.indicate_ordered()         ## INDICATE : ordered
 
@@ -394,6 +399,7 @@ class Worker(QThread):
                                             order['item_code'] = item_code
                                             order['qty'] = qty
                                             order['price'] = price
+                                            order['order_type'] = judge_type
                                             self.rq_order.emit(order)
                                             self.indicate_ordered()         ## INDICATE : ordered
 
@@ -427,12 +433,11 @@ class Worker(QThread):
                                         order = {}
                                         order['type'] = 1       ## sell
                                         order['item_code'] = item_code
-                                        # order['qty'] = qty
                                         order['qty'] = res['qty']       ## 전량
-                                        # order['price'] = price
                                         order['price'] = res['price']   ## 매수 최우선가
+                                        order['order_type'] = judge_type
+                                        
                                         self.rq_order.emit(order)       ## make order to master
-
                                         self.indicate_ordered()         ## INDICATE : ordered
                         
     
