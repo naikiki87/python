@@ -113,21 +113,21 @@ class Worker(QThread):
                         if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                             self.lock = 0           ## unlock
 
-                ## BUY(Manual)
+                ## new BUY(Manual)
                 elif orderType == 5 :
                     print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                         if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                             self.lock = 0           ## unlock
 
-                ## BUY(Manual)
+                ## gi BUY(Manual)
                 elif orderType == 6 :
                     print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                         if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                             self.lock = 0           ## unlock
 
-                ## SELL(Manual)
+                ## partial SELL(Manual)
                 elif orderType == 7 :
                     print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
@@ -140,11 +140,17 @@ class Worker(QThread):
                     self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
                     self.lock = 0           ## unlock
             
-            elif res == 0 : ## 수량부족으로 처리 불가시
-                if orderType == 5 :
+            elif res == 0 : ## 수량부족 또는 order 미수신으로 처리 불가시
+                if orderType == 5 :         # 신규 buy인 경우 db삭제 및 lock 해제
                     print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                     self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
                     self.lock = 0           ## unlock
+
+                else :                      # 다른 sit인 경우 db order 정보 0으로 세팅 및 lock 해제
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                        self.lock = 0           ## unlock
+
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
