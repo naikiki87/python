@@ -81,62 +81,70 @@ class Worker(QThread):
 
             item_code = data['item_code']
             orderType = self.func_GET_db_item(item_code, 3)
-            
-            ## Add water
-            if orderType == 1 :
-                print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
-                cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
-                new_step = cur_step + 1
-                if self.func_UPDATE_db_item(item_code, 1, new_step) == 1 :   ## update step
+            res = data['res']
+
+            if res == 1 :   ## 정상처리 되었을 경우
+                ## Add water
+                if orderType == 1 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
+                    new_step = cur_step + 1
+                    if self.func_UPDATE_db_item(item_code, 1, new_step) == 1 :   ## update step
+                        if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                            if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                                self.lock = 0           ## unlock
+
+                ## Sell & Buy(SELL)
+                elif orderType == 2 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       ## orderType -> 4
+                        self.lock = 0           ## unlock
+
+                ## full sell
+                elif orderType == 3 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
+                    self.lock = 0           ## unlock
+
+                ## Sell & Buy(BUY)
+                elif orderType == 4 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                         if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                             self.lock = 0           ## unlock
 
-            ## Sell & Buy(SELL)
-            elif orderType == 2 :
-                print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
-                if self.func_UPDATE_db_item(item_code, 3, 4) == 1:       ## orderType -> 4
+                ## BUY(Manual)
+                elif orderType == 5 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                            self.lock = 0           ## unlock
+
+                ## BUY(Manual)
+                elif orderType == 6 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                            self.lock = 0           ## unlock
+
+                ## SELL(Manual)
+                elif orderType == 7 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                            self.lock = 0           ## unlock
+
+                ## FULL SELL(Manual)
+                elif orderType == 8 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
                     self.lock = 0           ## unlock
-
-            ## full sell
-            elif orderType == 3 :
-                print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
-                self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
-                self.lock = 0           ## unlock
-
-            ## Sell & Buy(BUY)
-            elif orderType == 4 :
-                print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
-                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
-                    if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
-                        self.lock = 0           ## unlock
-
-            ## BUY(Manual)
-            elif orderType == 5 :
-                print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
-                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
-                    if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
-                        self.lock = 0           ## unlock
-
-            ## BUY(Manual)
-            elif orderType == 6 :
-                print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
-                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
-                    if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
-                        self.lock = 0           ## unlock
-
-            ## SELL(Manual)
-            elif orderType == 7 :
-                print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
-                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
-                    if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
-                        self.lock = 0           ## unlock
-
-            ## FULL SELL(Manual)
-            elif orderType == 8 :
-                print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
-                self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
-                self.lock = 0           ## unlock
+            
+            elif res == 0 : ## 수량부족으로 처리 불가시
+                if orderType == 5 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
+                    self.lock = 0           ## unlock
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :

@@ -49,6 +49,7 @@ class Kiwoom(QMainWindow, form_class):
 
     def init_ENV(self) :
         ## flag setting
+        self.check_jan = [0, 0, 0]             # buy 전 잔량확인
         self.send_data = 1
         self.buying_item = 0
         self.input_show_status.setText("STOP")
@@ -77,7 +78,7 @@ class Kiwoom(QMainWindow, form_class):
         self.btn_BUY.clicked.connect(self.func_ORDER_BUY)
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL)
         self.btn_TEST.clicked.connect(self.btn_test)
-        # self.btn_TEST_2.clicked.connect(self.btn_test_2)
+        self.btn_TEST_2.clicked.connect(self.btn_test_2)
         # self.btn_START.clicked.connect(self.func_start_check)
         self.btn_START.clicked.connect(self.order_start)
         # self.btn_STOP.clicked.connect(self.func_stop_check)
@@ -152,12 +153,54 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         now = self.now()
         print(now, "[MAIN]", "btn test")
-        print("val : ", self.table_summary.item(1,0).text())
+
+        # self.SetRealReg("0101", "005930", "10", 1)      ## 실시간 데이터 수신 등록
+        self.GET_hoga_to_buy("005930", 1010)
+
+    def GET_hoga_to_buy(self, item_code, qty, price) :
+        now = self.now()
+        print("GET hoga to buy")
+
+        self.check_jan = [0, 0, 0]
+        self.check_jan[0] = item_code
+        self.check_jan[1] = qty
+        self.check_jan[2] = price
+
+        if self.check_jan[0] != 0 and self.check_jan[1] != 0 and self.check_jan[2] != 0 :
+            print("itemcode : ", item_code)
+            rq_name = item_code + "gethoga"
+
+            # hoga 창에 호가 입력
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rq_name, "opt10004", 0, "0101")
+
+    def result_get_hoga(self, rqname, trcode, recordname, item_code) :
+        now = self.now()
+        print("result get hoga")
+        if item_code == self.check_jan[0] :
+            jan_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선잔량").replace('+', '').replace('-', '').strip()
+            print("jan sell : ", jan_sell)
+
+            if int(self.check_jan[1]) <= int(jan_sell) :
+                print("매도 잔량 enough")
+                self.ORDER_BUY(item_code, self.check_jan[1], self.check_jan[2])
+            else :
+                print("매도 잔량 X")
+                self.reply_buy.emit(1)      # item finder 재 기동
+
+                che_dict = {}
+                che_dict['th_num'] = self.which_thread(item_code)
+                che_dict['item_code'] = item_code
+                che_dict['res'] = 0
+
+                self.che_dict.emit(che_dict)
         
     def btn_test_2(self):
         now = self.now()
         print(now, "[MAIN]", "btn test2")
-        self.reset_real_receive()
+        self.SetRealRemove("ALL", "005930")        ## 실시간 데이터 감시 해제
+
+        # self.reset_real_receive()
 
     def DELETE_Table_Summary_item(self, slot) :
         now = self.now()
@@ -197,7 +240,8 @@ class Kiwoom(QMainWindow, form_class):
             price = data['price']
 
             print(now, "[MAIN]", item_code, qty, price)
-            self.ORDER_BUY(item_code, qty, price)
+            self.GET_hoga_to_buy(item_code, qty, price)
+            # self.ORDER_BUY(item_code, qty, price)
         
         elif type == 1 :  ## SELL
             item_code = data['item_code']
@@ -507,6 +551,8 @@ class Kiwoom(QMainWindow, form_class):
         orgorderno = ""
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
+
+        print("ORDERORDER : ", order)
         
         self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
         timestamp = self.func_GET_CurrentTime()
@@ -665,7 +711,7 @@ class Kiwoom(QMainWindow, form_class):
         acc_pw = PASSWORD
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00018", 0, self.reset_time)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00018", 0, self.reset_time)       # 잔고 출력
 
         print(now, "[MAIN]", "[func_restart_check] ORDER COMPLETE")
 
@@ -693,6 +739,7 @@ class Kiwoom(QMainWindow, form_class):
         che_dict = {}
         che_dict['th_num'] = slot
         che_dict['item_code'] = item_code
+        che_dict['res'] = 1
 
         self.che_dict.emit(che_dict)
         # self.reset_slot[slot] = 0               ## reset slot을 0으로 setting 하여 reset이 완료되었음을 확인
@@ -757,6 +804,7 @@ class Kiwoom(QMainWindow, form_class):
                         che_dict = {}
                         che_dict['th_num'] = th_num
                         che_dict['item_code'] = item_code
+                        che_dict['res'] = 1
                         self.che_dict.emit(che_dict)        ## 결과 전송
 
                 elif orderType == 4 :
@@ -805,6 +853,7 @@ class Kiwoom(QMainWindow, form_class):
                         che_dict = {}
                         che_dict['th_num'] = th_num
                         che_dict['item_code'] = item_code
+                        che_dict['res'] = 1
                         self.che_dict.emit(che_dict)        ## 결과 
 
                 self.load_etc_data()
@@ -1349,6 +1398,7 @@ class Kiwoom(QMainWindow, form_class):
         now = self.now()
         print(now, "[MAIN]", "[receive_tr_data] ", rqname)
         reset_str = "RESET_"
+        gethoga = "gethoga"
 
         if reset_str in rqname:
             item_slot = int(rqname[6:7])
@@ -1356,6 +1406,11 @@ class Kiwoom(QMainWindow, form_class):
             print(now, "[MAIN]", "TR slot : ", item_slot)
             print(now, "[MAIN]", "TR item : ", item_code)
             self.func_RESET_Items(rqname, trcode, recordname, item_slot, item_code)
+        
+        if gethoga in rqname :
+            item_code = rqname[0:6]
+            print("rrrr : ", rqname, item_code)
+            self.result_get_hoga(rqname, trcode, recordname, item_code)
         
         if rqname == "SET_hoga":
             self.SET_hoga(rqname, trcode, recordname)
@@ -1380,6 +1435,8 @@ class Kiwoom(QMainWindow, form_class):
         if self.possible_time == 1 and self.send_data == 1 :
             th_num = self.which_thread(code)[1]
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
+            # jan = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 61).replace('+', '').replace('-', '').strip()
+            # print(code, ' : ', jan)
             if cur_price != '' :
                 try :
                     # price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()
@@ -1547,3 +1604,4 @@ if __name__=="__main__":
     myWindow = Kiwoom()
     myWindow.show()
     app.exec_()
+    
