@@ -161,7 +161,13 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         now = self.now()
         print(now, "[MAIN]", "btn test")
-        print("self : ", self.check_jan)
+        o_time = datetime.datetime.now().strftime('%H%M%S')
+        item_code = "005930"
+        qty = 2
+        price = 56000
+        order_type = 5
+        self.func_check_jumun(item_code, qty, price, o_time, order_type)
+        # print("self : ", self.check_jan)
         
     def GET_hoga_to_buy(self, item_code, qty, price, order_type) :
         now = self.now()
@@ -583,9 +589,9 @@ class Kiwoom(QMainWindow, form_class):
         if self.check_jumun[slot][0] != 0 and self.check_jumun[slot][1] != 0 and self.check_jumun[slot][2] != 0 and self.check_jumun[slot][3] != 0 :
             rqname = str(item_code) + str(slot) + "check_jumun"
             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "전체종목구분", 1)
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "전체종목구분", 0)
             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "매매구분", 0)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", "005930")
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "체결구분", 0)
             self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10075", 0, "0101")
 
@@ -609,6 +615,7 @@ class Kiwoom(QMainWindow, form_class):
 
         print("o time : ", o_time, o_time_m1, o_time_p1)
         res = 0
+        print("data cnt : ", data_cnt)
 
         for i in range(data_cnt) :
             jumun_item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목코드").strip()
