@@ -146,6 +146,11 @@ class Worker(QThread):
                     self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
                     self.lock = 0           ## unlock
 
+                if orderType == 1 :         ## add water 인 경우
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                        self.lock = 0       ## unlock
+                        self.indicate_release()
+
                 else :                      # 다른 sit인 경우 db order 정보 0으로 세팅 및 lock 해제
                     print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
@@ -218,7 +223,7 @@ class Worker(QThread):
                             order['order_type'] = orderType
                             self.rq_order.emit(order)
                             self.indicate_ordered()         ## INDICATE : ordered
-            elif orderType == 8 :       ## full sell manual
+            elif orderType == 8 :       ## full sell manu al
                 if MAKE_ORDER == 1 :
                     qty = data['qty']
                     price = data['price']
@@ -256,7 +261,6 @@ class Worker(QThread):
                     chegang = data['chegang']
 
                     total_purchase = own_count * unit_price
-                    # total_evaluation = own_count * cur_price
                     total_evaluation = own_count * price_buy    ## 매수 최우선가 기준으로 계산
                     temp_total = total_evaluation - total_purchase
                     fee_buy = FEE_BUY * total_purchase
@@ -366,14 +370,12 @@ class Worker(QThread):
                                 elif qty >= 0 :
                                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                                         if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "BUY")
+                                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "BUY / Qty : ", qty)
 
                                             order = {}
                                             order['type'] = 0       ## buy
                                             order['item_code'] = item_code
-                                            # order['qty'] = res['qty']       ## judge를 통해 나온 수량
                                             order['qty'] = qty
-                                            # order['price'] = res['price']   ## 매도 최우선가로 구매
                                             order['price'] = price
                                             order['order_type'] = judge_type
                                             self.rq_order.emit(order)       ## make order to master
@@ -436,7 +438,7 @@ class Worker(QThread):
                                         order['qty'] = res['qty']       ## 전량
                                         order['price'] = res['price']   ## 매수 최우선가
                                         order['order_type'] = judge_type
-                                        
+
                                         self.rq_order.emit(order)       ## make order to master
                                         self.indicate_ordered()         ## INDICATE : ordered
                         
@@ -608,8 +610,12 @@ class Worker(QThread):
         print(now, "[ TH", self.seq, "]", "data DELETED")
 
     def indicate_ordered(self) :
-        now = self.now()
         self.rp_dict['ordered'] = 1
+        self.rp_dict['seq'] = self.seq
+        self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
+
+    def indicate_release(self) :
+        self.rp_dict['ordered'] = 2
         self.rp_dict['seq'] = self.seq
         self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
     

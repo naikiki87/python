@@ -13,12 +13,12 @@ import module_finder
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 
-UNIT_PRICE_LIMIT = 50000
+UNIT_PRICE_LIMIT = 60000
 AUTO_BUY_PRICE_LIMIT = 100000
 
 class Timer(QThread):
     cur_time = pyqtSignal(dict)
-    new_deal = pyqtSignal(dict)
+    # new_deal = pyqtSignal(dict)
     check_slot = pyqtSignal(int)
     refresh_status = pyqtSignal(int)
     req_buy = pyqtSignal(dict)
@@ -52,7 +52,7 @@ class Timer(QThread):
             mkt_close = now.replace(hour=15, minute=20, second=0)
             # am10 = now.replace(hour=10, minute=00, second=0)
             am930 = now.replace(hour=9, minute=30, second=0)
-            pm230 = now.replace(hour=14, minute=30, second=0)
+            pm230 = now.replace(hour=15, minute=20, second=0)
 
             item_finding = now.replace(hour=13, minute=53, second=30)
 
@@ -137,16 +137,16 @@ class Timer(QThread):
         print(now, "[TIMER]", data)
         empty = data['empty']
 
-        if empty == 1 :     ## item discovery 결과 적정한 item 이 없는 경우
-            print(now, "[TIMER]", "No candidate")
+        if empty == 1 :                                     ## item discovery 결과 적정한 item 이 없는 경우
+            print(now, "[TIMER]", "NO PROPER CANDIDATE")
             self.item_checking = 0
         
-        elif empty == 0 :   ## 적정 item이 있는 경우
+        elif empty == 0 :                                   ## 적정 item이 있는 경우
             item_code = data['item_code']
             
-            self.candidate_queue = []       ## queue initialize
-            self.candidate_queue = data['item_code']    ## fill candidates in queue
-            self.candidate_seq = 0          ## first candidate
+            self.candidate_queue = []                       ## queue initialize
+            self.candidate_queue = data['item_code']        ## fill candidates in queue
+            self.candidate_seq = 0                          ## first candidate
             self.investigate_items()
     
     def investigate_items(self) :
@@ -219,7 +219,7 @@ class Timer(QThread):
     @pyqtSlot(int)
     def reply_buy(self, data) :
         now = self.now()
-        if data == 1:
+        if data == 1:                   ## data를 받은 경우
             self.item_checking = 0      ## request 후 구매 완료
     
     def now(self) :
