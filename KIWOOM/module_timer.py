@@ -18,7 +18,6 @@ AUTO_BUY_PRICE_LIMIT = 100000
 
 class Timer(QThread):
     cur_time = pyqtSignal(dict)
-    # new_deal = pyqtSignal(dict)
     check_slot = pyqtSignal(int)
     refresh_status = pyqtSignal(int)
     req_buy = pyqtSignal(dict)

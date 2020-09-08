@@ -30,7 +30,6 @@ class Worker(QThread):
     connected = 0
     trans_dict = pyqtSignal(dict)
     th_con = pyqtSignal(int)
-    notice = pyqtSignal(dict)
     rq_order = pyqtSignal(dict)
 
     def __init__(self, seq):
@@ -253,8 +252,9 @@ class Worker(QThread):
                             order['qty'] = qty
                             order['price'] = price
                             order['order_type'] = orderType
-                            self.rq_order.emit(order)
                             self.indicate_ordered()         ## INDICATE : ordered
+                            self.rq_order.emit(order)
+                            
             elif orderType == 8 :       ## full sell manu al
                 if MAKE_ORDER == 1 :
                     qty = data['qty']
@@ -643,6 +643,7 @@ class Worker(QThread):
         print(now, "[ TH", self.seq, "]", "data DELETED")
 
     def indicate_ordered(self) :
+        print("indicate ordered")
         self.rp_dict['ordered'] = 1
         self.rp_dict['seq'] = self.seq
         self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
