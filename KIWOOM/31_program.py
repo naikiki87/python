@@ -4,6 +4,7 @@ import time
 import math
 import pandas as pd
 import datetime
+import config
 from time import localtime, strftime
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
@@ -14,11 +15,11 @@ import module_timer
 import module_worker
 
 form_class = uic.loadUiType("interface.ui")[0]
-# ACCOUNT = "8137639811"
-ACCOUNT = "8144126111"
-PASSWORD = "6458"
-NUM_SLOT = 5
-tableSUMMARY_COL = 16
+
+ACCOUNT = config.ACCOUNT
+PASSWORD = config.PASSWORD
+NUM_SLOT = config.NUM_SLOT
+SUMMARY_COL_CNT = config.SUMMARY_COL_CNT
 
 class Kiwoom(QMainWindow, form_class):
     test_dict0 = pyqtSignal(dict)
@@ -135,24 +136,19 @@ class Kiwoom(QMainWindow, form_class):
         return datetime.datetime.now()
 
     def btn_test(self) :
-        now = self.now()
-        print(now, "[MAIN]", "btn test")
-        o_time = datetime.datetime.now().strftime('%H%M%S')
-        item_code = "005930"
-        qty = 2
-        price = 56000
-        order_type = 5
+        print(self.now(), "[MAIN]", "btn test")
+        self.worker0.temptest("007460")
 
     @pyqtSlot(dict)
     def rq_order(self, data) :
         buy_or_sell = data['type']
-        print(self.now(), "[MAIN]", "receive rq order, type : ", buy_or_sell)
+        item_code = data['item_code']
+        qty = data['qty']
+        price = data['price']
+        print(self.now(), "[MAIN] [rq order] : ", buy_or_sell, item_code, qty, price)
 
         if buy_or_sell == 0 :  ## BUY
-            item_code = data['item_code']
             slot = self.which_thread(item_code)[1]
-            qty = data['qty']
-            price = data['price']
             order_type = data['order_type']
 
             self.check_jan[slot] = [0, 0, 0, 0]
@@ -168,28 +164,36 @@ class Kiwoom(QMainWindow, form_class):
                 self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rq_name, "opt10004", 0, "0101")
         
         elif buy_or_sell == 1 :  ## SELL
-            item_code = data['item_code']
-            qty = data['qty']
-            price = data['price']
-
             self.ORDER_SELL(item_code, qty, price)
 
     def result_get_hoga(self, rqname, trcode, recordname, item_code, item_slot) :
         slot = int(item_slot)
         if item_code == self.check_jan[slot][0] :
             jan_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선잔량").replace('+', '').replace('-', '').strip()
-            print("jan sell : ", jan_sell)
-
+            print("A : ", int(self.check_jan[slot][1]))
+            print("B : ", int(jan_sell))
             if int(self.check_jan[slot][1]) <= int(jan_sell) :
-                print("매도 잔량 충분")
+                print(self.now(), "[MAIN] [result_get_hoga] jan amount ENOUGH : ", jan_sell)
                 self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
             else :
-                print("매도 잔량 모자람")
-                che_dict = {}
-                che_dict['res'] = 0
-                che_dict['th_num'] = slot
-                che_dict['item_code'] = item_code
-                self.che_dict.emit(che_dict)            ## worker에 통지 및 데이터 삭제
+                print(self.now(), "[MAIN] [result_get_hoga] jan amount NOT ENOUGH : ", jan_sell)
+
+                if slot == 0 :
+                    self.worker0.not_ordered(item_code)
+                elif slot == 1 :
+                    self.worker1.not_ordered(item_code)
+                elif slot == 2 :
+                    self.worker2.not_ordered(item_code)
+                elif slot == 3 :
+                    self.worker3.not_ordered(item_code)
+                elif slot == 4 :
+                    self.worker4.not_ordered(item_code)
+
+                # che_dict = {}
+                # che_dict['res'] = 0
+                # che_dict['th_num'] = slot
+                # che_dict['item_code'] = item_code
+                # self.che_dict.emit(che_dict)            ## worker에 통지 및 데이터 삭제
 
                 if self.check_jan[slot][3] == 9 :       ## item find를 통해 신규 find인 경우
                     self.item_slot[slot] = 0            ## slot 해제
@@ -202,10 +206,8 @@ class Kiwoom(QMainWindow, form_class):
 
     def DELETE_Table_Summary_item(self, slot) :
         try :
-            # print(now, "[MAIN]", "delete summary table slot : ", slot)
-            for i in range(tableSUMMARY_COL) :
+            for i in range(SUMMARY_COL_CNT) :
                 self.func_SET_TableData(1, slot, i, "", 0)
-            print(self.now(), "[MAIN] [Delete_Table_Summary_item] : ", slot)
 
             return 0
 
@@ -215,7 +217,6 @@ class Kiwoom(QMainWindow, form_class):
     def create_thread(self) :
         timestamp = self.func_GET_CurrentTime()
         self.text_edit.append(timestamp + "CREATE THREADS")
-        print(self.now(), "[MAIN]", "Start Creating Threads")
         ## 1st        
         self.th_seq = 0
         self.worker0 = module_worker.Worker(0)
@@ -226,7 +227,6 @@ class Kiwoom(QMainWindow, form_class):
         self.worker0.rq_order.connect(self.rq_order)
         self.worker0.start()
         while True :
-            # print(now, "[MAIN]", "here : ", self.list_th_connected[self.th_seq])
             if self.list_th_connected[self.th_seq] == 1:
                 timestamp = self.func_GET_CurrentTime()
                 self.text_edit.append(timestamp + "THREAD 1 CREATED")
@@ -347,14 +347,14 @@ class Kiwoom(QMainWindow, form_class):
 
                 if step == "none" :
                     self.func_INSERT_db_item(item_code, 0, 0, 0, 0)
-                    print(now, "[MAIN]", "[CODE SYNC] Code is not in DB - Item Initialized : ", item_code)
+                    # print(now, "[MAIN]", "[CODE SYNC] Code is not in DB - Item Initialized : ", item_code)
             except :
                 pass
         # print(now, "[MAIN]", "[CODE SYNC] Code Sync - Fill Lack Item Complete")
         # print(self.now(), "[MAIN] [func_SET_Items] Code Sync END")
 
         # time.sleep(2)
-        QtTest.QTest.qWait(1500)
+        QtTest.QTest.qWait(1000)
 
         for i in range(self.item_count) :
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
@@ -373,39 +373,6 @@ class Kiwoom(QMainWindow, form_class):
         
         print(self.now(), "[MAIN] [func_SET_Items] set items END")
 
-    # def set_items_in_table(self, own_items) :
-    #     print("seeeeetttttt : ", own_items)
-    #     empty = 0
-
-    #     for i in range(len(own_items)) :
-    #         try :
-    #             item_code = own_items[i][0]
-    #             item_name = own_items[i][1]
-    #             own_count = own_items[i][2]
-    #             unit_price = own_items[i][3]
-
-    #             self.func_SET_TableData(1, i, 0, item_code, 0)
-    #             self.func_SET_TableData(1, i, 1, item_name, 0)
-    #             self.func_SET_TableData(1, i, 2, str(own_count), 0)
-    #             self.func_SET_TableData(1, i, 3, str(unit_price), 0)
-
-    #             self.item_slot[i] = item_code
-    #             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
-
-    #         except :
-    #             pass
-
-    #     for i in range(self.item_count) :
-    #         if self.table_summary.item(i, 0) == "" :
-    #             print(now, "[MAIN]", "Table", i, "is empty")
-    #             empty = 1
-    #             break
-        
-    #     if empty == 1 :
-    #         self.set_items_in_table(own_items)
-    #     elif empty == 0 :
-    #         return 0
-
     def load_etc_data(self) :
         ## deposit load
         self.func_GET_Deposit()
@@ -423,14 +390,7 @@ class Kiwoom(QMainWindow, form_class):
 
         ## daily profit load
         self.func_GET_DailyProfit(0)
-    # def reset_real_receive(self) :
-    #     now = self.now()
-    #     print(now, "[MAIN] [reset real receive]")
-    #     self.SetRealRemove("ALL", "ALL")
 
-    #     for i in range(NUM_SLOT) :
-    #         item_code = self.item_slot[i]
-    #         self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
     def func_stop_check(self):
         self.SetRealRemove("ALL", "ALL")
         timestamp = self.func_GET_CurrentTime()
@@ -518,11 +478,22 @@ class Kiwoom(QMainWindow, form_class):
                 self.check_jumun_times = 0                              ## re init
                 print(self.now(), "[MAIN]", "res_check_jumun : ORDER RCV NOT PROPERTY")
 
-                che_dict = {}
-                che_dict['th_num'] = slot
-                che_dict['item_code'] = item_code
-                che_dict['res'] = 0
-                self.che_dict.emit(che_dict)
+                if slot == 0 :
+                    self.worker0.not_ordered(item_code)
+                elif slot == 1 :
+                    self.worker1.not_ordered(item_code)
+                elif slot == 2 :
+                    self.worker2.not_ordered(item_code)
+                elif slot == 3 :
+                    self.worker3.not_ordered(item_code)
+                elif slot == 4 :
+                    self.worker4.not_ordered(item_code)
+
+                # che_dict = {}
+                # che_dict['th_num'] = slot
+                # che_dict['item_code'] = item_code
+                # che_dict['res'] = 0
+                # self.che_dict.emit(che_dict)
 
                 if self.check_jumun[slot][3] == 9 :                     ## item find를 통해 buy 하는 경우
                     self.item_finder_req = 0
@@ -690,7 +661,6 @@ class Kiwoom(QMainWindow, form_class):
         # self.reset_slot[slot] = 0               ## reset slot을 0으로 setting 하여 reset이 완료되었음을 확인
 
     def func_GET_Chejan_data(self, fid):
-        now = self.now()
         ret = self.kiwoom.dynamicCall("GetChejanData(int)", fid)
         return ret
     def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
@@ -1125,11 +1095,10 @@ class Kiwoom(QMainWindow, form_class):
         self.wid_refresh_order.setText(ref_time)
     @pyqtSlot(dict)
     def auto_buy(self, data) :
-        print(self.now(), "[MAIN] [auto buy] : ", data)
-
         item_code = data['item_code']
         qty = data['qty']
         price = data['price']
+        print(self.now(), "[MAIN] [auto buy] : ", item_code, qty, price)
 
         self.code_edit.setText(item_code)
         self.buy_sell_count.setText(str(qty))
@@ -1167,7 +1136,7 @@ class Kiwoom(QMainWindow, form_class):
             self.func_start_check()          # Aloha
             
         else:
-            print(self.now(), "[MAIN]", "Login Failed")
+            print(self.now(), "[MAIN] Login Failed")
             try :
                 self.kiwoom.dynamicCall("CommConnect()")        ## aloha
             except :
@@ -1175,7 +1144,7 @@ class Kiwoom(QMainWindow, form_class):
     
     def func_SET_tableSUMMARY(self):
         row_count = 5
-        col_count = tableSUMMARY_COL
+        col_count = SUMMARY_COL_CNT
         self.table_summary.setRowCount(row_count)
         self.table_summary.setColumnCount(col_count)
         self.table_summary.resizeRowsToContents()
@@ -1343,6 +1312,7 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
         # print(now, "[MAIN]", "receive real : ", code)
+        # print("[MAIN] receive real : ", code)
         if self.possible_time == 1 and self.send_data == 1 :
             th_num = self.which_thread(code)[1]
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()

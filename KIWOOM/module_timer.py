@@ -3,6 +3,7 @@ import time
 import math
 import datetime
 import sqlite3
+import config
 from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore, QtWidgets
 import pandas as pd 
@@ -13,8 +14,9 @@ import module_finder
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 
-UNIT_PRICE_LIMIT = 50000
-AUTO_BUY_PRICE_LIMIT = 100000
+UNIT_PRICE_LIMIT = config.UNIT_PRICE_LIMIT
+UNIT_PRICE_LOW_LIMIT = config.UNIT_PRICE_LOW_LIMIT
+AUTO_BUY_PRICE_LIMIT = config.AUTO_BUY_PRICE_LIMIT
 
 class Timer(QThread):
     cur_time = pyqtSignal(dict)
@@ -42,7 +44,6 @@ class Timer(QThread):
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
 
     def run(self):
-        now = self.now()
         temp_time = {}
         test_time = 0
         while True:
@@ -51,7 +52,7 @@ class Timer(QThread):
             mkt_close = now.replace(hour=15, minute=20, second=0)
             # am10 = now.replace(hour=10, minute=00, second=0)
             am930 = now.replace(hour=9, minute=30, second=0)
-            pm230 = now.replace(hour=15, minute=20, second=0)
+            pm240 = now.replace(hour=14, minute=40, second=0)
 
             item_finding = now.replace(hour=13, minute=53, second=30)
 
@@ -67,7 +68,7 @@ class Timer(QThread):
                 if now >= am930 and c_sec == "00" :
                     self.refresh_status.emit(1)
 
-                if now >= am930 and now<=pm230 and c_sec == "00" and self.item_checking == 0 :
+                if now >= am930 and now<=pm240 and c_sec == "00" and self.item_checking == 0 :
                     self.check_slot.emit(1)
             else :
                 temp_time['possible'] = 0
@@ -77,18 +78,18 @@ class Timer(QThread):
             if self.waiting_check == 1 :
                 self.waiting_time = self.waiting_time + 1
                 if self.waiting_time % 2 == 0 :
-                    print(now, "[TIMER]", "item finding waiting : ", self.waiting_time)
+                    print(self.now(), "[TIMER] [run] item finding waiting : ", self.waiting_time)
 
             elif self.waiting_check == 2 :
                 self.waiting_time = 0       ## waiting time initialize
                 self.waiting_check = 0
-                print(now, "[TIMER]", "item finder alive checking end")
+                print(self.now(), "[TIMER] [run] item finder alive checking END")
             
             # elif self.waiting_check == 0 :
             #     self.waiting_time = 0       ## waiting time initialize
 
             if self.waiting_time == 100 :        ## item finding 중 100 이상 응답이 없을 경우
-                print(now, "[TIMER]", "item finder alive checking end - over 100")
+                print(self.now(), "[TIMER] [run] item finder alive checking END - exceed 100")
                 self.waiting_check = 0
                 self.finder.terminate()         ## 쓰레드 종료
                 self.item_checking = 0          ## item checking 해제
@@ -101,8 +102,7 @@ class Timer(QThread):
 
     @pyqtSlot(int)
     def finder_alive_checking(self, data) :
-        now = self.now()
-        print(now, "[TIMER]", "finder alive checking")
+        print(self.now(), "[TIMER] [finder_alive_checking] START")
 
         if data == 1 :      ## item finding is alive
             self.waiting_check = 1      ## waiting check start
@@ -110,12 +110,10 @@ class Timer(QThread):
         
         elif data == 2 :    ## item finding finish
             self.waiting_check = 2      ## waiting check stop
-            print(now, "[TIMER]", "item finder alive checking end")
 
     @pyqtSlot(list)
     def res_check_slot(self, data) :
-        now = self.now()
-        print(now, "[TIMER]", "res check slot : ", data)
+        
         self.cur_items = data
         empty = 0
 
@@ -123,7 +121,7 @@ class Timer(QThread):
             if data[i] == 0 :
                 empty = empty + 1
 
-        print(now, "[TIMER]", "empty : ", empty)
+        print(self.now(), "[TIMER] [res_check_slot] : ", data, "-> empty : ", empty)
 
         if empty != 0 :
             self.item_checking = 1
@@ -131,13 +129,10 @@ class Timer(QThread):
     
     @pyqtSlot(dict)
     def check_candidate(self, data) :
-        now = self.now()
-        print(now, "[TIMER]", "checking candidate")
-        print(now, "[TIMER]", data)
         empty = data['empty']
 
         if empty == 1 :                                     ## item discovery 결과 적정한 item 이 없는 경우
-            print(now, "[TIMER]", "NO PROPER CANDIDATE")
+            print(self.now(), "[TIMER] [check_candidate] : NO PROPER CANDIDATE")
             self.item_checking = 0
         
         elif empty == 0 :                                   ## 적정 item이 있는 경우
@@ -149,12 +144,10 @@ class Timer(QThread):
             self.investigate_items()
     
     def investigate_items(self) :
-        now = self.now()
-        print(now, "[TIMER]", "investigating items : ", self.candidate_queue)
-        print(now, "[TIMER]", "seq : ", self.candidate_seq)
+        print(self.now(), "[TIMER] [investigate_items] : ", self.candidate_queue, self.candidate_seq)
 
         if self.candidate_seq >= len(self.candidate_queue) :
-            print(now, "[TIMER]", "candidate seq overflow : Finish Checking")
+            print(self.now(), "[TIMER] [investigate_items] : candidate seq overflow / FINISH")
             self.item_checking = 0
         else :
             self.candidate = self.candidate_queue[self.candidate_seq]
@@ -163,21 +156,18 @@ class Timer(QThread):
                 self.candidate_seq = self.candidate_seq + 1
                 self.investigate_items()
             else :
-                print(now, "[TIMER]", "checking item : ", self.candidate)
+                print(self.now(), "[TIMER] [investigate_items] checking item : ", self.candidate)
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
                 self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        now = self.now()
-        print(now, "[TIMER]", "[receive_tr_data] ", rqname)
+        print(self.now(), "[TIMER] [receive_tr_data] : ", rqname)
 
         if rqname == "GET_ItemInfo":
             self.func_GET_ItemInfo(rqname, trcode, recordname)
         if rqname == "GET_hoga":
             self.func_GET_hoga(rqname, trcode, recordname)
     def func_GET_ItemInfo(self, rqname, trcode, recordname) :
-        now = self.now()
-        print(now, "[TIMER]", "timer func_GET_ItemInfo")
         item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
         name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
         volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
@@ -188,33 +178,32 @@ class Timer(QThread):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
     def func_GET_hoga(self, rqname, trcode, recordname) :
-        now = self.now()
-        print(now, "[TIMER]", "timer func_GET_hoga : ", self.candidate)
         price_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
         price_sell = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', ''))
 
         if price_sell > UNIT_PRICE_LIMIT :
-            print(now, "[TIMER]", "단가 너무 쎔")
+            print(self.now(), "[TIMER] [func_GET_hoga] : 단가 너무 쎔")
+            self.candidate_seq = self.candidate_seq + 1
+            self.investigate_items()
+
+        elif price_sell < UNIT_PRICE_LOW_LIMIT :
+            print(self.now(), "[TIMER] [func_GET_hoga] : 단가 너무 쌈")
             self.candidate_seq = self.candidate_seq + 1
             self.investigate_items()
         
-        elif price_sell <= UNIT_PRICE_LIMIT :
-            print(now, "[TIMER]", "단가 적당")
+        elif price_sell >= UNIT_PRICE_LOW_LIMIT and price_sell <= UNIT_PRICE_LIMIT :
             qty = math.floor(AUTO_BUY_PRICE_LIMIT / price_sell)
-
-            print(now, "[TIMER]", "candidate : ", self.candidate)
-            print(now, "[TIMER]", "단가 : ", price_sell)
-            print(now, "[TIMER]", "수량 : ", qty)
 
             temp = {}
             temp['item_code'] = self.candidate
             temp['qty'] = qty
             temp['price'] = price_sell
 
+            print(self.now(), "[TIMER] [func_GET_hoga] : 단가 적당 / ", self.candidate, qty, price_sell)
+
             self.req_buy.emit(temp)
     @pyqtSlot(int)
     def reply_buy(self, data) :
-        now = self.now()
         if data == 1:                   ## data를 받은 경우
             self.item_checking = 0      ## request 후 구매 완료
     
