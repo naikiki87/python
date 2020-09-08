@@ -14,9 +14,9 @@ import module_finder
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 
-UNIT_PRICE_LIMIT = config.UNIT_PRICE_LIMIT
-UNIT_PRICE_LOW_LIMIT = config.UNIT_PRICE_LOW_LIMIT
-AUTO_BUY_PRICE_LIMIT = config.AUTO_BUY_PRICE_LIMIT
+UNIT_PRICE_HI_LIM = config.UNIT_PRICE_HI_LIM
+UNIT_PRICE_LOW_LIM = config.UNIT_PRICE_LOW_LIM
+AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
 
 class Timer(QThread):
     cur_time = pyqtSignal(dict)
@@ -181,18 +181,18 @@ class Timer(QThread):
         price_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
         price_sell = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', ''))
 
-        if price_sell > UNIT_PRICE_LIMIT :
+        if price_sell > UNIT_PRICE_HI_LIM :
             print(self.now(), "[TIMER] [func_GET_hoga] : 단가 너무 쎔")
             self.candidate_seq = self.candidate_seq + 1
             self.investigate_items()
 
-        elif price_sell < UNIT_PRICE_LOW_LIMIT :
+        elif price_sell < UNIT_PRICE_LOW_LIM
             print(self.now(), "[TIMER] [func_GET_hoga] : 단가 너무 쌈")
             self.candidate_seq = self.candidate_seq + 1
             self.investigate_items()
         
-        elif price_sell >= UNIT_PRICE_LOW_LIMIT and price_sell <= UNIT_PRICE_LIMIT :
-            qty = math.floor(AUTO_BUY_PRICE_LIMIT / price_sell)
+        elif price_sell >= UNIT_PRICE_LOW_LIM and price_sell <= UNIT_PRICE_HI_LIM
+            qty = math.floor(AUTO_BUY_PRICE_LIM / price_sell)
 
             temp = {}
             temp['item_code'] = self.candidate
