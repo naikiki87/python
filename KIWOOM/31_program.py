@@ -48,6 +48,7 @@ class Kiwoom(QMainWindow, form_class):
 
     def init_ENV(self) :
         ## flag setting
+        self.today = self.func_GET_Today()
         self.item_finder_req = 0
         self.check_jumun_times = 0
         self.check_jan = []
@@ -315,10 +316,8 @@ class Kiwoom(QMainWindow, form_class):
         self.load_etc_data()
         if self.create_thread() == 0 :              ## thread creation
             self.table_summary.clearContents()      ## table clear
-            acc_no = ACCOUNT
-            acc_pw = PASSWORD
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
             self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
     def func_SET_Items(self, rqname, trcode, recordname):
         # print(self.now(), "[MAIN] [func_SET_Items]")
@@ -371,7 +370,7 @@ class Kiwoom(QMainWindow, form_class):
 
             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
         
-        print(self.now(), "[MAIN] [func_SET_Items] set items END")
+        print(self.now(), "[MAIN] [func_SET_Items] Set Items END")
 
     def load_etc_data(self) :
         ## deposit load
@@ -379,13 +378,12 @@ class Kiwoom(QMainWindow, form_class):
         QtTest.QTest.qWait(300)
 
         ## history load
-        today = self.func_GET_Today()
         self.flag_HistoryData_Auto = 1
-        self.func_GET_TradeHistory(today)
+        self.func_GET_TradeHistory(self.today)
         QtTest.QTest.qWait(300)
 
         ## ordering load
-        self.func_GET_Ordering(today)
+        self.func_GET_Ordering(self.today)
         QtTest.QTest.qWait(300)
 
         ## daily profit load
@@ -409,13 +407,9 @@ class Kiwoom(QMainWindow, form_class):
         self.check_jumun[slot][4] = order_type
         
         rqname = str(item_code) + str(slot) + "order_buy"
-        screen_no = "0101"
-        acc_no = ACCOUNT
-        order_type = 1
-        hogagb = "00"
-        orgorderno = ""
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
-                     [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
+                     [rqname, "0101", ACCOUNT, 1, item_code, qty, price, "00", ""])
+                    #  [rqname, screen_no, ACCOUNT, order_type, item_code, qty, price, hogagb, orgorderno])
 
         if order == 0 :
             self.func_check_jumun(item_code, slot)
@@ -458,13 +452,9 @@ class Kiwoom(QMainWindow, form_class):
             jumun_qty = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문수량").replace('+', '').replace('-', '').strip()
             jumun_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문가격").replace('+', '').replace('-', '').strip()
             jumun_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "시간").strip()
-
             jumun_time = int(int(jumun_time)/100)
-            # print(i, " : ", jumun_item_code, jumun_qty, jumun_price, jumun_time)
 
             if item_code == jumun_item_code :
-                # if int(jumun_qty) == int(self.check_jumun[slot][0]) and int(jumun_price) == int(self.check_jumun[slot][1]) :
-                # if (int(jumun_qty) == int(self.check_jumun_2[1])) and (int(jumun_price) == int(self.check_jumun_2[2])) :
                 if (int(jumun_qty) == int(qty)) and (int(jumun_price) == int(price)) :      ## 주문 수량과 주문 가격이 동일한 놈들 중
                     if jumun_time == o_time or jumun_time == o_time_p1 or jumun_time == o_time_m1 :         ## 주문 시간을 비교해서 같은 놈을 찾음
                         res = 1
@@ -506,18 +496,11 @@ class Kiwoom(QMainWindow, form_class):
                 self.func_check_jumun(item_code, slot)                  ## re-check jumun
         
     def ORDER_SELL(self, item_code, qty, price) :
-        rqname = "RQ_TEST"
-        screen_no = "0101"
-        acc_no = ACCOUNT
-        order_type = 2
-        hogagb = "00"
-        orgorderno = ""
-        
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
-                     [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
-        
-        # self.func_UPDATE_db_item(item_code, 2, 1)       # oerdered -> 1
-        print(self.now(), "[MAIN] [ORDER_SELL] : ", item_code, qty, price)
+                     ["ORDER_SELL", "0101", ACCOUNT, 2, item_code, qty, price, "00", ""])
+                    #  [rqname, screen_no, ACCOUNT, order_type, item_code, qty, price, hogagb, orgorderno])
+        if order == 0 :
+            print(self.now(), "[MAIN] [ORDER_SELL] : ", item_code, qty, price)
     ## 매수 ##
     def func_ORDER_BUY(self) :
         timestamp = self.func_GET_CurrentTime()
@@ -533,40 +516,40 @@ class Kiwoom(QMainWindow, form_class):
 
             print(self.now(), "[MAIN] [func_ORDER_BUY] : ", item_code, qty, price, th_num)
 
-            test_dict = {}
-            test_dict['autoTrade'] = 0
-            test_dict['item_code'] = item_code
+            temp = {}
+            temp['autoTrade'] = 0
+            temp['item_code'] = item_code
 
             if self.item_finder_req == 1 :          ## item finder의 요청에 의해 구매하는 경우
-                test_dict['orderType'] = 9
+                temp['orderType'] = 9
             
             else :
                 if already == 0 :                   ## 신규 item manual BUY
-                    test_dict['orderType'] = 5
+                    temp['orderType'] = 5
                 elif already == 1 :                 ## 기존 item manual BUY
-                    test_dict['orderType'] = 6
+                    temp['orderType'] = 6
 
-            test_dict['qty'] = qty
-            test_dict['price'] = price
-            test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
+            temp['qty'] = qty
+            temp['price'] = price
+            temp['deposit'] = int(self.wid_show_deposit_d2.text())
             
             self.item_slot[th_num] = item_code
 
             if th_num == 0 :
                 # print(now, "[MAIN]", "th_num : ", th_num)
-                self.test_dict0.emit(test_dict)
+                self.test_dict0.emit(temp)
             elif th_num == 1 :
                 # print(now, "[MAIN]", "th_num : ", th_num)
-                self.test_dict1.emit(test_dict)
+                self.test_dict1.emit(temp)
             elif th_num == 2 :
                 # print(now, "[MAIN]", "th_num : ", th_num)
-                self.test_dict2.emit(test_dict)
+                self.test_dict2.emit(temp)
             elif th_num == 3 :
                 # print(now, "[MAIN]", "th_num : ", th_num)
-                self.test_dict3.emit(test_dict)
+                self.test_dict3.emit(temp)
             elif th_num == 4 :
                 # print(now, "[MAIN]", "th_num : ", th_num)
-                self.test_dict4.emit(test_dict)
+                self.test_dict4.emit(temp)
 
         except Exception as e:
             timestamp = self.func_GET_CurrentTime()
@@ -581,40 +564,41 @@ class Kiwoom(QMainWindow, form_class):
             own_count = int(self.table_summary.item(th_num, 2).text())
             qty = int(self.buy_sell_count.text())
             price = self.wid_buy_price.text()
-            print(self.now(), "[MAIN] [func_ORDER_SELL] : ", item_code, qty, price, th_num)
 
-            test_dict = {}
-            test_dict['autoTrade'] = 0
-            test_dict['item_code'] = item_code
-            test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
+            temp = {}
+            temp['autoTrade'] = 0
+            temp['item_code'] = item_code
+            temp['deposit'] = int(self.wid_show_deposit_d2.text())
 
             if qty > own_count :
                 print(self.now(), "[MAIN] [func_ORDER_SELL] : SELL Qty Exceed")
                 
             elif qty < own_count :
-                test_dict['orderType'] = 7
+                temp['orderType'] = 7
                 
             elif qty == own_count :
-                test_dict['orderType'] = 8
+                temp['orderType'] = 8
                 
-            test_dict['qty'] = qty
-            test_dict['price'] = price
+            temp['qty'] = qty
+            temp['price'] = price
 
             if th_num == 0 :
                 # print(now, "[MAIN]", "send dict -> ", th_num)
-                self.test_dict0.emit(test_dict)
+                self.test_dict0.emit(temp)
             elif th_num == 1 :
                 # print(now, "[MAIN]", "send dict -> ", th_num)
-                self.test_dict1.emit(test_dict)
+                self.test_dict1.emit(temp)
             elif th_num == 2 :
                 # print(now, "[MAIN]", "send dict -> ", th_num)
-                self.test_dict2.emit(test_dict)
+                self.test_dict2.emit(temp)
             elif th_num == 3 :
                 # print(now, "[MAIN]", "send dict -> ", th_num)
-                self.test_dict3.emit(test_dict)
+                self.test_dict3.emit(temp)
             elif th_num == 4 :
                 # print(now, "[MAIN]", "send dict -> ", th_num)
-                self.test_dict4.emit(test_dict)
+                self.test_dict4.emit(temp)
+            
+            print(self.now(), "[MAIN] [func_ORDER_SELL] : ", item_code, qty, price, th_num)
 
         except Exception as e:
             timestamp = self.func_GET_CurrentTime()
@@ -624,11 +608,8 @@ class Kiwoom(QMainWindow, form_class):
         rqname = "RESET_" + str(th_num) + '_' + item_code
 
         self.reset_time = self.reset_time + 1
-
-        acc_no = ACCOUNT
-        acc_pw = PASSWORD
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00018", 0, self.reset_time)       # 잔고 출력
 
         # print(now, "[MAIN]", "[func_restart_check] ORDER COMPLETE")
@@ -651,14 +632,11 @@ class Kiwoom(QMainWindow, form_class):
         self.func_SET_TableData(1, slot, 2, str(int(owncount)), 0)
         self.func_SET_TableData(1, slot, 3, str(round(float(unit_price), 1)), 0)
 
-        # print(now, "[MAIN]", "[func_RESET_Items] Complete")
         che_dict = {}
         che_dict['th_num'] = slot
         che_dict['item_code'] = item_code
         che_dict['res'] = 1
-
         self.che_dict.emit(che_dict)
-        # self.reset_slot[slot] = 0               ## reset slot을 0으로 setting 하여 reset이 완료되었음을 확인
 
     def func_GET_Chejan_data(self, fid):
         ret = self.kiwoom.dynamicCall("GetChejanData(int)", fid)
@@ -666,8 +644,6 @@ class Kiwoom(QMainWindow, form_class):
     def func_RECEIVE_Chejan_data(self, gubun, item_cnt, fid_list):
         order_id = item_code = item_name = trade_price = trade_amount = remained = trade_time = 'n'
         if gubun == "0" :       
-            # receive_type = self.func_GET_Chejan_data(913)         # 주문상태(접수, 확인, 체결)
-            # trade_type = self.func_GET_Chejan_data(907)           # 매도수구분(1: 매도, 2: 매수)
             order_id = self.func_GET_Chejan_data(9203)              # 주문번호
             item_code = self.func_GET_Chejan_data(9001)             # 종목코드
             item_name = self.func_GET_Chejan_data(302)              # 종목명
@@ -675,8 +651,7 @@ class Kiwoom(QMainWindow, form_class):
             remained = self.func_GET_Chejan_data(902)               # 미체결
             trade_time = self.func_GET_Chejan_data(908)             # 주문체결시간
 
-            today = self.func_GET_Today()
-            self.func_GET_Ordering(today)                           ## 주문상황을 실시간으로 반영
+            self.func_GET_Ordering(self.today)                           ## 주문상황을 실시간으로 반영
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
             if remained == '0':         # 체결시
@@ -691,7 +666,6 @@ class Kiwoom(QMainWindow, form_class):
                 self.text_edit.append(timestamp + "[체결완료]" + "[" + trade_time+"]" + order_id + ':' + item_code + '/' + item_name.strip() + '/' + trade_amount + '(' + remained + ')')
                 # print(self.now(), "[MAIN] [체결완료]" + "[" + trade_time+"]" + order_id + ':' + item_code + '/' + item_name.strip() + '/' + trade_amount + '(' + remained + ')')
                 print(self.now(), "[MAIN] [체결완료] : ", order_id, item_code, trade_amount)
-
                 orderType = self.func_GET_db_item(item_code, 3)
                 if orderType != "none" :
                     if orderType == 1 :
@@ -787,15 +761,10 @@ class Kiwoom(QMainWindow, form_class):
                             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
                     self.load_etc_data()
-
-            # today = self.func_GET_Today()
-            # self.func_GET_Ordering(today)
                 
     def func_GET_Deposit(self) :
-        acc_no = ACCOUNT
-        acc_pw = PASSWORD
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Deposit", "opw00001", 0, "0101")
     def func_SHOW_Deposit(self, rqname, trcode, recordname) :
         deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
@@ -811,28 +780,24 @@ class Kiwoom(QMainWindow, form_class):
 
         self.set_deposit = 1
 
-    def func_GET_DailyProfit(self, input) :
-        acc_no = ACCOUNT
-        acc_pw = PASSWORD
-
-        if input == 0:
+    def func_GET_DailyProfit(self, index) :
+        if index == 0:
             year = strftime("%Y", localtime())
             month = strftime("%m", localtime())
 
             start_day = year + month + "01"
-            end_day = self.func_GET_Today()
         
-        elif input == 1:
+        elif index == 1:
             start_day = self.input_ds_start.text()
             end_day = self.input_ds_end.text()
 
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시작일자", start_day)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종료일자", end_day)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종료일자", self.today)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_DailyProfit", "opt10074", 0, "0101")
 
         self.show_ds_start.setText(start_day)
-        self.show_ds_end.setText(end_day)
+        self.show_ds_end.setText(self.today)
     def func_SHOW_DailyProfit(self, rqname, trcode, recordname):
         self.table_dailyprofit.clearContents()      ## table clear
         data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
@@ -871,11 +836,9 @@ class Kiwoom(QMainWindow, form_class):
         else :
             self.search_date = self.input_history_date.text()
 
-        acc_no = ACCOUNT
-        acc_pw = PASSWORD
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", self.search_date)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", "0")
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_History", "opw00009", 0, self.reset_time)
@@ -935,13 +898,10 @@ class Kiwoom(QMainWindow, form_class):
         except:
             pass
 
-    def func_GET_Ordering(self, today):
-        acc_no = ACCOUNT
-        acc_pw = PASSWORD
-
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", today)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", acc_no)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", acc_pw)
+    def func_GET_Ordering(self, date):
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주문일자", date)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호입력매체구분", "00")
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "조회구분", '1')
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "주식채권구분", 0)
@@ -1328,30 +1288,30 @@ class Kiwoom(QMainWindow, form_class):
                     own_count = self.table_summary.item(th_num, 2).text()
                     unit_price = self.table_summary.item(th_num, 3).text()
 
-                    test_dict = {}
+                    temp = {}
                     
-                    test_dict['item_code'] = code
-                    test_dict['item_name'] = item_name
-                    test_dict['own_count'] = int(own_count)
-                    test_dict['unit_price'] = float(unit_price)
-                    test_dict['cur_price'] = int(cur_price)
-                    test_dict['price_buy'] = int(price_buy)
-                    test_dict['price_sell'] = int(price_sell)
-                    test_dict['chegang'] = float(chegang)
-                    test_dict['deposit'] = int(self.wid_show_deposit_d2.text())
+                    temp['item_code'] = code
+                    temp['item_name'] = item_name
+                    temp['own_count'] = int(own_count)
+                    temp['unit_price'] = float(unit_price)
+                    temp['cur_price'] = int(cur_price)
+                    temp['price_buy'] = int(price_buy)
+                    temp['price_sell'] = int(price_sell)
+                    temp['chegang'] = float(chegang)
+                    temp['deposit'] = int(self.wid_show_deposit_d2.text())
 
-                    test_dict['autoTrade'] = 1
+                    temp['autoTrade'] = 1
 
                     if th_num == 0 :
-                        self.test_dict0.emit(test_dict)
+                        self.test_dict0.emit(temp)
                     elif th_num == 1 :
-                        self.test_dict1.emit(test_dict)
+                        self.test_dict1.emit(temp)
                     elif th_num == 2 :
-                        self.test_dict2.emit(test_dict)
+                        self.test_dict2.emit(temp)
                     elif th_num == 3 :
-                        self.test_dict3.emit(test_dict)
+                        self.test_dict3.emit(temp)
                     elif th_num == 4 :
-                        self.test_dict4.emit(test_dict)
+                        self.test_dict4.emit(temp)
                 
                 except :
                     pass
@@ -1412,33 +1372,6 @@ class Kiwoom(QMainWindow, form_class):
         conn.commit()
         conn.close()
         print(self.now(), "[MAIN] [func_INSERT_db_item] : INSERTED")
-    # def func_UPDATE_db_item(self, code, col, data) :
-    #     conn = sqlite3.connect("item_status.db")
-    #     cur = conn.cursor()
-    #     if col == 1:    # update step
-    #         sql = "update STATUS set step = :DATA where code = :CODE"    
-    #         cur.execute(sql, {"DATA" : data, "CODE" : code})
-    #     elif col == 2:  # update ordered
-    #         sql = "update STATUS set ordered = :DATA where code = :CODE"    
-    #         cur.execute(sql, {"DATA" : data, "CODE" : code})
-    #     elif col == 3:  # update orderType
-    #         sql = "update STATUS set orderType = :DATA where code = :CODE"    
-    #         cur.execute(sql, {"DATA" : data, "CODE" : code})
-    #         #### type ####
-    #         # 0 : normai(default)
-    #         # 1 : 물타기
-    #         # 2 : 수익실현 및 복구
-    #         # 3 : full 매도
-    #         # 4 : 존버
-    #     elif col == 4:  # update trAmount
-    #         sql = "update STATUS set trAmount = :DATA where code = :CODE"    
-    #         cur.execute(sql, {"DATA" : data, "CODE" : code})
-
-    #     conn.commit()
-    #     conn.close()
-    #     success = cur.rowcount
-    #     # print(now, "[MAIN]", "UPDATED")
-    #     return success
     def func_DELETE_db_item(self, code):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
