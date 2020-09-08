@@ -139,14 +139,26 @@ class Worker(QThread):
                     print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                     self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
                     self.lock = 0           ## unlock
+
+                ## new BUY(item finder)
+                elif orderType == 9 :
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                        if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                            self.lock = 0           ## unlock
             
-            elif res == 0 : ## 수량부족 또는 order 미수신으로 처리 불가시
+            elif res == 0 :                 ## 수량부족 또는 order 미수신으로 처리 불가시
                 if orderType == 5 :         # 신규 buy인 경우 db삭제 및 lock 해제
                     print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                     self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
                     self.lock = 0           ## unlock
 
-                if orderType == 1 :         ## add water 인 경우
+                elif orderType == 9 :         # 신규 item finding buy인 경우 db삭제 및 lock 해제
+                    print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
+                    self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
+                    self.lock = 0           ## unlock
+
+                elif orderType == 1 :         ## add water 인 경우
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                         self.lock = 0       ## unlock
                         self.indicate_release()
@@ -163,22 +175,42 @@ class Worker(QThread):
         item_code = data['item_code']
         deposit = data['deposit']
 
-        if data['autoTrade'] == 0 :             ## manual trading 시
+        if data['autoTrade'] == 0 :                                             ## manual trading 시
             self.lock = 1
             print(now, "[ TH", self.seq, "]", "Receive Manual dict")
             orderType = data['orderType']
-            if orderType == 5 :         ## 신규 item 매수
+            if orderType == 5 :                                                 ## 신규 item manual 매수
                 if MAKE_ORDER == 1 :
                     print(now, "[ TH", self.seq, "]", "신규 바이")
+                    qty = data['qty']
+                    price = data['price']
+
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)             ## 신규 item db insert
+
+                    if self.func_UPDATE_db_item(item_code, 2, 1) == 1:          ## ordered -> 1
+                        if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
+                            print(now, "[ TH", self.seq, "]", " thread setting complete -> ordertype : 5")
+                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "BUY(MANUAL)")
+
+                            order = {}
+                            order['type'] = 0       ## buy
+                            order['item_code'] = item_code
+                            order['qty'] = qty
+                            order['price'] = price
+                            order['order_type'] = orderType
+                            self.rq_order.emit(order)
+            elif orderType == 9 :         ## 신규 item item finding 매수
+                if MAKE_ORDER == 1 :
+                    print(now, "[ TH", self.seq, "]", "신규 item finding 바이")
                     qty = data['qty']
                     price = data['price']
 
                     self.func_INSERT_db_item(item_code, 0, 0, 0, 0)     ## 신규 item db insert
 
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                        if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
-                            print(now, "[ TH", self.seq, "]", " thread setting complete -> ordertype : 5")
-                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "BUY(MANUAL)")
+                        if self.func_UPDATE_db_item(item_code, 3, 9) == 1:       ## orderType -> 9(manual item finding buy)
+                            print(now, "[ TH", self.seq, "]", " thread setting complete -> ordertype : 9")
+                            print(now, "[ TH", self.seq, "]", "make order : ", item_code, "BUY(ITEM FINDING)")
 
                             order = {}
                             order['type'] = 0       ## buy
@@ -378,8 +410,9 @@ class Worker(QThread):
                                             order['qty'] = qty
                                             order['price'] = price
                                             order['order_type'] = judge_type
-                                            self.rq_order.emit(order)       ## make order to master
                                             self.indicate_ordered()         ## INDICATE : ordered
+                                            self.rq_order.emit(order)       ## make order to master
+                                            
 
                         elif judge_type == 2 :      ## sell & buy
                             if JUDGE_SHOW == 1 :

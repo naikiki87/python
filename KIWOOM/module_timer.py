@@ -13,7 +13,7 @@ import module_finder
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 
-UNIT_PRICE_LIMIT = 60000
+UNIT_PRICE_LIMIT = 50000
 AUTO_BUY_PRICE_LIMIT = 100000
 
 class Timer(QThread):
@@ -176,7 +176,6 @@ class Timer(QThread):
             self.func_GET_ItemInfo(rqname, trcode, recordname)
         if rqname == "GET_hoga":
             self.func_GET_hoga(rqname, trcode, recordname)
-
     def func_GET_ItemInfo(self, rqname, trcode, recordname) :
         now = self.now()
         print(now, "[TIMER]", "timer func_GET_ItemInfo")
@@ -189,7 +188,6 @@ class Timer(QThread):
 
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
-
     def func_GET_hoga(self, rqname, trcode, recordname) :
         now = self.now()
         print(now, "[TIMER]", "timer func_GET_hoga : ", self.candidate)
@@ -215,7 +213,6 @@ class Timer(QThread):
             temp['price'] = price_sell
 
             self.req_buy.emit(temp)
-
     @pyqtSlot(int)
     def reply_buy(self, data) :
         now = self.now()

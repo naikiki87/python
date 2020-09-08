@@ -33,8 +33,8 @@ class Finder(QThread):
 
         code_df2 = pd.DataFrame(columns={'name', 'code'}) 
         
-        # subs_cnt = 200
-        subs_cnt = 10
+        subs_cnt = 200
+        # subs_cnt = 10
 
         rand_index = [random.randint(0, len(code_df)) for r in range(subs_cnt)]
 
@@ -150,13 +150,13 @@ class Finder(QThread):
             temp['empty'] = 1
         print(now, "[FINDER]", "send candidate")
 
-        test_df = pd.DataFrame(columns = ['code', 'p_avr', 'stdev', 'cur_price', 'price_ratio', 'mkt_sum'])
+        # test_df = pd.DataFrame(columns = ['code', 'p_avr', 'stdev', 'cur_price', 'price_ratio', 'mkt_sum'])
         
-        temp = {}
-        test_df.loc[0] = ["005930", 0, 0, 0, 0, 0]
-        item_code = test_df.code.values.tolist()
-        temp['empty'] = 0
-        temp['item_code'] = item_code
+        # temp = {}
+        # test_df.loc[0] = ["005930", 0, 0, 0, 0, 0]
+        # item_code = test_df.code.values.tolist()
+        # temp['empty'] = 0
+        # temp['item_code'] = item_code
 
         self.candidate.emit(temp)
         self.alive.emit(2)

@@ -47,6 +47,8 @@ class Kiwoom(QMainWindow, form_class):
 
     def init_ENV(self) :
         ## flag setting
+        self.item_finder_req = 0
+        self.check_jumun_times = 0
         self.check_jan = []
         for i in range(5) :
             self.check_jan.append([0,0,0,0])
@@ -94,16 +96,16 @@ class Kiwoom(QMainWindow, form_class):
         self.func_SET_tableORDER()          # order 현황 table
         self.func_SET_table_dailyprofit()   # dailyprofit table
 
-    @pyqtSlot(dict)
-    def buy_new_item(self, data) :
-        now = self.now()
-        print(now, "[MAIN]", "buy new item", data['item_code'], data['qty'])
-        item_code = data['item_code']
-        qty = data['qty']
-        self.code_edit.setText(item_code)
-        self.buy_sell_count.setText(str(qty))
-        self.GET_hoga(item_code)
-        self.func_ORDER_BUY()
+    # @pyqtSlot(dict)
+    # def buy_new_item(self, data) :
+    #     now = self.now()
+    #     print(now, "[MAIN]", "buy new item", data['item_code'], data['qty'])
+    #     item_code = data['item_code']
+    #     qty = data['qty']
+    #     self.code_edit.setText(item_code)
+    #     self.buy_sell_count.setText(str(qty))
+    #     self.GET_hoga(item_code)
+    #     self.func_ORDER_BUY()
     @pyqtSlot(dict)
     def update_times(self, data) :
         now = self.now()
@@ -222,20 +224,21 @@ class Kiwoom(QMainWindow, form_class):
             print("jan sell : ", jan_sell)
 
             if int(self.check_jan[slot][1]) <= int(jan_sell) :
-                print("매도 잔량 enough")
+                print("매도 잔량 충분")
                 self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
                 # self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2])
             else :
-                print("매도 잔량 X")
+                print("매도 잔량 모자람")
                 che_dict = {}
                 che_dict['res'] = 0
                 che_dict['th_num'] = slot
                 che_dict['item_code'] = item_code
                 self.che_dict.emit(che_dict)            ## worker에 통지 및 데이터 삭제
 
-                if self.check_jan[slot][3] == 5 :       ## item find를 통해 신규 find인 경우
-                    print("신규 buy")
+                if self.check_jan[slot][3] == 9 :       ## item find를 통해 신규 find인 경우
+                    print("신규 item finding buy")
                     self.item_slot[slot] = 0            ## slot 해제
+                    self.item_finder_req = 0
                     print("slot 해제 : ", slot)
                     self.reply_buy.emit(1)                  # item finder 재 기동
         
@@ -555,17 +558,18 @@ class Kiwoom(QMainWindow, form_class):
         self.text_edit.append(timestamp + "Monitoring STOP")
 
         self.load_etc_data()
-    def ORDER_BUY(self, item_code, qty, price, order_type) :
     # def ORDER_BUY(self, item_code, qty, price) :
+    def ORDER_BUY(self, item_code, qty, price, order_type) :
         now = self.now()
 
         slot = self.which_thread(item_code)[1]
+        # o_time = datetime.datetime.now().strftime('%H%M%S')
 
         self.check_jumun[slot] = ['',0,0,0,0]      # init
         self.check_jumun[slot][0] = item_code
         self.check_jumun[slot][1] = qty
         self.check_jumun[slot][2] = price
-        self.check_jumun[slot][3] = time
+        self.check_jumun[slot][3] = datetime.datetime.now().strftime('%H%M%S')
         self.check_jumun[slot][4] = order_type
 
         timestamp = self.func_GET_CurrentTime()
@@ -580,7 +584,11 @@ class Kiwoom(QMainWindow, form_class):
         orgorderno = ""
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
-        
+
+
+        if order == 0 :
+            self.func_check_jumun(item_code, slot)
+
         # self.func_UPDATE_db_item(item_code, 2, 1)       # 해당 item 의 현재 상태를 Trading으로 변환
 
         # o_time = datetime.datetime.now().strftime('%H%M%S')
@@ -590,7 +598,7 @@ class Kiwoom(QMainWindow, form_class):
     # def func_check_jumun(self) :
     def func_check_jumun(self, item_code, item_slot) :
         now = self.now()
-        print(now, "[MAIN]", "func_check_jumun : ", self.check_jumun_2)
+        print(now, "[MAIN]", "func_check_jumun")
 
         slot = int(item_slot)
 
@@ -613,7 +621,7 @@ class Kiwoom(QMainWindow, form_class):
         
         data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
 
-        o_time = int(int(self.check_jumun[slot][2]) / 100)
+        o_time = int(int(self.check_jumun[slot][3]) / 100)
         o_time_p1 = o_time + 1
         o_time_m1 = o_time - 1
 
@@ -644,21 +652,30 @@ class Kiwoom(QMainWindow, form_class):
                     if jumun_time == o_time or jumun_time == o_time_p1 or jumun_time == o_time_m1 :         ## 주문 시간을 비교해서 같은 놈을 찾음
                         res = 1
 
-        if res == 1 :               ## 주문내역이 있는 경우
-            print(now, "[MAIN]", "res_check_jumun : order received properly")
+        if res == 1 :                                                   ## 주문내역이 있는 경우
+            print(now, "[MAIN]", "res_check_jumun : ORDER RCV PROPERLY")
             ## do nothing
 
-        elif res == 0 :             ## 주문내역이 없는 경우
-            print(now, "[MAIN]", "res_check_jumun : order received NOT properly")
+        elif res == 0 :                                                 ## 주문내역이 없는 경우
+            if self.check_jumun_times == 3 :                            ## jumun receive 여부 3회까지 확인
+                self.check_jumun_times = 0                              ## re init
+                print(now, "[MAIN]", "res_check_jumun : ORDER RCV NOT PROPERTY")
 
-            che_dict = {}
-            che_dict['th_num'] = slot
-            che_dict['item_code'] = item_code
-            che_dict['res'] = 0
-            self.che_dict.emit(che_dict)
+                che_dict = {}
+                che_dict['th_num'] = slot
+                che_dict['item_code'] = item_code
+                che_dict['res'] = 0
+                self.che_dict.emit(che_dict)
 
-            if self.check_jumun[slot][3] == 5 :                     ## item find를 통해 buy 하는 경우
-                self.reply_buy.emit(1)                              # 주문이 안들어 갔으므로 item finder 재 기동
+                if self.check_jumun[slot][3] == 9 :                     ## item find를 통해 buy 하는 경우
+                    self.item_finder_req = 0
+                    self.item_slot[slot] = 0                            ## slot 해제
+                    self.reply_buy.emit(1)                              ## 주문이 안들어 갔으므로 item finder 재 기동
+            
+            else :
+                self.check_jumun_times = self.check_jumun_times + 1
+                QtTest.QTest.qWait(2000)                                 ## 500 ms delay
+                self.func_check_jumun(item_code, slot)                  ## re-check jumun
         
     def ORDER_SELL(self, item_code, qty, price) :
         now = self.now()
@@ -672,7 +689,7 @@ class Kiwoom(QMainWindow, form_class):
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
                      [rqname, screen_no, acc_no, order_type, item_code, qty, price, hogagb, orgorderno])
         
-        self.func_UPDATE_db_item(item_code, 2, 1)       # oerdered -> 1
+        # self.func_UPDATE_db_item(item_code, 2, 1)       # oerdered -> 1
         timestamp = self.func_GET_CurrentTime()
         print(now, "[MAIN]", timestamp + "ORDER : SELL", item_code, " / ", qty)
     ## 매수 ##
@@ -699,12 +716,16 @@ class Kiwoom(QMainWindow, form_class):
             test_dict['autoTrade'] = 0
             test_dict['item_code'] = item_code
 
-            if already == 0 :       ## 신규 item BUY
-                print(now, "[MAIN]", "신규 BUY")
-                test_dict['orderType'] = 5
-            elif already == 1 :     ## 기존 item BUY
-                print(now, "[MAIN]", "기 BUY")
-                test_dict['orderType'] = 6
+            if self.item_finder_req == 1 :          ## item finder의 요청에 의해 구매하는 경우
+                test_dict['orderType'] = 9
+            
+            else :
+                if already == 0 :                   ## 신규 item manual BUY
+                    print(now, "[MAIN]", "신규 BUY")
+                    test_dict['orderType'] = 5
+                elif already == 1 :                 ## 기존 item manual BUY
+                    print(now, "[MAIN]", "기 BUY")
+                    test_dict['orderType'] = 6
 
             test_dict['qty'] = qty
             test_dict['price'] = price
@@ -855,22 +876,25 @@ class Kiwoom(QMainWindow, form_class):
         now = self.now()
         order_id = item_code = item_name = trade_price = trade_amount = remained = trade_time = 'n'
         if gubun == "0" :       
-            # receive_type = self.func_GET_Chejan_data(913)      # 주문상태(접수, 확인, 체결)
-            # trade_type = self.func_GET_Chejan_data(907)      # 매도수구분(1: 매도, 2: 매수)
-            order_id = self.func_GET_Chejan_data(9203)      # 주문번호
-            item_code = self.func_GET_Chejan_data(9001)     # 종목코드
-            item_name = self.func_GET_Chejan_data(302)      # 종목명
-            trade_amount = self.func_GET_Chejan_data(911)   # 체결량
-            remained = self.func_GET_Chejan_data(902)       # 미체결
-            trade_time = self.func_GET_Chejan_data(908)      # 주문체결시간
+            # receive_type = self.func_GET_Chejan_data(913)         # 주문상태(접수, 확인, 체결)
+            # trade_type = self.func_GET_Chejan_data(907)           # 매도수구분(1: 매도, 2: 매수)
+            order_id = self.func_GET_Chejan_data(9203)              # 주문번호
+            item_code = self.func_GET_Chejan_data(9001)             # 종목코드
+            item_name = self.func_GET_Chejan_data(302)              # 종목명
+            trade_amount = self.func_GET_Chejan_data(911)           # 체결량
+            remained = self.func_GET_Chejan_data(902)               # 미체결
+            trade_time = self.func_GET_Chejan_data(908)             # 주문체결시간
+
+            today = self.func_GET_Today()
+            self.func_GET_Ordering(today)                           ## 주문상황을 실시간으로 반영
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
             if remained == '0':         # 체결시
                 item_code = item_code.replace('A', '').strip()
                 print(now, "[MAIN]", "CHE RECEIVE : ", item_code)
 
-                if item_code == self.buying_item :
-                    self.reply_buy.emit(1)
+                # if item_code == self.buying_item :              ## item find를 통해 구매한 내역일 경우 item finder에 finish signal send
+                #     self.reply_buy.emit(1)
 
                 timestamp = self.func_GET_CurrentTime()
                 
@@ -894,21 +918,21 @@ class Kiwoom(QMainWindow, form_class):
                     if self.DELETE_Table_Summary_item(th_num) == 0 :
                         self.func_restart_check(th_num, item_code)
 
-                elif orderType == 3 :       ## Full Sell 일 경우
+                elif orderType == 3 :                                   ## Full Sell 일 경우
                     print(now, "[MAIN]", "[CHEJAN] FULL SELL(Auto)")
                     th_num = self.which_thread(item_code)[1]
                     print(now, "[MAIN]", "[3] THREAD NUM : ", th_num)
                     self.item_slot[th_num] = 0      ## unassign slot
                     print(now, "[MAIN]", "[3] Slot unassign Complete")
                     
-                    if self.DELETE_Table_Summary_item(th_num) == 0 :  ## table data 삭제
-                        self.SetRealRemove("ALL", item_code)        ## 실시간 데이터 감시 해제
+                    if self.DELETE_Table_Summary_item(th_num) == 0 :    ## table data 삭제
+                        self.SetRealRemove("ALL", item_code)            ## 실시간 데이터 감시 해제
 
                         che_dict = {}
                         che_dict['th_num'] = th_num
                         che_dict['item_code'] = item_code
                         che_dict['res'] = 1
-                        self.che_dict.emit(che_dict)        ## 결과 전송
+                        self.che_dict.emit(che_dict)                    ## 결과 전송
 
                 elif orderType == 4 :
                     print(now, "[MAIN]", "[CHEJAN] SELL & BUY(BUY)")
@@ -918,7 +942,7 @@ class Kiwoom(QMainWindow, form_class):
                     if self.DELETE_Table_Summary_item(th_num) == 0 :
                         self.func_restart_check(th_num, item_code)
 
-                elif orderType == 5 :       ## buy new (manual)
+                elif orderType == 5 :                                   ## BUY NEW(manual)
                     print(now, "[MAIN]", "[CHEJAN] BUY(MANUAL)")
                     th_num = self.which_thread(item_code)[1]
                     print(now, "[MAIN]", "[5] THREAD NUM : ", th_num)
@@ -958,11 +982,23 @@ class Kiwoom(QMainWindow, form_class):
                         che_dict['item_code'] = item_code
                         che_dict['res'] = 1
                         self.che_dict.emit(che_dict)        ## 결과 
+                
+                elif orderType == 9 :       ## new buy by item finding
+                    self.reply_buy.emit(1)
+                    print(now, "[MAIN]", "[CHEJAN] BUY(ITEM FINDER)")
+                    th_num = self.which_thread(item_code)[1]
+                    print(now, "[MAIN]", "[9] THREAD NUM : ", th_num)
+
+                    self.item_finder_req = 0
+
+                    if self.DELETE_Table_Summary_item(th_num) == 0 :
+                        self.func_restart_check(th_num, item_code)
+                        self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
                 self.load_etc_data()
 
-            today = self.func_GET_Today()
-            self.func_GET_Ordering(today)
+            # today = self.func_GET_Today()
+            # self.func_GET_Ordering(today)
                 
     def func_GET_Deposit(self) :
         now = self.now()
@@ -1320,6 +1356,8 @@ class Kiwoom(QMainWindow, form_class):
 
         print(now, "[MAIN]", "ready to buy")
         self.buying_item = item_code
+
+        self.item_finder_req = 1
 
         self.func_ORDER_BUY()
 
