@@ -286,8 +286,9 @@ class Worker(QThread):
                 self.TA_UNIT_SUM = 0
                 self.val_cnt = 0
 
-                ordered = self.func_GET_db_item(item_code, 2)
-                if ordered == 1 :       ## 프로그램이 시작했는데 현재 item이 order 중인 경우
+                # ordered = self.func_GET_db_item(item_code, 2)
+                # if ordered == 1 :       ## 프로그램이 시작했는데 현재 item이 order 중인 경우
+                if self.func_GET_db_item(item_code, 2) == 1 :           ## 프로그램이 시작했는데 현재 item이 order 중인 경우 
                     self.lock = 1
 
                     ## SHOW ##
@@ -323,8 +324,8 @@ class Worker(QThread):
                     self.rp_dict['seq'] = self.seq
                     self.rp_dict['high'] = self.PER_HI
 
-                    self.trans_dict.emit(self.rp_dict)       ## SHOW
                     self.indicate_ordered()         ## INDICATE : ordered
+                    self.trans_dict.emit(self.rp_dict)       ## SHOW
                 
                 self.first_rcv = 0
             else :      ## 2번째 receive 부터
