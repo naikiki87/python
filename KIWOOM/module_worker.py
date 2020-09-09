@@ -42,8 +42,7 @@ class Worker(QThread):
         self.prev_price = 0
         self.first_rcv = 1
 
-        self.delay = module_delay.Delay()
-        self.delay.resume.connect(self.resume_thread)
+        
         self.delay_item = ''
 
     def event_connect(self, err_code):
@@ -57,11 +56,6 @@ class Worker(QThread):
         self.cnt = 0
         print(self.now(), "[ TH", self.seq, "] [run] Thread Connected")
         self.th_con.emit(1)
-    
-    # def pause(self) :
-    #     self.event.clear()
-
-    # def resume(self)
     
     @pyqtSlot(dict)
     def che_result(self, data) :
@@ -161,28 +155,36 @@ class Worker(QThread):
 
     @pyqtSlot(int)
     def resume_thread(self, data) :
-        item_code = self.delay_item
-        orderType = self.func_GET_db_item(item_code, 3)
+        # print(self.seq, "resume thread : ", self.delay_item)
+        self.delay.terminate()
 
-        if orderType != "none" :                ## after get data from db
-            if orderType == 1 :                                             ## add water
-                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
-                    self.indicate_release()
-                    self.lock = 0                           ## unlock
+        if data == self.seq : 
+            item_code = self.delay_item
+            orderType = self.func_GET_db_item(item_code, 3)
 
-            elif orderType == 5 :                           # 신규 buy인 경우 db삭제 및 lock 해제
-                self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
-                self.lock = 0                               ## unlock
+            if orderType != "none" :                ## after get data from db
+                if orderType == 1 :                                             ## add water
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                        self.indicate_release()
+                        self.lock = 0                           ## unlock
 
-            elif orderType == 9 :                           # 신규 item finding buy인 경우 db삭제 및 lock 해제
-                self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
-                self.lock = 0                               ## unlock
+                elif orderType == 5 :                           # 신규 buy인 경우 db삭제 및 lock 해제
+                    self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
+                    self.lock = 0                               ## unlock
 
-            else :                                          # 다른 sit인 경우 db order 정보 0으로 세팅 및 lock 해제
-                if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
-                    self.lock = 0                           ## unlock
+                elif orderType == 9 :                           # 신규 item finding buy인 경우 db삭제 및 lock 해제
+                    self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
+                    self.lock = 0                               ## unlock
+
+                else :                                          # 다른 sit인 경우 db order 정보 0으로 세팅 및 lock 해제
+                    if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+                        self.lock = 0                           ## unlock
 
     def pause_worker(self, item_code) :
+        # print("thread : pause worker : ", item_code)
+        self.delay = module_delay.Delay()
+        self.delay.resume.connect(self.resume_thread)
+
         self.indicate_paused()
         self.delay_item = item_code
         self.delay.start()
@@ -212,7 +214,7 @@ class Worker(QThread):
                             order['order_type'] = orderType
                             self.rq_order.emit(order)
 
-                            print(self.now(), "[ TH", self.seq, "] [dict_from_main] New Buy Manual : ", item_code)
+                            # print(self.now(), "[ TH", self.seq, "] [dict_from_main] New Buy Manual : ", item_code)
 
             elif orderType == 9 :         ## 신규 item item finding 매수
                 if MAKE_ORDER == 1 :
@@ -231,7 +233,7 @@ class Worker(QThread):
                             order['order_type'] = orderType
                             self.rq_order.emit(order)
 
-                            print(self.now(), "[ TH", self.seq, "] [dict_from_main] New Buy Item Finding : ", item_code)
+                            # print(self.now(), "[ TH", self.seq, "] [dict_from_main] New Buy Item Finding : ", item_code)
 
             elif orderType == 6 :       ## 기존 item 수동 매수
                 if MAKE_ORDER == 1 :
@@ -249,7 +251,7 @@ class Worker(QThread):
                             self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)
 
-                            print(self.now(), "[ TH", self.seq, "] [dict_from_main] Gi Buy Manual : ", item_code)
+                            # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Gi Buy Manual : ", item_code)
 
             elif orderType == 7 :       ## 일부 sell manual
                 if MAKE_ORDER == 1 :
@@ -267,7 +269,7 @@ class Worker(QThread):
                             self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)
 
-                            print(self.now(), "[ TH", self.seq, "] [dict_from_main] Part Sell Manual : ", item_code)
+                            # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Part Sell Manual : ", item_code)
                             
             elif orderType == 8 :       ## full sell manu al
                 if MAKE_ORDER == 1 :
@@ -285,7 +287,7 @@ class Worker(QThread):
                             self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)
 
-                            print(self.now(), "[ TH", self.seq, "] [dict_from_main] Full Sell Manual : ", item_code)
+                            # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Full Sell Manual : ", item_code)
 
         elif data['autoTrade'] == 1 :                   ## auto trading 시
             if self.first_rcv == 1 :
@@ -423,7 +425,7 @@ class Worker(QThread):
                                         self.indicate_ordered()         ## INDICATE : ordered
                                         self.rq_order.emit(order)       ## make order to master
 
-                                        print(self.now(), "[ TH", self.seq, "] [dict_from_main] Add Water : ", item_code)
+                                        # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Add Water : ", item_code)
                                         
 
                     elif judge_type == 2 :      ## sell & buy
@@ -447,7 +449,7 @@ class Worker(QThread):
                                         self.indicate_ordered()         ## INDICATE : ordered
                                         self.rq_order.emit(order)
 
-                                        print(self.now(), "[ TH", self.seq, "] [dict_from_main] Sell & Buy(sell) : ", item_code)
+                                        # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Sell & Buy(sell) : ", item_code)
 
                             elif qty >= 1 :
                                 if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
@@ -461,7 +463,7 @@ class Worker(QThread):
                                             self.indicate_ordered()         ## INDICATE : ordered
                                             self.rq_order.emit(order)
 
-                                            print(self.now(), "[ TH", self.seq, "] [dict_from_main] Sell & Buy(sell) : ", item_code)
+                                            # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Sell & Buy(sell) : ", item_code)
 
                     elif judge_type == 3 :      ## full_sell
                         if MAKE_ORDER == 1 :
@@ -477,7 +479,7 @@ class Worker(QThread):
                                     self.indicate_ordered()         ## INDICATE : ordered
                                     self.rq_order.emit(order)       ## make order to master
 
-                                    print(self.now(), "[ TH", self.seq, "] [dict_from_main] Full Sell Auto : ", item_code)
+                                    # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Full Sell Auto : ", item_code)
 
         ################## judgement ###################
     def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :

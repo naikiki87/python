@@ -186,18 +186,12 @@ class Kiwoom(QMainWindow, form_class):
         if item_code == self.check_jan[slot][0] :
             jan_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선잔량").replace('+', '').replace('-', '').strip()
             if int(self.check_jan[slot][1]) <= int(jan_sell) :
-                print(self.now(), "[MAIN] [result_get_hoga] jan amount ENOUGH : ", jan_sell)
+                print(self.now(), "[MAIN] [result_get_hoga] Jan ENOUGH : ", jan_sell)
                 self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
             else :
-                print(self.now(), "[MAIN] [result_get_hoga] jan amount NOT ENOUGH : ", jan_sell)
+                print(self.now(), "[MAIN] [result_get_hoga] Jan NOT ENOUGH : ", jan_sell)
 
                 self.pause_worker(slot, item_code)
-
-                # che_dict = {}
-                # che_dict['res'] = 0
-                # che_dict['th_num'] = slot
-                # che_dict['item_code'] = item_code
-                # self.che_dict.emit(che_dict)            ## worker에 통지 및 데이터 삭제
 
                 if self.check_jan[slot][3] == 9 :       ## item find를 통해 신규 find인 경우
                     self.item_slot[slot] = 0            ## slot 해제
@@ -427,6 +421,7 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "체결구분", 0)
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10075", 0, "0101")
+
     def res_check_jumun(self, rqname, trcode, recordname, item_code, item_slot) :
         slot = int(item_slot)
 
@@ -473,12 +468,6 @@ class Kiwoom(QMainWindow, form_class):
 
                 self.pause_worker(slot, item_code)
 
-                # che_dict = {}
-                # che_dict['th_num'] = slot
-                # che_dict['item_code'] = item_code
-                # che_dict['res'] = 0
-                # self.che_dict.emit(che_dict)
-
                 if self.check_jumun[slot][3] == 9 :                     ## item find를 통해 buy 하는 경우
                     self.item_finder_req = 0
                     self.item_slot[slot] = 0                            ## slot 해제
@@ -497,8 +486,6 @@ class Kiwoom(QMainWindow, form_class):
             print(self.now(), "[MAIN] [ORDER_SELL] : ", item_code, qty, price)
     ## 매수 ##
     def func_ORDER_BUY(self) :
-        timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "Clicked : BUY")
         try:
             item_code = self.code_edit.text()
 
@@ -506,7 +493,8 @@ class Kiwoom(QMainWindow, form_class):
             th_num = self.which_thread(item_code)[1]
 
             qty = int(self.buy_sell_count.text())
-            price = int(self.wid_sell_price.text())
+            # price = int(self.wid_sell_price.text())
+            price = int(self.wid_buy_price.text())
 
             print(self.now(), "[MAIN] [func_ORDER_BUY] : ", item_code, qty, price, th_num)
 
@@ -557,7 +545,8 @@ class Kiwoom(QMainWindow, form_class):
             th_num = self.which_thread(item_code)[1]
             own_count = int(self.table_summary.item(th_num, 2).text())
             qty = int(self.buy_sell_count.text())
-            price = self.wid_buy_price.text()
+            # price = self.wid_buy_price.text()
+            price = self.wid_sell_price.text()
 
             temp = {}
             temp['autoTrade'] = 0
@@ -1225,13 +1214,14 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetRealRemove(QString, QString)", screenNo, item_code)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        print(self.now(), "[MAIN] [receive_tr_data] : ", rqname)
+        # print(self.now(), "[MAIN] [receive_tr_data] : ", rqname)
+        # print("[MAIN] [receive_tr_data] : ", rqname)
         reset_str = "RESET_"
 
-        if "order_buy" in rqname :
-            item_code = rqname[0:6]
-            item_slot = rqname[6:7]
-            self.func_check_jumun(item_code, item_slot)
+        # if "order_buy" in rqname :
+        #     item_code = rqname[0:6]
+        #     item_slot = rqname[6:7]
+        #     self.func_check_jumun(item_code, item_slot)
 
         if reset_str in rqname:
             item_slot = int(rqname[6:7])
@@ -1265,7 +1255,6 @@ class Kiwoom(QMainWindow, form_class):
         if rqname == "GET_History":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
-        # print(now, "[MAIN]", "receive real : ", code)
         # print("[MAIN] receive real : ", code)
         if self.possible_time == 1 and self.send_data == 1 :
             th_num = self.which_thread(code)[1]

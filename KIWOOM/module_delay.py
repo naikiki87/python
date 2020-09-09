@@ -10,6 +10,5 @@ class Delay(QThread):
     resume = pyqtSignal(int)
 
     def run(self):
-        print("delay triggered")
         QtTest.QTest.qWait(30000)
         self.resume.emit(1)
