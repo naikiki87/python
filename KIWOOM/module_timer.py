@@ -186,12 +186,12 @@ class Timer(QThread):
             self.candidate_seq = self.candidate_seq + 1
             self.investigate_items()
 
-        elif price_sell < UNIT_PRICE_LOW_LIM
+        elif price_sell < UNIT_PRICE_LOW_LIM :
             print(self.now(), "[TIMER] [func_GET_hoga] : 단가 너무 쌈")
             self.candidate_seq = self.candidate_seq + 1
             self.investigate_items()
         
-        elif price_sell >= UNIT_PRICE_LOW_LIM and price_sell <= UNIT_PRICE_HI_LIM
+        elif price_sell >= UNIT_PRICE_LOW_LIM and price_sell <= UNIT_PRICE_HI_LIM :
             qty = math.floor(AUTO_BUY_PRICE_LIM / price_sell)
 
             temp = {}

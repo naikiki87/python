@@ -12,6 +12,7 @@ from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore
 from collections import deque
 import config
+import module_delay
 
 ACCOUNT = config.ACCOUNT
 PASSWORD = config.PASSWORD
@@ -41,6 +42,10 @@ class Worker(QThread):
         self.prev_price = 0
         self.first_rcv = 1
 
+        self.delay = module_delay.Delay()
+        self.delay.resume.connect(self.resume_thread)
+        self.delay_item = ''
+
     def event_connect(self, err_code):
         if err_code == 0:
             self.connected = 1
@@ -52,6 +57,11 @@ class Worker(QThread):
         self.cnt = 0
         print(self.now(), "[ TH", self.seq, "] [run] Thread Connected")
         self.th_con.emit(1)
+    
+    # def pause(self) :
+    #     self.event.clear()
+
+    # def resume(self)
     
     @pyqtSlot(dict)
     def che_result(self, data) :
@@ -149,35 +159,34 @@ class Worker(QThread):
             #         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
             #             self.lock = 0           ## unlock
 
-    def not_ordered(self, item_code) :
-        print("thread temp test : ", item_code)
+    @pyqtSlot(int)
+    def resume_thread(self, data) :
+        item_code = self.delay_item
         orderType = self.func_GET_db_item(item_code, 3)
 
         if orderType != "none" :                ## after get data from db
             print("ordertype : ", orderType)
-            QtTest.QTest.qWait(10000)
             if orderType == 1 :                                             ## add water
                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                     self.indicate_release()
                     self.lock = 0                           ## unlock
 
             elif orderType == 5 :                           # 신규 buy인 경우 db삭제 및 lock 해제
-                # print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                 self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
                 self.lock = 0                               ## unlock
 
             elif orderType == 9 :                           # 신규 item finding buy인 경우 db삭제 및 lock 해제
-                # print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                 self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
                 self.lock = 0                               ## unlock
 
             else :                                          # 다른 sit인 경우 db order 정보 0으로 세팅 및 lock 해제
-                # print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                     self.lock = 0                           ## unlock
-            
 
-
+    def pause_worker(self, item_code) :
+        self.indicate_paused()
+        self.delay_item = item_code
+        self.delay.start()
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
@@ -621,6 +630,11 @@ class Worker(QThread):
 
     def indicate_ordered(self) :
         self.rp_dict['ordered'] = 1
+        self.rp_dict['seq'] = self.seq
+        self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
+
+    def indicate_paused(self) :
+        self.rp_dict['ordered'] = 3
         self.rp_dict['seq'] = self.seq
         self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
 

@@ -103,10 +103,12 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(dict)
     def rp_dict(self, data):
         ordered = data['ordered']
-        if ordered == 1 :
+        if ordered == 1 :                       ## indicate ordered
             self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(0,255,0))
-        elif ordered == 2 :
+        elif ordered == 2 :                     ## indicate released
             self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
+        elif ordered == 3 :                     ## indicate paused
+            self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,0))
         elif ordered == 0 :
             self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
         
@@ -138,7 +140,7 @@ class Kiwoom(QMainWindow, form_class):
 
     def btn_test(self) :
         print(self.now(), "[MAIN]", "btn test")
-        self.worker0.temptest("007460")
+        self.worker0.pause_worker("007460")
 
     @pyqtSlot(dict)
     def rq_order(self, data) :
@@ -166,29 +168,30 @@ class Kiwoom(QMainWindow, form_class):
         
         elif buy_or_sell == 1 :  ## SELL
             self.ORDER_SELL(item_code, qty, price)
+    
+    def pause_worker(self, slot, item_code) :
+        if slot == 0 :
+            self.worker0.pause_worker(item_code)
+        elif slot == 1 :
+            self.worker1.pause_worker(item_code)
+        elif slot == 2 :
+            self.worker2.pause_worker(item_code)
+        elif slot == 3 :
+            self.worker3.pause_worker(item_code)
+        elif slot == 4 :
+            self.worker4.pause_worker(item_code)
 
     def result_get_hoga(self, rqname, trcode, recordname, item_code, item_slot) :
         slot = int(item_slot)
         if item_code == self.check_jan[slot][0] :
             jan_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선잔량").replace('+', '').replace('-', '').strip()
-            print("A : ", int(self.check_jan[slot][1]))
-            print("B : ", int(jan_sell))
             if int(self.check_jan[slot][1]) <= int(jan_sell) :
                 print(self.now(), "[MAIN] [result_get_hoga] jan amount ENOUGH : ", jan_sell)
                 self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
             else :
                 print(self.now(), "[MAIN] [result_get_hoga] jan amount NOT ENOUGH : ", jan_sell)
 
-                if slot == 0 :
-                    self.worker0.not_ordered(item_code)
-                elif slot == 1 :
-                    self.worker1.not_ordered(item_code)
-                elif slot == 2 :
-                    self.worker2.not_ordered(item_code)
-                elif slot == 3 :
-                    self.worker3.not_ordered(item_code)
-                elif slot == 4 :
-                    self.worker4.not_ordered(item_code)
+                self.pause_worker(slot, item_code)
 
                 # che_dict = {}
                 # che_dict['res'] = 0
@@ -468,16 +471,7 @@ class Kiwoom(QMainWindow, form_class):
                 self.check_jumun_times = 0                              ## re init
                 print(self.now(), "[MAIN]", "res_check_jumun : ORDER RCV NOT PROPERTY")
 
-                if slot == 0 :
-                    self.worker0.not_ordered(item_code)
-                elif slot == 1 :
-                    self.worker1.not_ordered(item_code)
-                elif slot == 2 :
-                    self.worker2.not_ordered(item_code)
-                elif slot == 3 :
-                    self.worker3.not_ordered(item_code)
-                elif slot == 4 :
-                    self.worker4.not_ordered(item_code)
+                self.pause_worker(slot, item_code)
 
                 # che_dict = {}
                 # che_dict['th_num'] = slot
