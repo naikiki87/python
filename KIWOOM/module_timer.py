@@ -78,7 +78,7 @@ class Timer(QThread):
             if self.waiting_check == 1 :
                 self.waiting_time = self.waiting_time + 1
                 if self.waiting_time % 2 == 0 :
-                    print(self.now(), "[TIMER] [run] item finding waiting : ", self.waiting_time)
+                    print("[TIMER] [run] item finding waiting : ", self.waiting_time)
 
             elif self.waiting_check == 2 :
                 self.waiting_time = 0       ## waiting time initialize
@@ -102,9 +102,8 @@ class Timer(QThread):
 
     @pyqtSlot(int)
     def finder_alive_checking(self, data) :
-        print(self.now(), "[TIMER] [finder_alive_checking] START")
-
         if data == 1 :      ## item finding is alive
+            print(self.now(), "[TIMER] [finder_alive_checking] START")
             self.waiting_check = 1      ## waiting check start
             self.waiting_time = 0
         
@@ -151,6 +150,8 @@ class Timer(QThread):
             self.item_checking = 0
         else :
             self.candidate = self.candidate_queue[self.candidate_seq]
+
+            print("cur items : ", self.cur_items)
 
             if self.candidate in self.cur_items :
                 self.candidate_seq = self.candidate_seq + 1

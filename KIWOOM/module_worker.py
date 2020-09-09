@@ -165,7 +165,6 @@ class Worker(QThread):
         orderType = self.func_GET_db_item(item_code, 3)
 
         if orderType != "none" :                ## after get data from db
-            print("ordertype : ", orderType)
             if orderType == 1 :                                             ## add water
                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                     self.indicate_release()
