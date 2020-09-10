@@ -165,13 +165,12 @@ class Finder(QThread):
         url = "http://polling.finance.naver.com/api/realtime.nhn?query=SERVICE_ITEM:{}|SERVICE_RECENT_ITEM:{}&_callback=".format(item_code, item_code)
         source = requests.get(url)
         data = source.json()
-        name = data['result']['areas'][0]['datas'][0]['nm']
+        # name = data['result']['areas'][0]['datas'][0]['nm']
         value = data['result']['areas'][0]['datas'][0]['nv']
 
         return value
 
     def get_market_sum(self, item_code):
-        get_last_3 = 1
         cnt_0_digit = 0
 
         url = "https://finance.naver.com/item/main.nhn?code={}".format(item_code)

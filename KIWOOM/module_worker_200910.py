@@ -618,25 +618,6 @@ class Worker(QThread):
         self.rp_dict['ordered'] = 2
         self.rp_dict['seq'] = self.seq
         self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
-    def check_deposit_1(self) :
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "check_deposit", "opw00001", 0, "0101")
-    def check_deposit_2(self, rqname, trcode, recordname) :
-        deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
-        d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
-        d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
-        # orderable_money = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "주문가능금액")
-
-        # str('{0:,}'.format())
-        self.wid_show_deposit.setText(str('{0:,}'.format(int(deposit))))
-        self.wid_show_deposit_d1.setText(str('{0:,}'.format(int(d_1))))
-        self.wid_show_deposit_d2.setText(str(int(d_2)))
-        # self.wid_show_orderable_money.setText(str('{0:,}'.format(int(orderable_money))))
-
-        self.set_deposit = 1
-    def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        if rqname == "check_deposit":
-            self.check_deposit_2(rqname, trcode, recordname)
+    
     def now(self) :
         return datetime.datetime.now()

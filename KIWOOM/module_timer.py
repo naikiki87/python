@@ -17,6 +17,7 @@ from PyQt5.QAxContainer import *
 UNIT_PRICE_HI_LIM = config.UNIT_PRICE_HI_LIM
 UNIT_PRICE_LOW_LIM = config.UNIT_PRICE_LOW_LIM
 AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
+SLOT_EMPTY = 0
 
 class Timer(QThread):
     cur_time = pyqtSignal(dict)
@@ -54,8 +55,6 @@ class Timer(QThread):
             am930 = now.replace(hour=9, minute=30, second=0)
             pm240 = now.replace(hour=14, minute=40, second=0)
 
-            item_finding = now.replace(hour=13, minute=53, second=30)
-
             c_hour = now.strftime('%H')
             c_min = now.strftime('%M')
             c_sec = now.strftime('%S')
@@ -90,6 +89,7 @@ class Timer(QThread):
 
             if self.waiting_time == 100 :        ## item finding 중 100 이상 응답이 없을 경우
                 print(self.now(), "[TIMER] [run] item finder alive checking END - exceed 100")
+                self.waiting_time = 0
                 self.waiting_check = 0
                 self.finder.terminate()         ## 쓰레드 종료
                 self.item_checking = 0          ## item checking 해제
@@ -97,6 +97,7 @@ class Timer(QThread):
                 self.finder = module_finder.Finder()        ## 신규 쓰레드 생성
                 self.finder.alive.connect(self.finder_alive_checking)
                 self.finder.candidate.connect(self.check_candidate)
+                # self.finder.start()
 
             time.sleep(1)
 
@@ -112,7 +113,6 @@ class Timer(QThread):
 
     @pyqtSlot(list)
     def res_check_slot(self, data) :
-        
         self.cur_items = data
         empty = 0
 
@@ -122,7 +122,8 @@ class Timer(QThread):
 
         print(self.now(), "[TIMER] [res_check_slot] : ", data, "-> empty : ", empty)
 
-        if empty != 0 :
+        # if empty != 0 :
+        if empty > SLOT_EMPTY :
             self.item_checking = 1
             self.finder.start()
     
@@ -135,8 +136,6 @@ class Timer(QThread):
             self.item_checking = 0
         
         elif empty == 0 :                                   ## 적정 item이 있는 경우
-            item_code = data['item_code']
-            
             self.candidate_queue = []                       ## queue initialize
             self.candidate_queue = data['item_code']        ## fill candidates in queue
             self.candidate_seq = 0                          ## first candidate
@@ -164,20 +163,20 @@ class Timer(QThread):
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print(self.now(), "[TIMER] [receive_tr_data] : ", rqname)
 
-        if rqname == "GET_ItemInfo":
-            self.func_GET_ItemInfo(rqname, trcode, recordname)
+        # if rqname == "GET_ItemInfo":
+        #     self.func_GET_ItemInfo(rqname, trcode, recordname)
         if rqname == "GET_hoga":
             self.func_GET_hoga(rqname, trcode, recordname)
-    def func_GET_ItemInfo(self, rqname, trcode, recordname) :
-        item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
-        name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
-        volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
-        percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
-        current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
-        current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가").replace('+', '').replace('-', '').strip()
+    # def func_GET_ItemInfo(self, rqname, trcode, recordname) :
+    #     item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
+    #     name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
+    #     volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
+    #     percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
+    #     current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
+    #     current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가").replace('+', '').replace('-', '').strip()
 
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
+    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
+    #     self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
     def func_GET_hoga(self, rqname, trcode, recordname) :
         price_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
         price_sell = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', ''))

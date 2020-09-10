@@ -50,7 +50,8 @@ class Kiwoom(QMainWindow, form_class):
         ## flag setting
         self.today = self.func_GET_Today()
         self.item_finder_req = 0
-        self.check_jumun_times = 0
+        self.check_jumun_times = [0,0,0,0,0]
+        # self.check_jumun_times = 0
         self.check_jan = []
         for i in range(5) :
             self.check_jan.append([0,0,0,0])
@@ -103,44 +104,46 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(dict)
     def rp_dict(self, data):
         ordered = data['ordered']
-        if ordered == 1 :                       ## indicate ordered
-            self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(0,255,0))
-        elif ordered == 2 :                     ## indicate released
-            self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
-        elif ordered == 3 :                     ## indicate paused
-            self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,0))
-        elif ordered == 0 :
-            self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
-        
-            self.func_SET_TableData(1, data['seq'], 4, str(data['cur_price']), 0)
-            self.func_SET_TableData(1, data['seq'], 5, str(data['price_sell']), 0)
-            self.func_SET_TableData(1, data['seq'], 6, str(data['price_buy']), 0)
-            self.func_SET_TableData(1, data['seq'], 7, str(data['total_purchase']), 0)
-            self.func_SET_TableData(1, data['seq'], 8, str(data['total_evaluation']), 0)
-            self.func_SET_TableData(1, data['seq'], 9, str(data['temp_total']), 0)
-            self.func_SET_TableData(1, data['seq'], 10, str(data['total_fee']), 0)
-            self.func_SET_TableData(1, data['seq'], 11, str(data['total_sum']), 0)
-            if data['percent'] > 0 :
-                self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 1)
-            elif data['percent'] < 0 :
-                self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 2)
-            elif data['percent'] == 0 :
-                self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 0)
-            self.func_SET_TableData(1, data['seq'], 13, str(data['step']), 0)
-            self.func_SET_TableData(1, data['seq'], 14, str(data['high']), 0)
-            self.func_SET_TableData(1, data['seq'], 15, str(data['chegang']), 0)
+        try :
+            if ordered == 1 :                       ## indicate ordered
+                self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(0,255,0))
+            elif ordered == 2 :                     ## indicate released
+                self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
+            elif ordered == 3 :                     ## indicate paused
+                self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,0))
+            elif ordered == 0 :
+                self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
+            
+                self.func_SET_TableData(1, data['seq'], 4, str(data['cur_price']), 0)
+                self.func_SET_TableData(1, data['seq'], 5, str(data['price_sell']), 0)
+                self.func_SET_TableData(1, data['seq'], 6, str(data['price_buy']), 0)
+                self.func_SET_TableData(1, data['seq'], 7, str(data['total_purchase']), 0)
+                self.func_SET_TableData(1, data['seq'], 8, str(data['total_evaluation']), 0)
+                self.func_SET_TableData(1, data['seq'], 9, str(data['temp_total']), 0)
+                self.func_SET_TableData(1, data['seq'], 10, str(data['total_fee']), 0)
+                self.func_SET_TableData(1, data['seq'], 11, str(data['total_sum']), 0)
+                if data['percent'] > 0 :
+                    self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 1)
+                elif data['percent'] < 0 :
+                    self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 2)
+                elif data['percent'] == 0 :
+                    self.func_SET_TableData(1, data['seq'], 12, str(data['percent']), 0)
+                self.func_SET_TableData(1, data['seq'], 13, str(data['step']), 0)
+                self.func_SET_TableData(1, data['seq'], 14, str(data['high']), 0)
+                self.func_SET_TableData(1, data['seq'], 15, str(data['chegang']), 0)
+            
+        except :
+            pass
 
     @pyqtSlot(int)
     def th_connected(self, data) :
-        print(self.now(), "[MAIN] [th_connected] : ", data)
         self.list_th_connected[self.th_seq] = data
-
-    def now(self) :
-        return datetime.datetime.now()
+        if 0 not in self.list_th_connected :
+            print(self.now(), "[MAIN] [th_connected] Thread Connect Complete")
 
     def btn_test(self) :
         print(self.now(), "[MAIN]", "btn test")
-        self.worker0.pause_worker("007460")
+        self.table_summary.item(3, 0).setBackground(QtGui.QColor(255,255,0))
 
     @pyqtSlot(dict)
     def rq_order(self, data) :
@@ -161,10 +164,12 @@ class Kiwoom(QMainWindow, form_class):
             self.check_jan[slot][3] = order_type
 
             if self.check_jan[slot][0] != 0 and self.check_jan[slot][1] != 0 and self.check_jan[slot][2] != 0 and self.check_jan[slot][3] != 0:
-                rq_name = str(item_code) + str(slot) + "jan_check"
+                # self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
+                self.ORDER_BUY(item_code, qty, price, order_type)
 
-                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
-                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rq_name, "opt10004", 0, "0101")
+                # rq_name = str(item_code) + str(slot) + "jan_check"
+                # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+                # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rq_name, "opt10004", 0, "0101")
         
         elif buy_or_sell == 1 :  ## SELL
             self.ORDER_SELL(item_code, qty, price)
@@ -445,6 +450,8 @@ class Kiwoom(QMainWindow, form_class):
         # print("o time : ", o_time, o_time_m1, o_time_p1)
         res = 0
 
+        # print("Order : ", item_code, qty, price, o_time)
+
         for i in range(data_cnt) :
             jumun_item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목코드").strip()
             jumun_qty = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문수량").replace('+', '').replace('-', '').strip()
@@ -452,19 +459,21 @@ class Kiwoom(QMainWindow, form_class):
             jumun_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "시간").strip()
             jumun_time = int(int(jumun_time)/100)
 
+            # print(i, jumun_item_code, jumun_qty, jumun_price, jumun_time)
+
             if item_code == jumun_item_code :
                 if (int(jumun_qty) == int(qty)) and (int(jumun_price) == int(price)) :      ## 주문 수량과 주문 가격이 동일한 놈들 중
                     if jumun_time == o_time or jumun_time == o_time_p1 or jumun_time == o_time_m1 :         ## 주문 시간을 비교해서 같은 놈을 찾음
                         res = 1
 
         if res == 1 :                                                   ## 주문내역이 있는 경우
-            print(self.now(), "[MAIN]", "res_check_jumun : ORDER RCV PROPERLY")
+            print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV PROPERLY")
             ## do nothing
 
         elif res == 0 :                                                 ## 주문내역이 없는 경우
-            if self.check_jumun_times == 3 :                            ## jumun receive 여부 3회까지 확인
-                self.check_jumun_times = 0                              ## re init
-                print(self.now(), "[MAIN]", "res_check_jumun : ORDER RCV NOT PROPERTY")
+            if self.check_jumun_times[slot] == 5 :                            ## jumun receive 여부 3회까지 확인
+                self.check_jumun_times[slot] = 0                              ## re init
+                print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV NOT PROPERTY : END")
 
                 self.pause_worker(slot, item_code)
 
@@ -474,8 +483,9 @@ class Kiwoom(QMainWindow, form_class):
                     self.reply_buy.emit(1)                              ## 주문이 안들어 갔으므로 item finder 재 기동
             
             else :
-                self.check_jumun_times = self.check_jumun_times + 1
-                QtTest.QTest.qWait(2000)                                 ## 500 ms delay
+                print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV NOT PROPERTY : ", self.check_jumun_times[slot])
+                self.check_jumun_times[slot] = self.check_jumun_times[slot] + 1
+                QtTest.QTest.qWait(500)                                 ## 100 ms delay
                 self.func_check_jumun(item_code, slot)                  ## re-check jumun
         
     def ORDER_SELL(self, item_code, qty, price) :
@@ -968,10 +978,10 @@ class Kiwoom(QMainWindow, form_class):
         item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
         name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
         volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
-        numStocks = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "상장주식")
-        prices = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "시가")
+        # numStocks = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "상장주식")
+        # prices = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "시가")
         percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
-        per = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "PER")
+        # per = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "PER")
         current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
         current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가").replace('+', '').replace('-', '').strip()
 
@@ -1214,65 +1224,54 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetRealRemove(QString, QString)", screenNo, item_code)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        # print(self.now(), "[MAIN] [receive_tr_data] : ", rqname)
         # print("[MAIN] [receive_tr_data] : ", rqname)
-        reset_str = "RESET_"
 
-        # if "order_buy" in rqname :
-        #     item_code = rqname[0:6]
-        #     item_slot = rqname[6:7]
-        #     self.func_check_jumun(item_code, item_slot)
-
-        if reset_str in rqname:
+        if "RESET_" in rqname:
             item_slot = int(rqname[6:7])
             item_code = rqname[8:]
             self.func_RESET_Items(rqname, trcode, recordname, item_slot, item_code)
         
-        if "jan_check" in rqname :
+        elif "jan_check" in rqname :
             item_code = rqname[0:6]
             item_slot = rqname[6:7]
             self.result_get_hoga(rqname, trcode, recordname, item_code, item_slot)
 
-        if "check_jumun" in rqname :
+        elif "check_jumun" in rqname :
             item_code = rqname[0:6]
             item_slot = rqname[6:7]
             self.res_check_jumun(rqname, trcode, recordname, item_code, item_slot)
         
-        if rqname == "SET_hoga":
+        elif rqname == "SET_hoga":
             self.SET_hoga(rqname, trcode, recordname)
-        if rqname == "GET_DailyProfit":
+        elif rqname == "GET_DailyProfit":
             self.func_SHOW_DailyProfit(rqname, trcode, recordname)
-        if rqname == "SETTING":
+        elif rqname == "SETTING":
             self.func_SET_Items(rqname, trcode, recordname)
-        if rqname == "GET_Deposit":
+        elif rqname == "GET_Deposit":
             self.func_SHOW_Deposit(rqname, trcode, recordname)
-        if rqname == "GET_ItemInfo":
+        elif rqname == "GET_ItemInfo":
             self.func_SHOW_ItemInfo(rqname, trcode, recordname)
-        if rqname == "GET_Ordering":
+        elif rqname == "GET_Ordering":
             self.func_SHOW_Ordering(rqname, trcode, recordname)
-        if rqname == "opw00018_req":
+        elif rqname == "opw00018_req":
             self.func_SHOW_CheckBalance(rqname, trcode, recordname)
-        if rqname == "GET_History":
+        elif rqname == "GET_History":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
         # print("[MAIN] receive real : ", code)
         if self.possible_time == 1 and self.send_data == 1 :
             th_num = self.which_thread(code)[1]
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
-            # jan = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 61).replace('+', '').replace('-', '').strip()
             if cur_price != '' :
                 try :
                     price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()       ## 매도 최우선가
                     price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()        ## 매수 최우선가
-
                     chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
-                    
                     item_name = self.table_summary.item(th_num, 1).text()
                     own_count = self.table_summary.item(th_num, 2).text()
                     unit_price = self.table_summary.item(th_num, 3).text()
 
                     temp = {}
-                    
                     temp['item_code'] = code
                     temp['item_name'] = item_name
                     temp['own_count'] = int(own_count)
@@ -1383,7 +1382,8 @@ class Kiwoom(QMainWindow, form_class):
                     break
         
         return th_num
-
+    def now(self) :
+        return datetime.datetime.now()
 if __name__=="__main__":
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create('Fusion')) # --> 없으면, 헤더색 변경 안됨.
