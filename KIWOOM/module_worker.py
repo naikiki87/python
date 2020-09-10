@@ -169,41 +169,41 @@ class Worker(QThread):
         self.indicate_paused()
         self.delay.start()
 
-    def func_test(self, item_code, qty, price, ordertype) :
-        print("func test")
-        self.ordering_item_code = item_code
-        self.ordering_qty = qty
-        self.ordering_price = price
-        self.ordering_ordertype = ordertype
+    # def func_test(self, item_code, qty, price, ordertype) :
+    #     print("func test")
+    #     self.ordering_item_code = item_code
+    #     self.ordering_qty = qty
+    #     self.ordering_price = price
+    #     self.ordering_ordertype = ordertype
 
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "check_deposit", "opw00001", 0, "0101")
+    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
+    #     self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "check_deposit", "opw00001", 0, "0101")
 
-    def check_deposit_2(self, rqname, trcode, recordname) :
-        print("check_deposit_2")
-        deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
-        d1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
-        d2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
+    # def check_deposit_2(self, rqname, trcode, recordname) :
+    #     print("check_deposit_2")
+    #     deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
+    #     d1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
+    #     d2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
 
-        purchase_price = self.ordering_price * self.ordering_qty
+    #     purchase_price = self.ordering_price * self.ordering_qty
 
-        print("pu price : ", purchase_price)
+    #     print("pu price : ", purchase_price)
 
-        if d2 >= purchase_price :
-            print("d2 over")
-            if self.ordering_ordertype == 5 :
-                print("ordertype 5")
-                self.func_INSERT_db_item(item_code, 0, 0, 0, 0)             ## 신규 item db insert
-                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:          ## ordered -> 1
-                    if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
-                        order = {}
-                        order['type'] = 0       ## buy
-                        order['item_code'] = item_code
-                        order['qty'] = qty
-                        order['price'] = price
-                        order['order_type'] = orderType
-                        self.rq_order.emit(order)
+    #     if d2 >= purchase_price :
+    #         print("d2 over")
+    #         if self.ordering_ordertype == 5 :
+    #             print("ordertype 5")
+    #             self.func_INSERT_db_item(item_code, 0, 0, 0, 0)             ## 신규 item db insert
+    #             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:          ## ordered -> 1
+    #                 if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
+    #                     order = {}
+    #                     order['type'] = 0       ## buy
+    #                     order['item_code'] = item_code
+    #                     order['qty'] = qty
+    #                     order['price'] = price
+    #                     order['order_type'] = orderType
+    #                     self.rq_order.emit(order)
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
@@ -218,19 +218,19 @@ class Worker(QThread):
                     qty = data['qty']
                     price = data['price']
 
-                    self.func_test(item_code, qty, price, orderType)
+                    # self.func_test(item_code, qty, price, orderType)
 
-                    # self.func_INSERT_db_item(item_code, 0, 0, 0, 0)             ## 신규 item db insert
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)             ## 신규 item db insert
 
-                    # if self.func_UPDATE_db_item(item_code, 2, 1) == 1:          ## ordered -> 1
-                    #     if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
-                    #         order = {}
-                    #         order['type'] = 0       ## buy
-                    #         order['item_code'] = item_code
-                    #         order['qty'] = qty
-                    #         order['price'] = price
-                    #         order['order_type'] = orderType
-                    #         self.rq_order.emit(order)
+                    if self.func_UPDATE_db_item(item_code, 2, 1) == 1:          ## ordered -> 1
+                        if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
+                            order = {}
+                            order['type'] = 0       ## buy
+                            order['item_code'] = item_code
+                            order['qty'] = qty
+                            order['price'] = price
+                            order['order_type'] = orderType
+                            self.rq_order.emit(order)
 
 
             elif orderType == 9 :         ## 신규 item item finding 매수
