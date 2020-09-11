@@ -48,6 +48,8 @@ class Kiwoom(QMainWindow, form_class):
 
     def init_ENV(self) :
         ## flag setting
+        self.tempi = 0
+        self.win_check_deposit = 1000
         self.today = self.func_GET_Today()
         self.item_finder_req = 0
         self.check_jumun_times = [0,0,0,0,0]
@@ -141,9 +143,35 @@ class Kiwoom(QMainWindow, form_class):
         if 0 not in self.list_th_connected :
             print(self.now(), "[MAIN] [th_connected] Thread Connect Complete")
 
-    def btn_test(self) :
+    def btn_test(self, item_code, item_slot) :
         print(self.now(), "[MAIN]", "btn test")
-        self.table_summary.item(3, 0).setBackground(QtGui.QColor(255,255,0))
+
+    def check_deposit_2(self, rqname, trcode, recordname, item_slot, item_code) :
+        slot = int(item_slot)
+        d1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
+        d2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
+
+        qty = self.check_jan[slot][1]
+        price = self.check_jan[slot][2]
+
+        # print("check deposit 2 : ", slot, item_code)
+        # print("qty : ", qty)
+        # print("price : ", price)
+        # print("price : ", int(qty) * int(price))
+        # print("d2 : ", d2)
+
+        if (int(price) * int(qty)) <= int(d2) :
+            self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
+            # print("can buy")
+        
+        else :
+            # print("can't buy")
+            self.pause_worker(slot, item_code)
+
+            if self.check_jan[slot][3] == 9 :                     ## item find를 통해 buy 하는 경우
+                self.item_finder_req = 0                            ## item finder req 해제
+                self.item_slot[slot] = 0                            ## slot 해제
+                self.reply_buy.emit(1)                              ## 주문이 안들어 갔으므로 item finder 재 기동
 
     @pyqtSlot(dict)
     def rq_order(self, data) :
@@ -164,8 +192,20 @@ class Kiwoom(QMainWindow, form_class):
             self.check_jan[slot][3] = order_type
 
             if self.check_jan[slot][0] != 0 and self.check_jan[slot][1] != 0 and self.check_jan[slot][2] != 0 and self.check_jan[slot][3] != 0:
+                # self.btn_test(item_code, slot)
+
+                self.tempi = self.tempi + 1
+                rqname = str(item_code) + str(slot) + "check_deposit"
+                
+                self.win_check_deposit = self.win_check_deposit + 1
+
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
+                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00001", 0, str(self.win_check_deposit))
+
+
                 # self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
-                self.ORDER_BUY(item_code, qty, price, order_type)
+                # self.ORDER_BUY(item_code, qty, price, order_type)
 
                 # rq_name = str(item_code) + str(slot) + "jan_check"
                 # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
@@ -1224,12 +1264,18 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetRealRemove(QString, QString)", screenNo, item_code)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
-        # print("[MAIN] [receive_tr_data] : ", rqname)
+        print("[MAIN] [receive_tr_data] : ", rqname)
 
         if "RESET_" in rqname:
             item_slot = int(rqname[6:7])
             item_code = rqname[8:]
             self.func_RESET_Items(rqname, trcode, recordname, item_slot, item_code)
+
+        elif "check_deposit" in rqname :
+            item_code = rqname[0:6]
+            item_slot = rqname[6:7]
+            print("tr data : ", item_slot, item_code)
+            self.check_deposit_2(rqname, trcode, recordname, item_slot, item_code)
         
         elif "jan_check" in rqname :
             item_code = rqname[0:6]
