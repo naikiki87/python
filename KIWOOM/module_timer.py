@@ -51,7 +51,6 @@ class Timer(QThread):
             now = datetime.datetime.now()
             mkt_open = now.replace(hour=9, minute=0, second=0)
             mkt_close = now.replace(hour=15, minute=20, second=0)
-            # am10 = now.replace(hour=10, minute=00, second=0)
             am930 = now.replace(hour=9, minute=30, second=0)
             pm240 = now.replace(hour=14, minute=40, second=0)
 
@@ -65,6 +64,7 @@ class Timer(QThread):
             if now >= mkt_open and now < mkt_close :
                 temp_time['possible'] = 1
                 if now >= am930 and c_sec == "00" :
+                    print(self.now(), "[TIMER] [run] item finding : ", self.waiting_time)
                     self.refresh_status.emit(1)
 
                 if now >= am930 and now<=pm240 and c_sec == "00" and self.item_checking == 0 :
@@ -77,7 +77,7 @@ class Timer(QThread):
             if self.waiting_check == 1 :
                 self.waiting_time = self.waiting_time + 1
                 if self.waiting_time % 2 == 0 :
-                    print("[TIMER] [run] item finding waiting : ", self.waiting_time)
+                    print("[TIMER] [run] item finding : ", self.waiting_time)
 
             elif self.waiting_check == 2 :
                 self.waiting_time = 0       ## waiting time initialize
