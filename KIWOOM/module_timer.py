@@ -17,6 +17,7 @@ from PyQt5.QAxContainer import *
 UNIT_PRICE_HI_LIM = config.UNIT_PRICE_HI_LIM
 UNIT_PRICE_LOW_LIM = config.UNIT_PRICE_LOW_LIM
 AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
+ITEM_FINDER_PERCENT = config.ITEM_FINDER_PERCENT
 SLOT_EMPTY = 0
 
 class Timer(QThread):
@@ -157,26 +158,39 @@ class Timer(QThread):
                 self.investigate_items()
             else :
                 print(self.now(), "[TIMER] [investigate_items] checking item : ", self.candidate)
+
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
-                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
+                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_iteminfo", "opt10001", 0, "0102")
+
+                # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
+                # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
+
+    def res_iteminfo(self, rqname, trcode, recordname) :
+        item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
+        name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
+        percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
+
+        print("candidate item : ", item_code, name, percent)
+        percent = percent.strip()
+        per_data = float(percent[1:])
+
+        if percent[0] == '+' and per_data >= ITEM_FINDER_PERCENT :
+            print("item finder item 등 + 2.5 이상")
+            self.candidate_seq = self.candidate_seq + 1
+            self.investigate_items()
+        else :
+            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
+            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print(self.now(), "[TIMER] [receive_tr_data] : ", rqname)
 
-        # if rqname == "GET_ItemInfo":
-        #     self.func_GET_ItemInfo(rqname, trcode, recordname)
         if rqname == "GET_hoga":
             self.func_GET_hoga(rqname, trcode, recordname)
-    # def func_GET_ItemInfo(self, rqname, trcode, recordname) :
-    #     item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
-    #     name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
-    #     volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
-    #     percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
-    #     current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
-    #     current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가").replace('+', '').replace('-', '').strip()
 
-    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
-    #     self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
+        elif rqname == "GET_iteminfo":
+            self.res_iteminfo(rqname, trcode, recordname)
+
     def func_GET_hoga(self, rqname, trcode, recordname) :
         price_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
         price_sell = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', ''))
@@ -202,6 +216,7 @@ class Timer(QThread):
             print(self.now(), "[TIMER] [func_GET_hoga] : 단가 적당 / ", self.candidate, qty, price_sell)
 
             self.req_buy.emit(temp)
+            
     @pyqtSlot(int)
     def reply_buy(self, data) :
         if data == 1:                   ## data를 받은 경우

@@ -143,8 +143,31 @@ class Kiwoom(QMainWindow, form_class):
         if 0 not in self.list_th_connected :
             print(self.now(), "[MAIN] [th_connected] Thread Connect Complete")
 
-    def btn_test(self, item_code, item_slot) :
-        print(self.now(), "[MAIN]", "btn test")
+    def btn_test(self) :
+        print("[MAIN]", "btn test")
+
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", "005930")
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo2", "opt10001", 0, "0102")
+
+    def res_item_info2(self, rqname, trcode, recordname) :
+        item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
+        name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
+        volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
+        percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
+
+        print("item : ", item_code, name)
+        print("percent : ", percent, type(percent))
+        percent = percent.strip()
+        print("pp : ", percent[0])
+        per_data = float(percent[1:])
+
+        if percent[0] == '-' :
+            print("minus")
+            print(per_data)
+
+        else :
+            print("plus")
+            print(per_data)
 
     def check_deposit_2(self, rqname, trcode, recordname, item_slot, item_code) :
         slot = int(item_slot)
@@ -1286,6 +1309,9 @@ class Kiwoom(QMainWindow, form_class):
             item_code = rqname[0:6]
             item_slot = rqname[6:7]
             self.res_check_jumun(rqname, trcode, recordname, item_code, item_slot)
+
+        elif rqname == "GET_ItemInfo2":
+            self.res_item_info2(rqname, trcode, recordname)
         
         elif rqname == "SET_hoga":
             self.SET_hoga(rqname, trcode, recordname)
