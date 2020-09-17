@@ -163,7 +163,7 @@ class Worker(QThread):
 
     def pause_worker(self, item_code) :
         self.rp_dict = {}
-        self.delay = module_delay.Delay()
+        self.delay = module_delay.Delay(self.seq)
         self.delay.resume.connect(self.resume_thread)
         self.delay_item = item_code
         self.indicate_paused()

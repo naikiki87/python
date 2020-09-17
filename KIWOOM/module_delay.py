@@ -13,10 +13,15 @@ from bs4 import BeautifulSoup
 import module_finder
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
+
 class Delay(QThread):
     candidate = pyqtSignal(dict)
     resume = pyqtSignal(int)
 
+    def __init__(self, slot):
+        super().__init__()
+        self.slot = slot
+
     def run(self):
         QtTest.QTest.qWait(30000)
-        self.resume.emit(1)
+        self.resume.emit(self.slot)

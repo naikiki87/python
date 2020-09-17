@@ -145,30 +145,9 @@ class Kiwoom(QMainWindow, form_class):
 
     def btn_test(self) :
         print("[MAIN]", "btn test")
-
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", "005930")
         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo2", "opt10001", 0, "0102")
-
-    def res_item_info2(self, rqname, trcode, recordname) :
-        item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
-        name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
-        volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
-        percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
-
-        print("item : ", item_code, name)
-        print("percent : ", percent, type(percent))
-        percent = percent.strip()
-        print("pp : ", percent[0])
-        per_data = float(percent[1:])
-
-        if percent[0] == '-' :
-            print("minus")
-            print(per_data)
-
-        else :
-            print("plus")
-            print(per_data)
-
+    
     def check_deposit_2(self, rqname, trcode, recordname, item_slot, item_code) :
         slot = int(item_slot)
         d1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
@@ -238,6 +217,7 @@ class Kiwoom(QMainWindow, form_class):
             self.ORDER_SELL(item_code, qty, price)
     
     def pause_worker(self, slot, item_code) :
+        print("pause worker : ", slot, item_code)
         if slot == 0 :
             self.worker0.pause_worker(item_code)
         elif slot == 1 :
@@ -710,7 +690,7 @@ class Kiwoom(QMainWindow, form_class):
             self.func_GET_Ordering(self.today)                           ## 주문상황을 실시간으로 반영
 
             # 데이터가 여러번 표시되는 것이 아니라 다 받은 후 일괄로 처리되기 위함
-            if remained == '0':         # 체결시
+            if remained == '0':         # 전수체결시
                 item_code = item_code.replace('A', '').strip()
                 # print(now, "[MAIN]", "CHE RECEIVE : ", item_code)
 
@@ -1310,9 +1290,6 @@ class Kiwoom(QMainWindow, form_class):
             item_slot = rqname[6:7]
             self.res_check_jumun(rqname, trcode, recordname, item_code, item_slot)
 
-        elif rqname == "GET_ItemInfo2":
-            self.res_item_info2(rqname, trcode, recordname)
-        
         elif rqname == "SET_hoga":
             self.SET_hoga(rqname, trcode, recordname)
         elif rqname == "GET_DailyProfit":
