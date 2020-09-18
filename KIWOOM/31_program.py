@@ -398,9 +398,9 @@ class Kiwoom(QMainWindow, form_class):
             ## do nothing
 
         elif res == 0 :                                                 ## 주문내역이 없는 경우
-            if self.first_check_times[slot] == 3 :                            ## jumun receive 여부 3회까지 확인
+            if self.first_check_times[slot] == 2 :                            ## jumun receive 여부 3회까지 확인
+                print(self.now(), "[MAIN] [res_check_jumun] ORDER List XXXXXX : ", self.first_check_times[slot])
                 self.first_check_times[slot] = 0                              ## re init
-                print(self.now(), "[MAIN] [res_check_jumun] ORDER List XXXXXX")
 
                 temp = {}
                 temp['slot'] = slot
@@ -408,7 +408,6 @@ class Kiwoom(QMainWindow, form_class):
                 self.reply_first_check.emit(temp)
 
             else :
-                print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV NOT PROPERTY : ", self.first_check_times[slot])
                 self.first_check_times[slot] = self.first_check_times[slot] + 1
                 QtTest.QTest.qWait(500)                                 ## 100 ms delay
                 self.first_rcv_jumun_check_2(slot, item_code)           ## recheck
@@ -1355,7 +1354,6 @@ class Kiwoom(QMainWindow, form_class):
         elif "first_jumun_check" in rqname :
             item_code = rqname[0:6]
             item_slot = rqname[6:7]
-            print("tr : ", item_code, item_slot)
             self.res_first_check_jumun(rqname, trcode, recordname, item_code, item_slot)
 
         elif rqname == "SET_hoga":
