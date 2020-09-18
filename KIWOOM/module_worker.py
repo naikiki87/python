@@ -32,6 +32,7 @@ class Worker(QThread):
     trans_dict = pyqtSignal(dict)
     th_con = pyqtSignal(int)
     rq_order = pyqtSignal(dict)
+    first_jumun_check = pyqtSignal(dict)
 
     def __init__(self, seq):
         super().__init__()
@@ -41,7 +42,6 @@ class Worker(QThread):
         
         self.prev_price = 0
         self.first_rcv = 1
-
         
         self.delay_item = ''
 
@@ -49,6 +49,8 @@ class Worker(QThread):
         self.ordering_qty = 0
         self.ordering_price = 0
         self.ordering_ordertype = 0
+
+        self.check_jumun_times = 0
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -169,41 +171,14 @@ class Worker(QThread):
         self.indicate_paused()
         self.delay.start()
 
-    # def func_test(self, item_code, qty, price, ordertype) :
-    #     print("func test")
-    #     self.ordering_item_code = item_code
-    #     self.ordering_qty = qty
-    #     self.ordering_price = price
-    #     self.ordering_ordertype = ordertype
-
-    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-    #     self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "check_deposit", "opw00001", 0, "0101")
-
-    # def check_deposit_2(self, rqname, trcode, recordname) :
-    #     print("check_deposit_2")
-    #     deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
-    #     d1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
-    #     d2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
-
-    #     purchase_price = self.ordering_price * self.ordering_qty
-
-    #     print("pu price : ", purchase_price)
-
-    #     if d2 >= purchase_price :
-    #         print("d2 over")
-    #         if self.ordering_ordertype == 5 :
-    #             print("ordertype 5")
-    #             self.func_INSERT_db_item(item_code, 0, 0, 0, 0)             ## 신규 item db insert
-    #             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:          ## ordered -> 1
-    #                 if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
-    #                     order = {}
-    #                     order['type'] = 0       ## buy
-    #                     order['item_code'] = item_code
-    #                     order['qty'] = qty
-    #                     order['price'] = price
-    #                     order['order_type'] = orderType
-    #                     self.rq_order.emit(order)
+    @pyqtSlot(dict)
+    def reply_first_check(self, data) :
+        if data['slot'] == self.seq :
+            item_code = data['item_code']
+            self.rp_dict = {}
+            self.indicate_release()
+            if self.func_UPDATE_db_item(item_code, 2, 0) == 1:          ## ordered -> 0
+                self.lock = 0
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
@@ -317,42 +292,57 @@ class Worker(QThread):
                 # if ordered == 1 :       ## 프로그램이 시작했는데 현재 item이 order 중인 경우
                 if self.func_GET_db_item(item_code, 2) == 1 :           ## 프로그램이 시작했는데 현재 item이 order 중인 경우 
                     self.lock = 1
+                    # ## SHOW ##
+                    # own_count = data['own_count']
+                    # unit_price = data['unit_price']
+                    # cur_price = data['cur_price']
+                    # price_buy = data['price_buy']
+                    # price_sell = data['price_sell']
+                    # chegang = data['chegang']
 
-                    ## SHOW ##
-                    own_count = data['own_count']
-                    unit_price = data['unit_price']
-                    cur_price = data['cur_price']
-                    price_buy = data['price_buy']
-                    price_sell = data['price_sell']
-                    chegang = data['chegang']
-
-                    total_purchase = own_count * unit_price
-                    total_evaluation = own_count * price_buy    ## 매수 최우선가 기준으로 계산
-                    temp_total = total_evaluation - total_purchase
-                    fee_buy = FEE_BUY * total_purchase
-                    fee_sell = FEE_SELL * total_evaluation
-                    tax = TAX * total_evaluation
-                    total_fee = round((fee_buy + fee_sell + tax), 1)
-                    total_sum = total_evaluation - total_purchase - total_fee
-                    percent = round((total_sum / total_purchase) * 100, 1)
-                    step = self.func_GET_db_item(item_code, 1)
+                    # total_purchase = own_count * unit_price
+                    # total_evaluation = own_count * price_buy    ## 매수 최우선가 기준으로 계산
+                    # temp_total = total_evaluation - total_purchase
+                    # fee_buy = FEE_BUY * total_purchase
+                    # fee_sell = FEE_SELL * total_evaluation
+                    # tax = TAX * total_evaluation
+                    # total_fee = round((fee_buy + fee_sell + tax), 1)
+                    # total_sum = total_evaluation - total_purchase - total_fee
+                    # percent = round((total_sum / total_purchase) * 100, 1)
+                    # step = self.func_GET_db_item(item_code, 1)
 
                     self.rp_dict = {}
-                    self.rp_dict.update(data)
+                    # self.rp_dict.update(data)
 
-                    self.rp_dict['ordered'] = 0
-                    self.rp_dict['total_purchase'] = total_purchase
-                    self.rp_dict['total_evaluation'] = total_evaluation
-                    self.rp_dict['temp_total'] = temp_total
-                    self.rp_dict['total_fee'] = total_fee
-                    self.rp_dict['total_sum'] = total_sum
-                    self.rp_dict['percent'] = percent
-                    self.rp_dict['step'] = step
-                    self.rp_dict['seq'] = self.seq
-                    self.rp_dict['high'] = self.PER_HI
+                    # self.rp_dict['ordered'] = 0
+                    # self.rp_dict['total_purchase'] = total_purchase
+                    # self.rp_dict['total_evaluation'] = total_evaluation
+                    # self.rp_dict['temp_total'] = temp_total
+                    # self.rp_dict['total_fee'] = total_fee
+                    # self.rp_dict['total_sum'] = total_sum
+                    # self.rp_dict['percent'] = percent
+                    # self.rp_dict['step'] = step
+                    # self.rp_dict['seq'] = self.seq
+                    # self.rp_dict['high'] = self.PER_HI
 
                     self.indicate_ordered()         ## INDICATE : ordered
-                    self.trans_dict.emit(self.rp_dict)       ## SHOW
+                    # self.trans_dict.emit(self.rp_dict)       ## SHOW
+
+                    # self.func_check_jumun(item_code)        ## 주문여부 확인
+                    print("Thread 주문여부 확인 : ", self.seq)
+                    ordered_item = {}
+
+                    ordered_item['slot'] = self.seq
+                    ordered_item['item_code'] = item_code
+                    self.first_jumun_check.emit(ordered_item)
+                    
+                    # rqname = str(item_code) + "check_jumun"
+                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "전체종목구분", 0)
+                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "매매구분", 0)
+                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "체결구분", 0)
+                    # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10075", 0, "0101")
                 
                 self.first_rcv = 0
             else :      ## 2번째 receive 부터
@@ -396,24 +386,6 @@ class Worker(QThread):
                     self.trans_dict.emit(self.rp_dict)       
 
                     ## Make Order
-                    # orderType = self.func_GET_db_item(item_code, 3)
-
-                    # if orderType == 4 :
-                    #     print(now, "[ TH", self.seq, "]", "sell and buy - sell : terminated")
-                        # if MAKE_ORDER == 1 :
-                        #     qty = self.func_GET_db_item(item_code, 4)       ## DB : qty <- trAmount
-                        #     price = price_buy
-
-                        #     print(now, "[ TH", self.seq, "]", "make order : ", item_code, "SELL & BUY(BUY")
-                        #     order = {}
-                        #     order['type'] = 0       ## buy
-                        #     order['item_code'] = item_code
-                        #     order['qty'] = qty
-                        #     order['price'] = price
-                        #     self.rq_order.emit(order)
-                        #     self.indicate_ordered()         ## INDICATE : ordered
-
-                    # else :
                     res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
                     judge_type = res['judge']
 
@@ -443,45 +415,7 @@ class Worker(QThread):
                                         self.rq_order.emit(order)       ## make order to master
 
                                         # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Add Water : ", item_code)
-                                        
-
-                    # elif judge_type == 2 :      ## sell & buy
-                    #     # if JUDGE_SHOW == 1 :
-                    #     #     print(now, "[ TH", self.seq, "]", item_code, "judge : 2")
-                    #     if MAKE_ORDER == 1 :
-                    #         qty = res['sell_qty']
-                    #         price = res['sell_price']
-
-                    #         if qty == 0 :
-                    #             print(now, "[ TH", self.seq, "]", item_code, "judge : 2 and 3")
-                    #             qty = own_count
-                    #             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                    #                 if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
-                    #                     order = {}
-                    #                     order['type'] = 1       ## sell
-                    #                     order['item_code'] = item_code
-                    #                     order['qty'] = qty
-                    #                     order['price'] = price
-                    #                     order['order_type'] = judge_type
-                    #                     self.indicate_ordered()         ## INDICATE : ordered
-                    #                     self.rq_order.emit(order)
-
-                    #                     # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Sell & Buy(sell) : ", item_code)
-
-                    #         elif qty >= 1 :
-                    #             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                    #                 if self.func_UPDATE_db_item(item_code, 3, 2) == 1:      ## orderType -> 2
-                    #                     if self.func_UPDATE_db_item(item_code, 4, qty) == 1:    ## 판매수량 -> trAmount
-                    #                         order = {}
-                    #                         order['type'] = 1       ## sell
-                    #                         order['item_code'] = item_code
-                    #                         order['qty'] = qty
-                    #                         order['price'] = price
-                    #                         self.indicate_ordered()         ## INDICATE : ordered
-                    #                         self.rq_order.emit(order)
-
-                    #                         # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Sell & Buy(sell) : ", item_code)
-
+                    
                     elif judge_type == 3 :      ## full_sell
                         if MAKE_ORDER == 1 :
                             # qty = res['qty']
@@ -660,25 +594,62 @@ class Worker(QThread):
         self.rp_dict['ordered'] = 2
         self.rp_dict['seq'] = self.seq
         self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
-    # def check_deposit_1(self) :
-    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-    #     self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "check_deposit", "opw00001", 0, "0101")
-    # def check_deposit_2(self, rqname, trcode, recordname) :
-    #     deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
-    #     d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
-    #     d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
-    #     # orderable_money = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "주문가능금액")
-
-    #     # str('{0:,}'.format())
-    #     self.wid_show_deposit.setText(str('{0:,}'.format(int(deposit))))
-    #     self.wid_show_deposit_d1.setText(str('{0:,}'.format(int(d_1))))
-    #     self.wid_show_deposit_d2.setText(str(int(d_2)))
-    #     # self.wid_show_orderable_money.setText(str('{0:,}'.format(int(orderable_money))))
-
-    #     self.set_deposit = 1
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         if rqname == "check_deposit":
             self.check_deposit_2(rqname, trcode, recordname)
+
+        elif "check_jumun" in rqname :
+            item_code = rqname[0:6]
+            self.res_check_jumun(rqname, trcode, recordname, item_code)
+
+    def func_check_jumun(self, item_code) :
+        print("Thread 주문여부 확인 : ", self.seq)
+        rqname = str(item_code) + "check_jumun"
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "전체종목구분", 0)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "매매구분", 0)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "체결구분", 0)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10075", 0, "0101")
+
+    def func_GET_RepeatCount(self, trcode, rqname):
+        ret = self.kiwoom.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
+        return ret
+
+    def res_check_jumun(self, rqname, trcode, recordname, item_code) :
+        res = 0
+        data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
+
+        for i in range(data_cnt) :
+            jumun_item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목코드").strip()
+            jumun_qty = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문수량").replace('+', '').replace('-', '').strip()
+            jumun_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문가격").replace('+', '').replace('-', '').strip()
+            jumun_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "시간").strip()
+            jumun_mi = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "미체결수량").replace('+', '').replace('-', '').strip())
+
+            print(i, jumun_item_code, jumun_qty, jumun_price, jumun_time, jumun_mi)
+
+            if item_code == jumun_item_code :
+                if jumun_mi > 0 :
+                    res = 1
+
+        if res == 1 :                                                   ## 주문내역이 있는 경우
+            print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV PROPERLY")
+            ## do nothing
+
+        elif res == 0 :                                                 ## 주문내역이 없는 경우
+            if self.check_jumun_times == 5 :                            ## jumun receive 여부 5회까지 확인
+                self.check_jumun_times = 0                              ## re init
+                print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV NOT PROPERTY : END")
+
+                # self.pause_worker(slot, item_code)
+                self.indicate_release()         ## INDICATE : ordered
+                self.lock = 0
+
+            else :
+                print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV NOT PROPERTY : ", self.check_jumun_times)
+                self.check_jumun_times = self.check_jumun_times + 1
+                QtTest.QTest.qWait(500)                                 ## 100 ms delay
+                self.func_check_jumun(item_code)                  ## re-check jumun
     def now(self) :
         return datetime.datetime.now()

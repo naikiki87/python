@@ -30,6 +30,7 @@ class Kiwoom(QMainWindow, form_class):
     che_dict = pyqtSignal(dict)
     res_check_slot = pyqtSignal(list)
     reply_buy = pyqtSignal(int)
+    reply_first_check = pyqtSignal(dict)
 
     def __init__(self):
         super().__init__()
@@ -53,6 +54,7 @@ class Kiwoom(QMainWindow, form_class):
         self.today = self.func_GET_Today()
         self.item_finder_req = 0
         self.check_jumun_times = [0,0,0,0,0]
+        self.first_check_times = [0,0,0,0,0]
         # self.check_jumun_times = 0
         self.check_jan = []
         for i in range(5) :
@@ -60,6 +62,9 @@ class Kiwoom(QMainWindow, form_class):
         self.check_jumun = []
         for i in range(5) :
             self.check_jumun.append(['',0,0,0,0])
+        self.first_check_jumun = []
+        for i in range(5) :
+            self.first_check_jumun.append([''])
         self.check_jumun_2 = ['',0,0,0,0]
         self.send_data = 1
         self.buying_item = 0
@@ -217,7 +222,6 @@ class Kiwoom(QMainWindow, form_class):
             self.ORDER_SELL(item_code, qty, price)
     
     def pause_worker(self, slot, item_code) :
-        print("pause worker : ", slot, item_code)
         if slot == 0 :
             self.worker0.pause_worker(item_code)
         elif slot == 1 :
@@ -269,8 +273,10 @@ class Kiwoom(QMainWindow, form_class):
         self.worker0.th_con.connect(self.th_connected)
         self.test_dict0.connect(self.worker0.dict_from_main)
         self.che_dict.connect(self.worker0.che_result)
+        self.reply_first_check.connect(self.worker0.reply_first_check)
         self.worker0.trans_dict.connect(self.rp_dict)
         self.worker0.rq_order.connect(self.rq_order)
+        self.worker0.first_jumun_check.connect(self.first_rcv_jumun_check)
         self.worker0.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
@@ -284,8 +290,10 @@ class Kiwoom(QMainWindow, form_class):
         self.worker1.th_con.connect(self.th_connected)
         self.test_dict1.connect(self.worker1.dict_from_main)
         self.che_dict.connect(self.worker1.che_result)
+        self.reply_first_check.connect(self.worker1.reply_first_check)
         self.worker1.trans_dict.connect(self.rp_dict)
         self.worker1.rq_order.connect(self.rq_order)
+        self.worker1.first_jumun_check.connect(self.first_rcv_jumun_check)
         self.worker1.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
@@ -299,8 +307,10 @@ class Kiwoom(QMainWindow, form_class):
         self.worker2.th_con.connect(self.th_connected)
         self.test_dict2.connect(self.worker2.dict_from_main)
         self.che_dict.connect(self.worker2.che_result)
+        self.reply_first_check.connect(self.worker2.reply_first_check)
         self.worker2.trans_dict.connect(self.rp_dict)
         self.worker2.rq_order.connect(self.rq_order)
+        self.worker2.first_jumun_check.connect(self.first_rcv_jumun_check)
         self.worker2.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
@@ -314,8 +324,10 @@ class Kiwoom(QMainWindow, form_class):
         self.worker3.th_con.connect(self.th_connected)
         self.test_dict3.connect(self.worker3.dict_from_main)
         self.che_dict.connect(self.worker3.che_result)
+        self.reply_first_check.connect(self.worker3.reply_first_check)
         self.worker3.trans_dict.connect(self.rp_dict)
         self.worker3.rq_order.connect(self.rq_order)
+        self.worker3.first_jumun_check.connect(self.first_rcv_jumun_check)
         self.worker3.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
@@ -330,8 +342,10 @@ class Kiwoom(QMainWindow, form_class):
         self.worker4.th_con.connect(self.th_connected)
         self.test_dict4.connect(self.worker4.dict_from_main)
         self.che_dict.connect(self.worker4.che_result)
+        self.reply_first_check.connect(self.worker4.reply_first_check)
         self.worker4.trans_dict.connect(self.rp_dict)
         self.worker4.rq_order.connect(self.rq_order)
+        self.worker4.first_jumun_check.connect(self.first_rcv_jumun_check)
         self.worker4.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
@@ -341,6 +355,65 @@ class Kiwoom(QMainWindow, form_class):
             QtTest.QTest.qWait(100)
         
         return 0
+
+    @pyqtSlot(dict)
+    def first_rcv_jumun_check(self, data) :
+        slot = data['slot']
+        item_code = data['item_code']
+        self.first_check_jumun[slot] = item_code
+
+        self.first_rcv_jumun_check_2(slot, item_code)
+
+    def first_rcv_jumun_check_2(self, item_slot, item_code) :
+        rqname = str(item_code) + str(item_slot) + "first_jumun_check"
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "전체종목구분", 0)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "매매구분", 0)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "체결구분", 0)
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10075", 0, "0102")
+
+    def res_first_check_jumun(self, rqname, trcode, recordname, item_code, item_slot) :
+        print("res_first_rcv_jumun_check : ", item_code, item_slot)
+
+        res = 0
+        slot = int(item_slot)
+        data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
+
+        for i in range(data_cnt) :
+            jumun_item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목코드").strip()
+            jumun_qty = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문수량").replace('+', '').replace('-', '').strip()
+            jumun_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문가격").replace('+', '').replace('-', '').strip()
+            jumun_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "시간").strip()
+            jumun_mi = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "미체결수량").replace('+', '').replace('-', '').strip())
+
+            print(i, jumun_item_code, jumun_qty, jumun_price, jumun_time, jumun_mi)
+
+            if item_code == jumun_item_code :
+                if jumun_mi > 0 :
+                    res = 1
+
+        if res == 1 :                                                   ## 주문내역이 있는 경우
+            print(self.now(), "[MAIN] [res_check_jumun] ORDER LIST 있음")
+            ## do nothing
+
+        elif res == 0 :                                                 ## 주문내역이 없는 경우
+            if self.first_check_times[slot] == 3 :                            ## jumun receive 여부 3회까지 확인
+                self.first_check_times[slot] = 0                              ## re init
+                print(self.now(), "[MAIN] [res_check_jumun] ORDER List XXXXXX")
+
+                temp = {}
+                temp['slot'] = slot
+                temp['item_code'] = item_code
+                self.reply_first_check.emit(temp)
+
+            else :
+                print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV NOT PROPERTY : ", self.first_check_times[slot])
+                self.first_check_times[slot] = self.first_check_times[slot] + 1
+                QtTest.QTest.qWait(500)                                 ## 100 ms delay
+                self.first_rcv_jumun_check_2(slot, item_code)           ## recheck
+
+
     def order_start(self) :
         try :
             self.send_data = 1
@@ -363,14 +436,10 @@ class Kiwoom(QMainWindow, form_class):
             self.table_summary.clearContents()      ## table clear
             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")
+            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")         ## 계좌 잔고 조회
     def func_SET_Items(self, rqname, trcode, recordname):
-        # print(self.now(), "[MAIN] [func_SET_Items]")
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
-
-        # print(self.now(), "[MAIN] [func_SET_Items] Code Sync START")
         db_codes = self.func_GET_db_item(0, 0)
-        # print(now, "[MAIN]", "[CODE SYNC] DB CODES : ", db_codes)
 
         for i in range(self.item_count) :
             try :
@@ -378,11 +447,9 @@ class Kiwoom(QMainWindow, form_class):
                 db_codes.remove(item_code)
             except :
                 pass
-        # print(now, "[MAIN]", "[CODE SYNC] Code Sync Remains : ", db_codes)
 
         for i in range(len(db_codes)) :
             self.func_DELETE_db_item(db_codes[i])
-        # print(now, "[MAIN] [func_SET_Items] Code Sync REMOVE COMPLETE")
 
         for i in range(self.item_count) :
             try :
@@ -391,13 +458,9 @@ class Kiwoom(QMainWindow, form_class):
 
                 if step == "none" :
                     self.func_INSERT_db_item(item_code, 0, 0, 0, 0)
-                    # print(now, "[MAIN]", "[CODE SYNC] Code is not in DB - Item Initialized : ", item_code)
             except :
                 pass
-        # print(now, "[MAIN]", "[CODE SYNC] Code Sync - Fill Lack Item Complete")
-        # print(self.now(), "[MAIN] [func_SET_Items] Code Sync END")
 
-        # time.sleep(2)
         QtTest.QTest.qWait(1000)
 
         for i in range(self.item_count) :
@@ -1277,7 +1340,6 @@ class Kiwoom(QMainWindow, form_class):
         elif "check_deposit" in rqname :
             item_code = rqname[0:6]
             item_slot = rqname[6:7]
-            print("tr data : ", item_slot, item_code)
             self.check_deposit_2(rqname, trcode, recordname, item_slot, item_code)
         
         elif "jan_check" in rqname :
@@ -1289,6 +1351,12 @@ class Kiwoom(QMainWindow, form_class):
             item_code = rqname[0:6]
             item_slot = rqname[6:7]
             self.res_check_jumun(rqname, trcode, recordname, item_code, item_slot)
+
+        elif "first_jumun_check" in rqname :
+            item_code = rqname[0:6]
+            item_slot = rqname[6:7]
+            print("tr : ", item_code, item_slot)
+            self.res_first_check_jumun(rqname, trcode, recordname, item_code, item_slot)
 
         elif rqname == "SET_hoga":
             self.SET_hoga(rqname, trcode, recordname)
