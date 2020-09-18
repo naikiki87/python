@@ -328,7 +328,6 @@ class Worker(QThread):
                     self.indicate_ordered()         ## INDICATE : ordered
                     # self.trans_dict.emit(self.rp_dict)       ## SHOW
 
-                    # self.func_check_jumun(item_code)        ## 주문여부 확인
                     print("Thread 주문여부 확인 : ", self.seq)
                     ordered_item = {}
 
@@ -602,54 +601,5 @@ class Worker(QThread):
             item_code = rqname[0:6]
             self.res_check_jumun(rqname, trcode, recordname, item_code)
 
-    def func_check_jumun(self, item_code) :
-        print("Thread 주문여부 확인 : ", self.seq)
-        rqname = str(item_code) + "check_jumun"
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "전체종목구분", 0)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "매매구분", 0)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "체결구분", 0)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10075", 0, "0101")
-
-    def func_GET_RepeatCount(self, trcode, rqname):
-        ret = self.kiwoom.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
-        return ret
-
-    def res_check_jumun(self, rqname, trcode, recordname, item_code) :
-        res = 0
-        data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
-
-        for i in range(data_cnt) :
-            jumun_item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목코드").strip()
-            jumun_qty = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문수량").replace('+', '').replace('-', '').strip()
-            jumun_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "주문가격").replace('+', '').replace('-', '').strip()
-            jumun_time = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "시간").strip()
-            jumun_mi = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "미체결수량").replace('+', '').replace('-', '').strip())
-
-            print(i, jumun_item_code, jumun_qty, jumun_price, jumun_time, jumun_mi)
-
-            if item_code == jumun_item_code :
-                if jumun_mi > 0 :
-                    res = 1
-
-        if res == 1 :                                                   ## 주문내역이 있는 경우
-            print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV PROPERLY")
-            ## do nothing
-
-        elif res == 0 :                                                 ## 주문내역이 없는 경우
-            if self.check_jumun_times == 5 :                            ## jumun receive 여부 5회까지 확인
-                self.check_jumun_times = 0                              ## re init
-                print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV NOT PROPERTY : END")
-
-                # self.pause_worker(slot, item_code)
-                self.indicate_release()         ## INDICATE : ordered
-                self.lock = 0
-
-            else :
-                print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV NOT PROPERTY : ", self.check_jumun_times)
-                self.check_jumun_times = self.check_jumun_times + 1
-                QtTest.QTest.qWait(500)                                 ## 100 ms delay
-                self.func_check_jumun(item_code)                  ## re-check jumun
     def now(self) :
         return datetime.datetime.now()

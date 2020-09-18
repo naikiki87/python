@@ -51,7 +51,7 @@ class Timer(QThread):
         while True:
             now = datetime.datetime.now()
             mkt_open = now.replace(hour=9, minute=0, second=0)
-            mkt_close = now.replace(hour=15, minute=20, second=0)
+            mkt_close = now.replace(hour=15, minute=30, second=0)
             am930 = now.replace(hour=9, minute=30, second=0)
             pm240 = now.replace(hour=14, minute=40, second=0)
 
