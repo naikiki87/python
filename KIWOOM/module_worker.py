@@ -51,6 +51,7 @@ class Worker(QThread):
         self.ordering_ordertype = 0
 
         self.check_jumun_times = 0
+        self.pause_time = 0
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -140,7 +141,7 @@ class Worker(QThread):
     @pyqtSlot(int)
     def resume_thread(self, data) :
         self.delay.terminate()
-
+        
         if data == self.seq : 
             item_code = self.delay_item
             orderType = self.func_GET_db_item(item_code, 3)
@@ -165,11 +166,20 @@ class Worker(QThread):
 
     def pause_worker(self, item_code) :
         self.rp_dict = {}
-        self.delay = module_delay.Delay(self.seq)
-        self.delay.resume.connect(self.resume_thread)
-        self.delay_item = item_code
-        self.indicate_paused()
-        self.delay.start()
+        self.pause_time = self.pause_time + 1
+        if self.pause_time < 3 :        ## 2번까지 30초 pause 시행
+            self.delay = module_delay.Delay(self.seq, 30000)        ## 30 sec delay
+            self.delay.resume.connect(self.resume_thread)
+            self.delay_item = item_code
+            self.indicate_paused()
+            self.delay.start()
+        elif self.pause_time == 3 :
+            self.pause_time = 0     ## reset
+            self.delay = module_delay.Delay(self.seq, 300000)       ## 5min delay
+            self.delay.resume.connect(self.resume_thread)
+            self.delay_item = item_code
+            self.indicate_paused()
+            self.delay.start()
 
     @pyqtSlot(dict)
     def reply_first_check(self, data) :

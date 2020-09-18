@@ -18,10 +18,11 @@ class Delay(QThread):
     candidate = pyqtSignal(dict)
     resume = pyqtSignal(int)
 
-    def __init__(self, slot):
+    def __init__(self, slot, delay_time):
         super().__init__()
         self.slot = slot
+        self.delay_time = int(delay_time)
 
     def run(self):
-        QtTest.QTest.qWait(30000)
+        QtTest.QTest.qWait(self.delay_time)
         self.resume.emit(self.slot)
