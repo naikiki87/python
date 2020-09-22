@@ -1,6 +1,9 @@
 import config
 
-ACCOU = config.ACCOUNT
-test = config.temp.temp1
+EXCEPT_ITEM = config.EXCEPT_ITEM
 
-print("A : ", test)
+print("A : ", EXCEPT_ITEM)
+print("len : ", len(EXCEPT_ITEM))
+
+if "214391" in EXCEPT_ITEM :
+    print("asdfasdfasdfadf")

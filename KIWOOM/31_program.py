@@ -118,7 +118,9 @@ class Kiwoom(QMainWindow, form_class):
                 self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
             elif ordered == 3 :                     ## indicate paused
                 self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,0))
-            elif ordered == 0 :
+            elif ordered == 4 :                     ## indicate paused2  
+                self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(247,129,129))
+            elif ordered == 0 :                     ## indicate normal state
                 self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
             
                 self.func_SET_TableData(1, data['seq'], 4, str(data['cur_price']), 0)
@@ -486,8 +488,8 @@ class Kiwoom(QMainWindow, form_class):
 
         ## history load
         self.flag_HistoryData_Auto = 1
-        self.func_GET_TradeHistory(self.today)
-        QtTest.QTest.qWait(300)
+        # self.func_GET_TradeHistory(self.today)
+        # QtTest.QTest.qWait(300)
 
         ## ordering load
         self.func_GET_Ordering(self.today)
@@ -762,31 +764,23 @@ class Kiwoom(QMainWindow, form_class):
                 timestamp = self.func_GET_CurrentTime()
                 
                 self.text_edit.append(timestamp + "[체결완료]" + "[" + trade_time+"]" + order_id + ':' + item_code + '/' + item_name.strip() + '/' + trade_amount + '(' + remained + ')')
-                # print(self.now(), "[MAIN] [체결완료]" + "[" + trade_time+"]" + order_id + ':' + item_code + '/' + item_name.strip() + '/' + trade_amount + '(' + remained + ')')
                 print(self.now(), "[MAIN] [체결완료] : ", order_id, item_code, trade_amount)
                 orderType = self.func_GET_db_item(item_code, 3)
                 if orderType != "none" :
                     if orderType == 1 :
                         th_num = self.which_thread(item_code)[1]
-                        # print(now, "[MAIN]", "[CHEJAN] ADD Water / slot : ", th_num)
-
                         if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
                             self.func_restart_check(th_num, item_code)
 
                     elif orderType == 2 :
-                        # print(now, "[MAIN]", "[CHEJAN] SELL & BUY(SELL)")
                         th_num = self.which_thread(item_code)[1]
-                        # print(now, "[MAIN]", "[2] THREAD NUM : ", th_num)
 
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.func_restart_check(th_num, item_code)
 
                     elif orderType == 3 :                                   ## Full Sell 일 경우
-                        # print(now, "[MAIN]", "[CHEJAN] FULL SELL(Auto)")
                         th_num = self.which_thread(item_code)[1]
-                        # print(now, "[MAIN]", "[3] THREAD NUM : ", th_num)
                         self.item_slot[th_num] = 0      ## unassign slot
-                        # print(now, "[MAIN]", "[3] Slot unassign Complete")
                         
                         if self.DELETE_Table_Summary_item(th_num) == 0 :    ## table data 삭제
                             self.SetRealRemove("ALL", item_code)            ## 실시간 데이터 감시 해제
@@ -798,44 +792,33 @@ class Kiwoom(QMainWindow, form_class):
                             self.che_dict.emit(che_dict)                    ## 결과 전송
 
                     elif orderType == 4 :
-                        # print(now, "[MAIN]", "[CHEJAN] SELL & BUY(BUY)")
                         th_num = self.which_thread(item_code)[1]
-                        # print(now, "[MAIN]", "[4] THREAD NUM : ", th_num)
 
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.func_restart_check(th_num, item_code)
 
                     elif orderType == 5 :                                   ## BUY NEW(manual)
-                        # print(now, "[MAIN]", "[CHEJAN] BUY(MANUAL)")
                         th_num = self.which_thread(item_code)[1]
-                        # print(now, "[MAIN]", "[5] THREAD NUM : ", th_num)
 
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.func_restart_check(th_num, item_code)
                             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
 
                     elif orderType == 6 :       ## gi buy (manual)
-                        # print(now, "[MAIN]", "[CHEJAN] GI BUY(MANUAL)")
                         th_num = self.which_thread(item_code)[1]
-                        # print(now, "[MAIN]", "[6] THREAD NUM : ", th_num)
 
                         if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
                             self.func_restart_check(th_num, item_code)
 
                     elif orderType == 7 :       ## sell(manual)
-                        # print(now, "[MAIN]", "[CHEJAN] SELL(MANUAL)")
                         th_num = self.which_thread(item_code)[1]
-                        # print(now, "[MAIN]", "[7] THREAD NUM : ", th_num)
                         
                         if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
                             self.func_restart_check(th_num, item_code)
 
                     elif orderType == 8 :       ## manual Sell Full
-                        # print(now, "[MAIN]", "[CHEJAN] FULL SELL(MANUAL)")
                         th_num = self.which_thread(item_code)[1]
-                        # print(now, "[MAIN]", "[8] THREAD NUM : ", th_num)
                         self.item_slot[th_num] = 0      ## unassign slot
-                        # print(now, "[MAIN]", "[8] Slot unassign Complete")
 
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.SetRealRemove("ALL", item_code)        ## 실시간 데이터 감시 해제
@@ -848,9 +831,7 @@ class Kiwoom(QMainWindow, form_class):
                     
                     elif orderType == 9 :       ## new buy by item finding
                         self.reply_buy.emit(1)
-                        # print(now, "[MAIN]", "[CHEJAN] BUY(ITEM FINDER)")
                         th_num = self.which_thread(item_code)[1]
-                        # print(now, "[MAIN]", "[9] THREAD NUM : ", th_num)
 
                         self.item_finder_req = 0
 

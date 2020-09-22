@@ -40,7 +40,8 @@ class Worker(QThread):
         self.PER_HI = 0.5
         self.items = deque()
         
-        self.prev_price = 0
+        self.prev_data = [0, 0, 0]          ## save previous data : cur_price, price_buy, price_sell
+
         self.first_rcv = 1
         
         self.delay_item = ''
@@ -52,6 +53,7 @@ class Worker(QThread):
 
         self.check_jumun_times = 0
         self.pause_time = 0
+        self.data_Q = []
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -168,17 +170,19 @@ class Worker(QThread):
         self.rp_dict = {}
         self.pause_time = self.pause_time + 1
         if self.pause_time < 3 :        ## 2번까지 30초 pause 시행
+            print("30 sec pause : ", self.pause_time)
             self.delay = module_delay.Delay(self.seq, 30000)        ## 30 sec delay
             self.delay.resume.connect(self.resume_thread)
             self.delay_item = item_code
             self.indicate_paused()
             self.delay.start()
         elif self.pause_time == 3 :
+            print("5 min pause : ", self.pause_time)
             self.pause_time = 0     ## reset
             self.delay = module_delay.Delay(self.seq, 300000)       ## 5min delay
             self.delay.resume.connect(self.resume_thread)
             self.delay_item = item_code
-            self.indicate_paused()
+            self.indicate_paused2()
             self.delay.start()
 
     @pyqtSlot(dict)
@@ -188,6 +192,7 @@ class Worker(QThread):
             self.rp_dict = {}
             self.indicate_release()
             if self.func_UPDATE_db_item(item_code, 2, 0) == 1:          ## ordered -> 0
+                self.first_rcv = 0
                 self.lock = 0
 
     @pyqtSlot(dict)
@@ -293,72 +298,63 @@ class Worker(QThread):
 
         elif data['autoTrade'] == 1 :                   ## auto trading 시
             if self.first_rcv == 1 :
-                # print(now, "[ TH", self.seq, "]", "First Receive")
-                self.prev_price = data['cur_price']
-                self.TA_UNIT_SUM = 0
-                self.val_cnt = 0
+                self.lock = 1
+                self.prev_data = [data['cur_price'], data['price_buy'], data['price_sell']]
 
-                # ordered = self.func_GET_db_item(item_code, 2)
-                # if ordered == 1 :       ## 프로그램이 시작했는데 현재 item이 order 중인 경우
+                ## SHOW -> TABLE ##
+                own_count = data['own_count']
+                unit_price = data['unit_price']
+                cur_price = data['cur_price']
+                price_buy = data['price_buy']
+                price_sell = data['price_sell']
+                chegang = data['chegang']
+
+                total_purchase = own_count * unit_price
+                total_evaluation = own_count * price_buy    ## 매수 최우선가 기준
+                temp_total = total_evaluation - total_purchase
+                fee_buy = FEE_BUY * total_purchase
+                fee_sell = FEE_SELL * total_evaluation
+                tax = TAX * total_evaluation
+                total_fee = round((fee_buy + fee_sell + tax), 1)
+                total_sum = total_evaluation - total_purchase - total_fee
+                percent = round((total_sum / total_purchase) * 100, 1)
+                step = self.func_GET_db_item(item_code, 1)
+
+                self.rp_dict = {}
+                self.rp_dict.update(data)
+                self.rp_dict['ordered'] = 0
+                self.rp_dict['total_purchase'] = int(total_purchase)
+                self.rp_dict['total_evaluation'] = int(total_evaluation)
+                self.rp_dict['temp_total'] = int(temp_total)
+                self.rp_dict['total_fee'] = int(total_fee)
+                self.rp_dict['total_sum'] = int(total_sum)
+                self.rp_dict['percent'] = percent
+                self.rp_dict['step'] = step
+                self.rp_dict['seq'] = self.seq
+                self.rp_dict['high'] = self.PER_HI
+
+                self.trans_dict.emit(self.rp_dict)
+
                 if self.func_GET_db_item(item_code, 2) == 1 :           ## 프로그램이 시작했는데 현재 item이 order 중인 경우 
-                    self.lock = 1
-                    # ## SHOW ##
-                    # own_count = data['own_count']
-                    # unit_price = data['unit_price']
-                    # cur_price = data['cur_price']
-                    # price_buy = data['price_buy']
-                    # price_sell = data['price_sell']
-                    # chegang = data['chegang']
-
-                    # total_purchase = own_count * unit_price
-                    # total_evaluation = own_count * price_buy    ## 매수 최우선가 기준으로 계산
-                    # temp_total = total_evaluation - total_purchase
-                    # fee_buy = FEE_BUY * total_purchase
-                    # fee_sell = FEE_SELL * total_evaluation
-                    # tax = TAX * total_evaluation
-                    # total_fee = round((fee_buy + fee_sell + tax), 1)
-                    # total_sum = total_evaluation - total_purchase - total_fee
-                    # percent = round((total_sum / total_purchase) * 100, 1)
-                    # step = self.func_GET_db_item(item_code, 1)
-
+                    # self.lock = 1
                     self.rp_dict = {}
-                    # self.rp_dict.update(data)
-
-                    # self.rp_dict['ordered'] = 0
-                    # self.rp_dict['total_purchase'] = total_purchase
-                    # self.rp_dict['total_evaluation'] = total_evaluation
-                    # self.rp_dict['temp_total'] = temp_total
-                    # self.rp_dict['total_fee'] = total_fee
-                    # self.rp_dict['total_sum'] = total_sum
-                    # self.rp_dict['percent'] = percent
-                    # self.rp_dict['step'] = step
-                    # self.rp_dict['seq'] = self.seq
-                    # self.rp_dict['high'] = self.PER_HI
-
                     self.indicate_ordered()         ## INDICATE : ordered
-                    # self.trans_dict.emit(self.rp_dict)       ## SHOW
 
                     print("Thread 주문여부 확인 : ", self.seq)
                     ordered_item = {}
-
                     ordered_item['slot'] = self.seq
                     ordered_item['item_code'] = item_code
                     self.first_jumun_check.emit(ordered_item)
-                    
-                    # rqname = str(item_code) + "check_jumun"
-                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "전체종목구분", 0)
-                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "매매구분", 0)
-                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
-                    # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "체결구분", 0)
-                    # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10075", 0, "0101")
-                
-                self.first_rcv = 0
+
+                else :
+                    self.first_rcv = 0
+                    self.lock = 0
+                # self.first_rcv = 0
             else :      ## 2번째 receive 부터
                 if self.lock == 0 :
                     self.lock = 1       ## lock 체결
                     
-                    step = self.func_GET_db_item(item_code, 1)
+                    # step = self.func_GET_db_item(item_code, 1)
 
                     ## SHOW -> TABLE ##
                     own_count = data['own_count']
@@ -379,70 +375,67 @@ class Worker(QThread):
                     percent = round((total_sum / total_purchase) * 100, 1)
                     step = self.func_GET_db_item(item_code, 1)
 
-                    self.rp_dict = {}
-                    self.rp_dict.update(data)
-                    self.rp_dict['ordered'] = 0
-                    self.rp_dict['total_purchase'] = int(total_purchase)
-                    self.rp_dict['total_evaluation'] = int(total_evaluation)
-                    self.rp_dict['temp_total'] = int(temp_total)
-                    self.rp_dict['total_fee'] = int(total_fee)
-                    self.rp_dict['total_sum'] = int(total_sum)
-                    self.rp_dict['percent'] = percent
-                    self.rp_dict['step'] = step
-                    self.rp_dict['seq'] = self.seq
-                    self.rp_dict['high'] = self.PER_HI
+                    # if (cur_price != self.prev_data[0]) or (price_buy != self.prev_data[1]) or (price_sell != self.prev_data[2]) or (chegang != self.prev_data[3]) :
+                    if (cur_price != self.prev_data[0]) or (price_buy != self.prev_data[1]) or (price_sell != self.prev_data[2]) :
+                        self.rp_dict = {}
+                        self.rp_dict.update(data)
+                        self.rp_dict['ordered'] = 0
+                        self.rp_dict['total_purchase'] = int(total_purchase)
+                        self.rp_dict['total_evaluation'] = int(total_evaluation)
+                        self.rp_dict['temp_total'] = int(temp_total)
+                        self.rp_dict['total_fee'] = int(total_fee)
+                        self.rp_dict['total_sum'] = int(total_sum)
+                        self.rp_dict['percent'] = percent
+                        self.rp_dict['step'] = step
+                        self.rp_dict['seq'] = self.seq
+                        self.rp_dict['high'] = self.PER_HI
 
-                    self.trans_dict.emit(self.rp_dict)       
+                        self.trans_dict.emit(self.rp_dict)
+                    
+                    self.prev_data = [cur_price, price_buy, price_sell]
 
                     ## Make Order
-                    res = self.judge(percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
-                    judge_type = res['judge']
+                    # res = self.judge(item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
+                    self.judge(item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
+                    # judge_type = res['judge']
 
-                    if judge_type == 0 :        ## stay
-                        self.lock = 0
-                        # print(now, "[ TH", self.seq, "]", item_code, "judge : 0")
+                    # if judge_type == 0 :        ## stay
+                    #     self.lock = 0
 
-                    elif judge_type == 1 :      ## add water
-                        # print(now, "[ TH", self.seq, "]", item_code, "judge : 1")
-                        if MAKE_ORDER == 1 :
-                            qty = res['qty']
-                            price = res['price']
-                            if qty < 0 :
-                                # print(now, "[ TH", self.seq, "]", "qty is under 0")
-                                self.lock = 0
+                    # elif judge_type == 1 :      ## add water
+                    #     if MAKE_ORDER == 1 :
+                    #         qty = res['qty']
+                    #         price = res['price']
+                    #         if qty < 0 :
+                    #             self.lock = 0
 
-                            elif qty >= 0 :
-                                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                                    if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                                        order = {}
-                                        order['type'] = 0       ## buy
-                                        order['item_code'] = item_code
-                                        order['qty'] = qty
-                                        order['price'] = price
-                                        order['order_type'] = judge_type
-                                        self.indicate_ordered()         ## INDICATE : ordered
-                                        self.rq_order.emit(order)       ## make order to master
+                    #         elif qty >= 0 :
+                    #             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                    #                 if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                    #                     order = {}
+                    #                     order['type'] = 0       ## buy
+                    #                     order['item_code'] = item_code
+                    #                     order['qty'] = qty
+                    #                     order['price'] = price
+                    #                     order['order_type'] = judge_type
+                    #                     self.indicate_ordered()         ## INDICATE : ordered
+                    #                     self.rq_order.emit(order)       ## make order to master
 
-                                        # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Add Water : ", item_code)
-                    
-                    elif judge_type == 3 :      ## full_sell
-                        if MAKE_ORDER == 1 :
-                            # qty = res['qty']
-                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                                if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
-                                    order = {}
-                                    order['type'] = 1       ## sell
-                                    order['item_code'] = item_code
-                                    order['qty'] = res['qty']       ## 전량
-                                    order['price'] = res['price']   ## 매수 최우선가
-                                    order['order_type'] = judge_type
-                                    self.indicate_ordered()         ## INDICATE : ordered
-                                    self.rq_order.emit(order)       ## make order to master
-
-                                    # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Full Sell Auto : ", item_code)
+                    # elif judge_type == 3 :      ## full_sell
+                    #     if MAKE_ORDER == 1 :
+                    #         if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                    #             if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                    #                 order = {}
+                    #                 order['type'] = 1       ## sell
+                    #                 order['item_code'] = item_code
+                    #                 order['qty'] = res['qty']       ## 전량
+                    #                 order['price'] = res['price']   ## 매수 최우선가
+                    #                 order['order_type'] = judge_type
+                    #                 self.indicate_ordered()         ## INDICATE : ordered
+                    #                 self.rq_order.emit(order)       ## make order to master
 
         ################## judgement ###################
-    def judge(self, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
+    def judge(self, item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
         res = {}
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
@@ -457,56 +450,62 @@ class Worker(QThread):
 
             X = 1 + P + FB
             Y = 1 - T - FS
-            buy_qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
+            # buy_qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
+            # res['judge'] = 1
+            # res['qty'] = buy_qty
+            # res['price'] = int(price_sell)      ## 매도 최우선가
 
-            res['judge'] = 1
-            res['qty'] = buy_qty
-            res['price'] = int(price_sell)      ## 매도 최우선가
+            qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
+            price = int(price_sell)
 
-            return res
+            if MAKE_ORDER == 1 :
+                # qty = res['qty']
+                # price = res['price']
+                if qty < 0 :
+                    self.lock = 0
 
-        # Sell & Buy
-        # elif percent > self.PER_HI and step < STEP_LIMIT :
-        #     # sell_qty = int(own_count / 2)
-        #     sell_qty = own_count
-        #     # if sell_qty == 0 :
-        #     #     sell_qty = 1
-        #     price = int(price_sell)
+                elif qty >= 0 :
+                    if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                        if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                            order = {}
+                            order['type'] = 0       ## buy
+                            order['item_code'] = item_code
+                            order['qty'] = qty
+                            order['price'] = price
+                            order['order_type'] = 1
+                            self.indicate_ordered()         ## INDICATE : ordered
+                            self.rq_order.emit(order)       ## make order to master
 
-        #     # res['judge'] = 2
-        #     res['judge'] = 3
-        #     res['qty'] = own_count
-        #     res['price'] = int(price_buy)
+            # return res
 
-        #     return res
-        
         # Full Sell
         elif percent > self.PER_HI and step <= STEP_LIMIT :
-            sell_qty = own_count
+            # sell_qty = own_count
+            # res['judge'] = 3
+            # res['qty'] = own_count  ## 전량
+            # res['price'] = int(price_buy)   ## 매수최우선가
+            qty = own_count
+            price = int(price_buy)
 
-            res['judge'] = 3
-            res['qty'] = own_count  ## 전량
-            res['price'] = int(price_buy)   ## 매수최우선가
-
-            return res
-
-        # # # 손절 1단계
-        # elif percent < PER_LOW and step == STEP_LIIT :
-        #     # if chegang >= 90 :
-        #     sell_qty = own_count
-        #     price = int(price_sell)
-
-        #     res['judge'] = 3
-        #     res['sell_qty'] = sell_qty
-        #     res['sell_price'] = price
-
-        #     return res
+            if MAKE_ORDER == 1 :
+                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                    if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                        order = {}
+                        order['type'] = 1       ## sell
+                        order['item_code'] = item_code
+                        order['qty'] = qty       ## 전량
+                        order['price'] = price   ## 매수 최우선가
+                        order['order_type'] = 3
+                        self.indicate_ordered()         ## INDICATE : ordered
+                        self.rq_order.emit(order)       ## make order to master
+            # return res
 
         # STAY
         else :
-            res['judge'] = 0
+            self.lock = 0
+            # res['judge'] = 0
 
-            return res
+            # return res
             
     def func_GET_db_item(self, code, col):
         conn = sqlite3.connect("item_status.db")
@@ -596,6 +595,11 @@ class Worker(QThread):
 
     def indicate_paused(self) :
         self.rp_dict['ordered'] = 3
+        self.rp_dict['seq'] = self.seq
+        self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
+
+    def indicate_paused2(self) :
+        self.rp_dict['ordered'] = 4
         self.rp_dict['seq'] = self.seq
         self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
 

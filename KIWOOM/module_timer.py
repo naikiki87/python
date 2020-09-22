@@ -18,6 +18,7 @@ UNIT_PRICE_HI_LIM = config.UNIT_PRICE_HI_LIM
 UNIT_PRICE_LOW_LIM = config.UNIT_PRICE_LOW_LIM
 AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
 ITEM_FINDER_PERCENT = config.ITEM_FINDER_PERCENT
+EXCEPT_ITEM = config.EXCEPT_ITEM
 SLOT_EMPTY = 0
 
 class Timer(QThread):
@@ -154,6 +155,11 @@ class Timer(QThread):
             print("cur items : ", self.cur_items)
 
             if self.candidate in self.cur_items :
+                print("already own item")
+                self.candidate_seq = self.candidate_seq + 1
+                self.investigate_items()
+            elif self.candidate in EXCEPT_ITEM :
+                print("exception item choosed : ", self.candidate)
                 self.candidate_seq = self.candidate_seq + 1
                 self.investigate_items()
             else :
