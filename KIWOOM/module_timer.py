@@ -19,6 +19,7 @@ UNIT_PRICE_LOW_LIM = config.UNIT_PRICE_LOW_LIM
 AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
 ITEM_FINDER_PERCENT = config.ITEM_FINDER_PERCENT
 EXCEPT_ITEM = config.EXCEPT_ITEM
+DELAY_SEC = config.DELAY_SEC
 SLOT_EMPTY = 0
 
 class Timer(QThread):
@@ -26,10 +27,14 @@ class Timer(QThread):
     check_slot = pyqtSignal(int)
     refresh_status = pyqtSignal(int)
     req_buy = pyqtSignal(dict)
+    release_paused = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
         # self.make_db_table()
+        self.paused = [0,0,0,0,0]
+        self.paused_remain_sec = [0,0,0,0,0]
+
         self.item_checking = 0
         self.candidate = ""
 
@@ -48,7 +53,6 @@ class Timer(QThread):
 
     def run(self):
         temp_time = {}
-        test_time = 0
         while True:
             now = datetime.datetime.now()
             mkt_open = now.replace(hour=9, minute=0, second=0)
@@ -66,42 +70,51 @@ class Timer(QThread):
             if now >= mkt_open and now < mkt_close :
                 temp_time['possible'] = 1
                 if now >= am930 and c_sec == "00" :
-                    print(self.now(), "[TIMER] [run] item finding : ", self.waiting_time)
                     self.refresh_status.emit(1)
 
-                if now >= am930 and now<=pm240 and c_sec == "00" and self.item_checking == 0 :
+                if now >= am930 and now<=pm240 and c_sec == "30" and self.item_checking == 0 :
                     self.check_slot.emit(1)
             else :
                 temp_time['possible'] = 0
-            self.cur_time.emit(temp_time)
-            test_time = test_time + 1
+            self.cur_time.emit(temp_time)       ## 현재시각 및 market status send
+
 
             if self.waiting_check == 1 :
                 self.waiting_time = self.waiting_time + 1
                 if self.waiting_time % 2 == 0 :
                     print("[TIMER] [run] item finding : ", self.waiting_time)
 
+                if self.waiting_time == 100 :        ## item finding 중 100 이상 응답이 없을 경우
+                    print("[TIMER] [run] item finder alive checking END - exceed 100")
+                    self.waiting_time = 0
+                    self.waiting_check = 0
+                    self.finder.terminate()         ## 쓰레드 종료
+                    self.item_checking = 0          ## item checking 해제
+
+                    self.finder = module_finder.Finder()        ## 신규 쓰레드 생성
+                    self.finder.alive.connect(self.finder_alive_checking)
+                    self.finder.candidate.connect(self.check_candidate)
+
             elif self.waiting_check == 2 :
                 self.waiting_time = 0       ## waiting time initialize
                 self.waiting_check = 0
-                print(self.now(), "[TIMER] [run] item finder alive checking END")
-            
-            # elif self.waiting_check == 0 :
-            #     self.waiting_time = 0       ## waiting time initialize
+                print("[TIMER] [run] item finder alive checking END")
 
-            if self.waiting_time == 100 :        ## item finding 중 100 이상 응답이 없을 경우
-                print(self.now(), "[TIMER] [run] item finder alive checking END - exceed 100")
-                self.waiting_time = 0
-                self.waiting_check = 0
-                self.finder.terminate()         ## 쓰레드 종료
-                self.item_checking = 0          ## item checking 해제
-
-                self.finder = module_finder.Finder()        ## 신규 쓰레드 생성
-                self.finder.alive.connect(self.finder_alive_checking)
-                self.finder.candidate.connect(self.check_candidate)
-                # self.finder.start()
+            for i in range(5) :
+                if self.paused[i] == 1 :
+                    if self.paused_remain_sec[i] != 0 :
+                        self.paused_remain_sec[i] = self.paused_remain_sec[i] - 1
+                    elif self.paused_remain_sec[i] == 0 :
+                        self.paused[i] = 0
+                        self.release_paused.emit(i)
 
             time.sleep(1)
+    
+    @pyqtSlot(int)
+    def rcv_paused(self, data) :
+        # print("rcv paused : ", data)
+        self.paused[data] = 1
+        self.paused_remain_sec[data] = DELAY_SEC
 
     @pyqtSlot(int)
     def finder_alive_checking(self, data) :
@@ -126,7 +139,7 @@ class Timer(QThread):
 
         # if empty != 0 :
         if empty > SLOT_EMPTY :
-            self.item_checking = 1
+            self.item_checking = 1              ## checking 중임을 표시
             self.finder.start()
     
     @pyqtSlot(dict)

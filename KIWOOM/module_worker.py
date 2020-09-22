@@ -12,7 +12,7 @@ from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore
 from collections import deque
 import config
-import module_delay
+# import module_delay
 
 ACCOUNT = config.ACCOUNT
 PASSWORD = config.PASSWORD
@@ -36,6 +36,7 @@ class Worker(QThread):
 
     def __init__(self, seq):
         super().__init__()
+        self.item_code = ''
         self.seq = seq
         self.PER_HI = 0.5
         self.items = deque()
@@ -44,7 +45,7 @@ class Worker(QThread):
 
         self.first_rcv = 1
         
-        self.delay_item = ''
+        # self.delay_item = ''
 
         self.ordering_item_code = 0
         self.ordering_qty = 0
@@ -140,14 +141,37 @@ class Worker(QThread):
                         if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                             self.lock = 0           ## unlock
 
-    @pyqtSlot(int)
-    def resume_thread(self, data) :
-        self.delay.terminate()
+    # @pyqtSlot(int)
+    # def resume_thread(self, data) :
+    #     self.delay.terminate()
         
-        if data == self.seq : 
-            item_code = self.delay_item
-            orderType = self.func_GET_db_item(item_code, 3)
+    #     if data == self.seq : 
+    #         item_code = self.delay_item
+    #         orderType = self.func_GET_db_item(item_code, 3)
 
+    #         if orderType != "none" :                ## after get data from db
+    #             if orderType == 1 :                                             ## add water
+    #                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+    #                     self.indicate_release()
+    #                     self.lock = 0                           ## unlock
+
+    #             elif orderType == 5 :                           # 신규 buy인 경우 db삭제 및 lock 해제
+    #                 self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
+    #                 self.lock = 0                               ## unlock
+
+    #             elif orderType == 9 :                           # 신규 item finding buy인 경우 db삭제 및 lock 해제
+    #                 self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
+    #                 self.lock = 0                               ## unlock
+
+    #             else :                                          # 다른 sit인 경우 db order 정보 0으로 세팅 및 lock 해제
+    #                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+    #                     self.lock = 0                           ## unlock
+
+    @pyqtSlot(int)
+    def resume_paused(self, data) :
+        if data == self.seq : 
+            item_code = self.item_code
+            orderType = self.func_GET_db_item(item_code, 3)
             if orderType != "none" :                ## after get data from db
                 if orderType == 1 :                                             ## add water
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
@@ -165,25 +189,24 @@ class Worker(QThread):
                 else :                                          # 다른 sit인 경우 db order 정보 0으로 세팅 및 lock 해제
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                         self.lock = 0                           ## unlock
-
-    def pause_worker(self, item_code) :
-        self.rp_dict = {}
-        self.pause_time = self.pause_time + 1
-        if self.pause_time < 3 :        ## 2번까지 30초 pause 시행
-            print("30 sec pause : ", self.pause_time)
-            self.delay = module_delay.Delay(self.seq, 30000)        ## 30 sec delay
-            self.delay.resume.connect(self.resume_thread)
-            self.delay_item = item_code
-            self.indicate_paused()
-            self.delay.start()
-        elif self.pause_time == 3 :
-            print("5 min pause : ", self.pause_time)
-            self.pause_time = 0     ## reset
-            self.delay = module_delay.Delay(self.seq, 300000)       ## 5min delay
-            self.delay.resume.connect(self.resume_thread)
-            self.delay_item = item_code
-            self.indicate_paused2()
-            self.delay.start()
+    # def pause_worker(self, item_code) :
+    #     self.rp_dict = {}
+    #     self.pause_time = self.pause_time + 1
+    #     if self.pause_time < 3 :        ## 2번까지 30초 pause 시행
+    #         print("30 sec pause : ", self.seq, self.pause_time)
+    #         self.delay = module_delay.Delay(self.seq, 30000)        ## 30 sec delay
+    #         self.delay.resume.connect(self.resume_thread)
+    #         self.delay_item = item_code
+    #         self.indicate_paused()
+    #         self.delay.start()
+    #     elif self.pause_time == 3 :
+    #         print("1 min pause : ", self.seq, self.pause_time)
+    #         self.pause_time = 0     ## reset
+    #         self.delay = module_delay.Delay(self.seq, 60000)       ## 5min delay
+    #         self.delay.resume.connect(self.resume_thread)
+    #         self.delay_item = item_code
+    #         self.indicate_paused2()
+    #         self.delay.start()
 
     @pyqtSlot(dict)
     def reply_first_check(self, data) :
@@ -198,6 +221,7 @@ class Worker(QThread):
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
+        self.item_code = item_code
         deposit = data['deposit']
 
         if data['autoTrade'] == 0 :                                             ## manual trading 시
@@ -207,8 +231,6 @@ class Worker(QThread):
                 if MAKE_ORDER == 1 :
                     qty = data['qty']
                     price = data['price']
-
-                    # self.func_test(item_code, qty, price, orderType)
 
                     self.func_INSERT_db_item(item_code, 0, 0, 0, 0)             ## 신규 item db insert
 
@@ -298,57 +320,58 @@ class Worker(QThread):
 
         elif data['autoTrade'] == 1 :                   ## auto trading 시
             if self.first_rcv == 1 :
-                self.lock = 1
-                self.prev_data = [data['cur_price'], data['price_buy'], data['price_sell']]
+                print("first receive : ", self.seq, self.lock)
+                if self.lock == 0 :
+                    self.lock = 1
+                    self.prev_data = [data['cur_price'], data['price_buy'], data['price_sell']]
 
-                ## SHOW -> TABLE ##
-                own_count = data['own_count']
-                unit_price = data['unit_price']
-                cur_price = data['cur_price']
-                price_buy = data['price_buy']
-                price_sell = data['price_sell']
-                chegang = data['chegang']
+                    ## SHOW -> TABLE ##
+                    own_count = data['own_count']
+                    unit_price = data['unit_price']
+                    cur_price = data['cur_price']
+                    price_buy = data['price_buy']
+                    price_sell = data['price_sell']
+                    chegang = data['chegang']
 
-                total_purchase = own_count * unit_price
-                total_evaluation = own_count * price_buy    ## 매수 최우선가 기준
-                temp_total = total_evaluation - total_purchase
-                fee_buy = FEE_BUY * total_purchase
-                fee_sell = FEE_SELL * total_evaluation
-                tax = TAX * total_evaluation
-                total_fee = round((fee_buy + fee_sell + tax), 1)
-                total_sum = total_evaluation - total_purchase - total_fee
-                percent = round((total_sum / total_purchase) * 100, 1)
-                step = self.func_GET_db_item(item_code, 1)
+                    total_purchase = own_count * unit_price
+                    total_evaluation = own_count * price_buy    ## 매수 최우선가 기준
+                    temp_total = total_evaluation - total_purchase
+                    fee_buy = FEE_BUY * total_purchase
+                    fee_sell = FEE_SELL * total_evaluation
+                    tax = TAX * total_evaluation
+                    total_fee = round((fee_buy + fee_sell + tax), 1)
+                    total_sum = total_evaluation - total_purchase - total_fee
+                    percent = round((total_sum / total_purchase) * 100, 1)
+                    step = self.func_GET_db_item(item_code, 1)
 
-                self.rp_dict = {}
-                self.rp_dict.update(data)
-                self.rp_dict['ordered'] = 0
-                self.rp_dict['total_purchase'] = int(total_purchase)
-                self.rp_dict['total_evaluation'] = int(total_evaluation)
-                self.rp_dict['temp_total'] = int(temp_total)
-                self.rp_dict['total_fee'] = int(total_fee)
-                self.rp_dict['total_sum'] = int(total_sum)
-                self.rp_dict['percent'] = percent
-                self.rp_dict['step'] = step
-                self.rp_dict['seq'] = self.seq
-                self.rp_dict['high'] = self.PER_HI
-
-                self.trans_dict.emit(self.rp_dict)
-
-                if self.func_GET_db_item(item_code, 2) == 1 :           ## 프로그램이 시작했는데 현재 item이 order 중인 경우 
-                    # self.lock = 1
                     self.rp_dict = {}
-                    self.indicate_ordered()         ## INDICATE : ordered
+                    self.rp_dict.update(data)
+                    self.rp_dict['ordered'] = 0
+                    self.rp_dict['total_purchase'] = int(total_purchase)
+                    self.rp_dict['total_evaluation'] = int(total_evaluation)
+                    self.rp_dict['temp_total'] = int(temp_total)
+                    self.rp_dict['total_fee'] = int(total_fee)
+                    self.rp_dict['total_sum'] = int(total_sum)
+                    self.rp_dict['percent'] = percent
+                    self.rp_dict['step'] = step
+                    self.rp_dict['seq'] = self.seq
+                    self.rp_dict['high'] = self.PER_HI
 
-                    print("Thread 주문여부 확인 : ", self.seq)
-                    ordered_item = {}
-                    ordered_item['slot'] = self.seq
-                    ordered_item['item_code'] = item_code
-                    self.first_jumun_check.emit(ordered_item)
+                    self.trans_dict.emit(self.rp_dict)
 
-                else :
-                    self.first_rcv = 0
-                    self.lock = 0
+                    if self.func_GET_db_item(item_code, 2) == 1 :           ## 프로그램이 시작했는데 현재 item이 order 중인 경우 
+                        # self.lock = 1
+                        self.rp_dict = {}
+                        self.indicate_ordered()         ## INDICATE : ordered
+
+                        ordered_item = {}
+                        ordered_item['slot'] = self.seq
+                        ordered_item['item_code'] = item_code
+                        self.first_jumun_check.emit(ordered_item)
+
+                    else :
+                        self.first_rcv = 0
+                        self.lock = 0
                 # self.first_rcv = 0
             else :      ## 2번째 receive 부터
                 if self.lock == 0 :

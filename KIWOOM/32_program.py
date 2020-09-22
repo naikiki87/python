@@ -31,6 +31,8 @@ class Kiwoom(QMainWindow, form_class):
     res_check_slot = pyqtSignal(list)
     reply_buy = pyqtSignal(int)
     reply_first_check = pyqtSignal(dict)
+    sig_timer_paused = pyqtSignal(int)
+    sig_worker_resume = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
@@ -146,6 +148,12 @@ class Kiwoom(QMainWindow, form_class):
         except :
             pass
 
+    def show_pause(self, slot):
+        try :
+            self.table_summary.item(int(slot), 0).setBackground(QtGui.QColor(255,255,0))
+        except :
+            pass
+
     @pyqtSlot(int)
     def th_connected(self, data) :
         self.list_th_connected[self.th_seq] = data
@@ -167,10 +175,12 @@ class Kiwoom(QMainWindow, form_class):
 
         if (int(price) * int(qty)) <= int(d2) :
             self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
-            # print("can buy")
         
         else :
-            self.pause_worker(slot, item_code)
+            self.show_pause(slot)
+            self.sig_timer_paused.emit(slot)
+
+            # self.pause_worker(slot, item_code)
 
             if self.check_jan[slot][3] == 9 :                     ## item find를 통해 buy 하는 경우
                 self.item_finder_req = 0                            ## item finder req 해제
@@ -271,6 +281,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict0.connect(self.worker0.dict_from_main)
         self.che_dict.connect(self.worker0.che_result)
         self.reply_first_check.connect(self.worker0.reply_first_check)
+        self.sig_worker_resume.connect(self.worker0.resume_paused)
         self.worker0.trans_dict.connect(self.rp_dict)
         self.worker0.rq_order.connect(self.rq_order)
         self.worker0.first_jumun_check.connect(self.first_rcv_jumun_check)
@@ -288,6 +299,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict1.connect(self.worker1.dict_from_main)
         self.che_dict.connect(self.worker1.che_result)
         self.reply_first_check.connect(self.worker1.reply_first_check)
+        self.sig_worker_resume.connect(self.worker1.resume_paused)
         self.worker1.trans_dict.connect(self.rp_dict)
         self.worker1.rq_order.connect(self.rq_order)
         self.worker1.first_jumun_check.connect(self.first_rcv_jumun_check)
@@ -305,6 +317,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict2.connect(self.worker2.dict_from_main)
         self.che_dict.connect(self.worker2.che_result)
         self.reply_first_check.connect(self.worker2.reply_first_check)
+        self.sig_worker_resume.connect(self.worker2.resume_paused)
         self.worker2.trans_dict.connect(self.rp_dict)
         self.worker2.rq_order.connect(self.rq_order)
         self.worker2.first_jumun_check.connect(self.first_rcv_jumun_check)
@@ -322,6 +335,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict3.connect(self.worker3.dict_from_main)
         self.che_dict.connect(self.worker3.che_result)
         self.reply_first_check.connect(self.worker3.reply_first_check)
+        self.sig_worker_resume.connect(self.worker3.resume_paused)
         self.worker3.trans_dict.connect(self.rp_dict)
         self.worker3.rq_order.connect(self.rq_order)
         self.worker3.first_jumun_check.connect(self.first_rcv_jumun_check)
@@ -340,6 +354,7 @@ class Kiwoom(QMainWindow, form_class):
         self.test_dict4.connect(self.worker4.dict_from_main)
         self.che_dict.connect(self.worker4.che_result)
         self.reply_first_check.connect(self.worker4.reply_first_check)
+        self.sig_worker_resume.connect(self.worker4.resume_paused)
         self.worker4.trans_dict.connect(self.rp_dict)
         self.worker4.rq_order.connect(self.rq_order)
         self.worker4.first_jumun_check.connect(self.first_rcv_jumun_check)
@@ -1153,7 +1168,9 @@ class Kiwoom(QMainWindow, form_class):
             self.timer.check_slot.connect(self.check_slot)
             self.timer.req_buy.connect(self.auto_buy)
             self.timer.refresh_status.connect(self.refresh_status)
+            self.timer.release_paused.connect(self.release_paused)
             self.res_check_slot.connect(self.timer.res_check_slot)
+            self.sig_timer_paused.connect(self.timer.rcv_paused)
             self.reply_buy.connect(self.timer.reply_buy)
             self.timer.start()
 
@@ -1175,7 +1192,11 @@ class Kiwoom(QMainWindow, form_class):
                 self.kiwoom.dynamicCall("CommConnect()")        ## aloha
             except :
                 pass
-    
+    @pyqtSlot(int)
+    def release_paused(self, data) :
+        self.table_summary.item(int(data), 0).setBackground(QtGui.QColor(255,255,255))
+        self.sig_worker_resume.emit(int(data))
+
     def func_SET_tableSUMMARY(self):
         row_count = 5
         col_count = SUMMARY_COL_CNT
@@ -1351,16 +1372,16 @@ class Kiwoom(QMainWindow, form_class):
     def receive_real_data(self, code, real_type, real_data): 
         # print("[MAIN] receive real : ", code)
         if self.possible_time == 1 and self.send_data == 1 :
-            th_num = self.which_thread(code)[1]
+            slot = self.which_thread(code)[1]
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
             if cur_price != '' :
                 try :
                     price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()       ## 매도 최우선가
                     price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()        ## 매수 최우선가
                     chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
-                    item_name = self.table_summary.item(th_num, 1).text()
-                    own_count = self.table_summary.item(th_num, 2).text()
-                    unit_price = self.table_summary.item(th_num, 3).text()
+                    item_name = self.table_summary.item(slot, 1).text()
+                    own_count = self.table_summary.item(slot, 2).text()
+                    unit_price = self.table_summary.item(slot, 3).text()
 
                     temp = {}
                     temp['item_code'] = code
@@ -1375,15 +1396,15 @@ class Kiwoom(QMainWindow, form_class):
 
                     temp['autoTrade'] = 1
 
-                    if th_num == 0 :
+                    if slot == 0:
                         self.test_dict0.emit(temp)
-                    elif th_num == 1 :
+                    elif slot == 1:
                         self.test_dict1.emit(temp)
-                    elif th_num == 2 :
+                    elif slot == 2:
                         self.test_dict2.emit(temp)
-                    elif th_num == 3 :
+                    elif slot == 3:
                         self.test_dict3.emit(temp)
-                    elif th_num == 4 :
+                    elif slot == 4:
                         self.test_dict4.emit(temp)
                 
                 except :
