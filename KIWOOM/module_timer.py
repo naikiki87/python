@@ -28,6 +28,8 @@ class Timer(QThread):
     refresh_status = pyqtSignal(int)
     req_buy = pyqtSignal(dict)
     release_paused = pyqtSignal(int)
+    req_slot = pyqtSignal(int)
+    check_jumun = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
@@ -59,6 +61,7 @@ class Timer(QThread):
             mkt_close = now.replace(hour=15, minute=30, second=0)
             am930 = now.replace(hour=9, minute=30, second=0)
             pm240 = now.replace(hour=14, minute=40, second=0)
+            pm320 = now.replace(hour=15, minute=20, second=0)
 
             c_hour = now.strftime('%H')
             c_min = now.strftime('%M')
@@ -74,6 +77,10 @@ class Timer(QThread):
 
                 if now >= am930 and now<=pm240 and c_sec == "30" and self.item_checking == 0 :
                     self.check_slot.emit(1)
+                
+            if now >= am930 and now<=pm320 and c_sec == "15" :
+                self.check_jumun.emit(1)
+                    
             else :
                 temp_time['possible'] = 0
             self.cur_time.emit(temp_time)       ## 현재시각 및 market status send
@@ -110,9 +117,25 @@ class Timer(QThread):
 
             time.sleep(1)
     
+    @pyqtSlot(list)
+    def jumun_check(self, data):
+        print("timer jumun check : ", data)
+
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "select code from STATUS where ordered=1"
+        cur.execute(sql)
+        rows = cur.fetchall()
+        conn.close()
+
+        print("paused : ", self.paused)
+
+        for i in range(len(rows)) :
+            if rows[i][0] in data :
+                print(rows[i][0], "is in cur items")
+
     @pyqtSlot(int)
     def rcv_paused(self, data) :
-        # print("rcv paused : ", data)
         self.paused[data] = 1
         self.paused_remain_sec[data] = DELAY_SEC
 

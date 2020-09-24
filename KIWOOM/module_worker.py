@@ -175,7 +175,7 @@ class Worker(QThread):
             if orderType != "none" :                ## after get data from db
                 if orderType == 1 :                                             ## add water
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
-                        self.indicate_release()
+                        # self.indicate_release()
                         self.lock = 0                           ## unlock
 
                 elif orderType == 5 :                           # 신규 buy인 경우 db삭제 및 lock 해제
@@ -616,15 +616,15 @@ class Worker(QThread):
         self.rp_dict['seq'] = self.seq
         self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
 
-    def indicate_paused(self) :
-        self.rp_dict['ordered'] = 3
-        self.rp_dict['seq'] = self.seq
-        self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
+    # def indicate_paused(self) :
+    #     self.rp_dict['ordered'] = 3
+    #     self.rp_dict['seq'] = self.seq
+    #     self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
 
-    def indicate_paused2(self) :
-        self.rp_dict['ordered'] = 4
-        self.rp_dict['seq'] = self.seq
-        self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
+    # def indicate_paused2(self) :
+    #     self.rp_dict['ordered'] = 4
+    #     self.rp_dict['seq'] = self.seq
+    #     self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
 
     def indicate_release(self) :
         self.rp_dict['ordered'] = 2

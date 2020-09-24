@@ -29,6 +29,7 @@ class Kiwoom(QMainWindow, form_class):
     test_dict4 = pyqtSignal(dict)
     che_dict = pyqtSignal(dict)
     res_check_slot = pyqtSignal(list)
+    res_check_slot2 = pyqtSignal(list)
     reply_buy = pyqtSignal(int)
     reply_first_check = pyqtSignal(dict)
     sig_timer_paused = pyqtSignal(int)
@@ -51,6 +52,7 @@ class Kiwoom(QMainWindow, form_class):
 
     def init_ENV(self) :
         ## flag setting
+        self.paused = [0,0,0,0,0]
         self.tempi = 0
         self.win_check_deposit = 1000
         self.today = self.func_GET_Today()
@@ -177,8 +179,10 @@ class Kiwoom(QMainWindow, form_class):
             self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
         
         else :
-            self.show_pause(slot)
-            self.sig_timer_paused.emit(slot)
+            # self.show_pause(slot)
+            if self.set_pause(int(slot)) == 1 :
+                self.table_summary.item(int(slot), 0).setBackground(QtGui.QColor(255,255,0))
+                self.sig_timer_paused.emit(slot)
 
             # self.pause_worker(slot, item_code)
 
@@ -377,17 +381,18 @@ class Kiwoom(QMainWindow, form_class):
         self.first_rcv_jumun_check_2(slot, item_code)
 
     def first_rcv_jumun_check_2(self, item_slot, item_code) :
+        print("check jumun status : ", item_slot, item_code)
         rqname = str(item_code) + str(item_slot) + "first_jumun_check"
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "전체종목구분", 0)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "매매구분", 0)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", item_code)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "체결구분", 0)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10075", 0, "0102")
+        if self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opt10075", 0, "0102") != 0 :
+            self.first_rcv_jumun_check_2(item_slot, item_code)
 
     def res_first_check_jumun(self, rqname, trcode, recordname, item_code, item_slot) :
-        # print("res_first_rcv_jumun_check : ", item_code, item_slot)
-
+        print("res check jumun status : ", item_slot, item_code)
         res = 0
         slot = int(item_slot)
         data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
@@ -400,18 +405,11 @@ class Kiwoom(QMainWindow, form_class):
             jumun_mi = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "미체결수량").replace('+', '').replace('-', '').strip())
 
             # print(i, jumun_item_code, jumun_qty, jumun_price, jumun_time, jumun_mi)
-
             if item_code == jumun_item_code :
                 if jumun_mi > 0 :
                     res = 1
-
-        # if res == 1 :                                                   ## 주문내역이 있는 경우
-            # print(self.now(), "[MAIN] [res_check_jumun] ORDER LIST 있음")
-            ## do nothing
-
         if res == 0 :                                                 ## 주문내역이 없는 경우
             if self.first_check_times[slot] == 2 :                            ## jumun receive 여부 3회까지 확인
-                # print(self.now(), "[MAIN] [res_check_jumun] ORDER List XXXXXX : ", self.first_check_times[slot])
                 self.first_check_times[slot] = 0                              ## re init
 
                 temp = {}
@@ -423,6 +421,9 @@ class Kiwoom(QMainWindow, form_class):
                 self.first_check_times[slot] = self.first_check_times[slot] + 1
                 QtTest.QTest.qWait(500)                                 ## 100 ms delay
                 self.first_rcv_jumun_check_2(slot, item_code)           ## recheck
+        
+        elif res == 1 :
+            self.first_check_times[slot] = 0
 
 
     def order_start(self) :
@@ -585,14 +586,19 @@ class Kiwoom(QMainWindow, form_class):
 
         if res == 1 :                                                   ## 주문내역이 있는 경우
             print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV PROPERLY")
-            ## do nothing
+            self.check_jumun_times[slot] = 0
 
         elif res == 0 :                                                 ## 주문내역이 없는 경우
             if self.check_jumun_times[slot] == 5 :                            ## jumun receive 여부 3회까지 확인
                 self.check_jumun_times[slot] = 0                              ## re init
                 print(self.now(), "[MAIN] [res_check_jumun] ORDER RCV NOT PROPERTY : END")
 
-                self.pause_worker(slot, item_code)
+                # self.show_pause(slot)
+                if self.set_pause(int(slot)) == 1 :
+                    self.table_summary.item(int(slot), 0).setBackground(QtGui.QColor(255,255,0))
+                    self.sig_timer_paused.emit(slot)
+
+                # self.pause_worker(slot, item_code)
 
                 if self.check_jumun[slot][3] == 9 :                     ## item find를 통해 buy 하는 경우
                     self.item_finder_req = 0
@@ -1138,6 +1144,9 @@ class Kiwoom(QMainWindow, form_class):
     def check_slot(self, data) :
         self.res_check_slot.emit(self.item_slot)
     @pyqtSlot(int)
+    def check_slot2(self, data) :
+        self.res_check_slot2.emit(self.item_slot)
+    @pyqtSlot(int)
     def refresh_status(self, data) :
         ref_time = self.func_GET_CurrentTime2()
         self.load_etc_data()
@@ -1158,6 +1167,22 @@ class Kiwoom(QMainWindow, form_class):
 
         self.func_ORDER_BUY()
 
+    @pyqtSlot(int)
+    def min_check_jumun(self, data) :
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "select code from STATUS where ordered=1"
+        cur.execute(sql)
+        rows = cur.fetchall()
+        conn.close()
+
+        for i in range(len(rows)) :
+            temp_slot = self.which_thread(rows[i][0])[1]
+            self.paused[0] = 1
+            if self.paused[temp_slot] == 0 :                ## pause status
+                self.first_rcv_jumun_check_2(temp_slot, rows[i][0])
+                QtTest.QTest.qWait(350)
+
     def event_connect(self, err_code):
         if err_code == 0:
             timestamp = self.func_GET_CurrentTime()
@@ -1166,10 +1191,13 @@ class Kiwoom(QMainWindow, form_class):
             self.timer = module_timer.Timer()
             self.timer.cur_time.connect(self.update_times)
             self.timer.check_slot.connect(self.check_slot)
+            self.timer.check_jumun.connect(self.min_check_jumun)
+            self.timer.req_slot.connect(self.check_slot2)
             self.timer.req_buy.connect(self.auto_buy)
             self.timer.refresh_status.connect(self.refresh_status)
             self.timer.release_paused.connect(self.release_paused)
             self.res_check_slot.connect(self.timer.res_check_slot)
+            self.res_check_slot2.connect(self.timer.jumun_check)
             self.sig_timer_paused.connect(self.timer.rcv_paused)
             self.reply_buy.connect(self.timer.reply_buy)
             self.timer.start()
@@ -1192,10 +1220,20 @@ class Kiwoom(QMainWindow, form_class):
                 self.kiwoom.dynamicCall("CommConnect()")        ## aloha
             except :
                 pass
+    
     @pyqtSlot(int)
     def release_paused(self, data) :
-        self.table_summary.item(int(data), 0).setBackground(QtGui.QColor(255,255,255))
-        self.sig_worker_resume.emit(int(data))
+        if self.unset_pause(int(data)) == 1 :
+            self.table_summary.item(int(data), 0).setBackground(QtGui.QColor(255,255,255))
+            self.sig_worker_resume.emit(int(data))
+
+    def set_pause(self, slot) :
+        self.paused[slot] = 1
+        return 1
+
+    def unset_pause(self, slot) :
+        self.paused[slot] = 0
+        return 1
 
     def func_SET_tableSUMMARY(self):
         row_count = 5
