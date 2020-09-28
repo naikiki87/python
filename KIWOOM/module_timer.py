@@ -29,7 +29,7 @@ class Timer(QThread):
     req_buy = pyqtSignal(dict)
     release_paused = pyqtSignal(int)
     req_slot = pyqtSignal(int)
-    check_jumun = pyqtSignal(int)
+    sig_main_check_jumun = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
@@ -78,8 +78,8 @@ class Timer(QThread):
                 if now >= am930 and now<=pm240 and c_sec == "30" and self.item_checking == 0 :
                     self.check_slot.emit(1)
                 
-            if now >= am930 and now<=pm320 and c_sec == "15" :
-                self.check_jumun.emit(1)
+                if now >= am930 and now<=pm320 and c_sec == "15" :
+                    self.sig_main_check_jumun.emit(1)
                     
             else :
                 temp_time['possible'] = 0

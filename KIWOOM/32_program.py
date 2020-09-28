@@ -193,6 +193,7 @@ class Kiwoom(QMainWindow, form_class):
 
     @pyqtSlot(dict)
     def rq_order(self, data) :
+        self.table_summary.item(data['slot'], 0).setBackground(QtGui.QColor(0,255,0))
         buy_or_sell = data['type']
         item_code = data['item_code']
         qty = data['qty']
@@ -381,6 +382,7 @@ class Kiwoom(QMainWindow, form_class):
         self.first_rcv_jumun_check_2(slot, item_code)
 
     def first_rcv_jumun_check_2(self, item_slot, item_code) :
+        self.table_summary.item(int(item_slot), 0).setBackground(QtGui.QColor(0,255,0))
         print("check jumun status : ", item_slot, item_code)
         rqname = str(item_code) + str(item_slot) + "first_jumun_check"
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
@@ -411,6 +413,8 @@ class Kiwoom(QMainWindow, form_class):
         if res == 0 :                                                 ## 주문내역이 없는 경우
             if self.first_check_times[slot] == 2 :                            ## jumun receive 여부 3회까지 확인
                 self.first_check_times[slot] = 0                              ## re init
+                print("nonononono : ", slot, item_code)
+                self.table_summary.item(int(slot), 0).setBackground(QtGui.QColor(255,255,255))
 
                 temp = {}
                 temp['slot'] = slot
@@ -1169,6 +1173,7 @@ class Kiwoom(QMainWindow, form_class):
 
     @pyqtSlot(int)
     def min_check_jumun(self, data) :
+        print("main min_check_jumun : ", data)
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
         sql = "select code from STATUS where ordered=1"
@@ -1176,9 +1181,11 @@ class Kiwoom(QMainWindow, form_class):
         rows = cur.fetchall()
         conn.close()
 
+        print("self.paused : ", self.paused)
+
         for i in range(len(rows)) :
             temp_slot = self.which_thread(rows[i][0])[1]
-            self.paused[0] = 1
+            # self.paused[0] = 1
             if self.paused[temp_slot] == 0 :                ## pause status
                 self.first_rcv_jumun_check_2(temp_slot, rows[i][0])
                 QtTest.QTest.qWait(350)
@@ -1191,7 +1198,7 @@ class Kiwoom(QMainWindow, form_class):
             self.timer = module_timer.Timer()
             self.timer.cur_time.connect(self.update_times)
             self.timer.check_slot.connect(self.check_slot)
-            self.timer.check_jumun.connect(self.min_check_jumun)
+            self.timer.sig_main_check_jumun.connect(self.min_check_jumun)
             self.timer.req_slot.connect(self.check_slot2)
             self.timer.req_buy.connect(self.auto_buy)
             self.timer.refresh_status.connect(self.refresh_status)

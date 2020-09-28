@@ -210,10 +210,11 @@ class Worker(QThread):
 
     @pyqtSlot(dict)
     def reply_first_check(self, data) :
+        print("Worker replya first check : ", data)
         if data['slot'] == self.seq :
             item_code = data['item_code']
-            self.rp_dict = {}
-            self.indicate_release()
+            # self.rp_dict = {}
+            # self.indicate_release()
             if self.func_UPDATE_db_item(item_code, 2, 0) == 1:          ## ordered -> 0
                 self.first_rcv = 0
                 self.lock = 0
@@ -237,6 +238,7 @@ class Worker(QThread):
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:          ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
                             order = {}
+                            order['slot'] = self.seq
                             order['type'] = 0       ## buy
                             order['item_code'] = item_code
                             order['qty'] = qty
@@ -255,6 +257,7 @@ class Worker(QThread):
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 9) == 1:       ## orderType -> 9(manual item finding buy)
                             order = {}
+                            order['slot'] = self.seq
                             order['type'] = 0       ## buy
                             order['item_code'] = item_code
                             order['qty'] = qty
@@ -272,12 +275,13 @@ class Worker(QThread):
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 6) == 1:       ## orderType -> 6(manual gi buy)
                             order = {}
+                            order['slot'] = self.seq
                             order['type'] = 0       ## buy
                             order['item_code'] = item_code
                             order['qty'] = qty
                             order['price'] = price
                             order['order_type'] = orderType
-                            self.indicate_ordered()         ## INDICATE : ordered
+                            # self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)
 
                             # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Gi Buy Manual : ", item_code)
@@ -290,12 +294,13 @@ class Worker(QThread):
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 7) == 1:  ## orderType 변경 -> 7(manual sell)
                             order = {}
+                            order['slot'] = self.seq
                             order['type'] = 1       ## sell
                             order['item_code'] = item_code
                             order['qty'] = qty
                             order['price'] = price
                             order['order_type'] = orderType
-                            self.indicate_ordered()         ## INDICATE : ordered
+                            # self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)
 
                             # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Part Sell Manual : ", item_code)
@@ -308,12 +313,13 @@ class Worker(QThread):
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 8) == 1:  ## orderType 변경 -> 8(manual sell full)
                             order = {}
+                            order['slot'] = self.seq
                             order['type'] = 1      ## sell
                             order['item_code'] = item_code
                             order['qty'] = qty
                             order['price'] = price
                             order['order_type'] = orderType
-                            self.indicate_ordered()         ## INDICATE : ordered
+                            # self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)
 
                             # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Full Sell Manual : ", item_code)
@@ -362,7 +368,7 @@ class Worker(QThread):
                     if self.func_GET_db_item(item_code, 2) == 1 :           ## 프로그램이 시작했는데 현재 item이 order 중인 경우 
                         # self.lock = 1
                         self.rp_dict = {}
-                        self.indicate_ordered()         ## INDICATE : ordered
+                        # self.indicate_ordered()         ## INDICATE : ordered
 
                         ordered_item = {}
                         ordered_item['slot'] = self.seq
@@ -491,12 +497,13 @@ class Worker(QThread):
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
                             order = {}
+                            order['slot'] = self.seq
                             order['type'] = 0       ## buy
                             order['item_code'] = item_code
                             order['qty'] = qty
                             order['price'] = price
                             order['order_type'] = 1
-                            self.indicate_ordered()         ## INDICATE : ordered
+                            # self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)       ## make order to master
 
             # return res
@@ -514,12 +521,13 @@ class Worker(QThread):
                 if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
                     if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
                         order = {}
+                        order['slot'] = self.seq
                         order['type'] = 1       ## sell
                         order['item_code'] = item_code
                         order['qty'] = qty       ## 전량
                         order['price'] = price   ## 매수 최우선가
                         order['order_type'] = 3
-                        self.indicate_ordered()         ## INDICATE : ordered
+                        # self.indicate_ordered()         ## INDICATE : ordered
                         self.rq_order.emit(order)       ## make order to master
             # return res
 
