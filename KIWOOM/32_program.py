@@ -38,17 +38,16 @@ class Kiwoom(QMainWindow, form_class):
     def __init__(self):
         super().__init__()
         self.setupUi(self)
+        self.init_ENV()
+
         self.kiwoom = QAxWidget()
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
-
         self.kiwoom.dynamicCall("CommConnect()")        ## aloha
-        
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
         self.kiwoom.OnReceiveRealData.connect(self.receive_real_data)
         self.kiwoom.OnReceiveChejanData.connect(self.func_RECEIVE_Chejan_data)
 
-        self.init_ENV()
 
     def init_ENV(self) :
         ## flag setting
@@ -375,6 +374,7 @@ class Kiwoom(QMainWindow, form_class):
 
     @pyqtSlot(dict)
     def first_rcv_jumun_check(self, data) :
+        print("first rcv jumun check : ", data)
         slot = data['slot']
         item_code = data['item_code']
         self.first_check_jumun[slot] = item_code
@@ -382,8 +382,6 @@ class Kiwoom(QMainWindow, form_class):
         self.first_rcv_jumun_check_2(slot, item_code)
 
     def first_rcv_jumun_check_2(self, item_slot, item_code) :
-        self.table_summary.item(int(item_slot), 0).setBackground(QtGui.QColor(0,255,0))
-        print("check jumun status : ", item_slot, item_code)
         rqname = str(item_code) + str(item_slot) + "first_jumun_check"
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "전체종목구분", 0)
@@ -394,7 +392,7 @@ class Kiwoom(QMainWindow, form_class):
             self.first_rcv_jumun_check_2(item_slot, item_code)
 
     def res_first_check_jumun(self, rqname, trcode, recordname, item_code, item_slot) :
-        print("res check jumun status : ", item_slot, item_code)
+        # print("res check jumun status : ", item_slot, item_code)
         res = 0
         slot = int(item_slot)
         data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
@@ -413,7 +411,7 @@ class Kiwoom(QMainWindow, form_class):
         if res == 0 :                                                 ## 주문내역이 없는 경우
             if self.first_check_times[slot] == 2 :                            ## jumun receive 여부 3회까지 확인
                 self.first_check_times[slot] = 0                              ## re init
-                print("nonononono : ", slot, item_code)
+                print("[FIRST CHECK] : ", slot, item_code, " : NO")
                 self.table_summary.item(int(slot), 0).setBackground(QtGui.QColor(255,255,255))
 
                 temp = {}
@@ -1173,7 +1171,7 @@ class Kiwoom(QMainWindow, form_class):
 
     @pyqtSlot(int)
     def min_check_jumun(self, data) :
-        print("main min_check_jumun : ", data)
+        # print("main min_check_jumun : ", data)
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
         sql = "select code from STATUS where ordered=1"
@@ -1181,14 +1179,28 @@ class Kiwoom(QMainWindow, form_class):
         rows = cur.fetchall()
         conn.close()
 
-        print("self.paused : ", self.paused)
+        # print("self.paused : ", self.paused)
 
         for i in range(len(rows)) :
             temp_slot = self.which_thread(rows[i][0])[1]
-            # self.paused[0] = 1
             if self.paused[temp_slot] == 0 :                ## pause status
                 self.first_rcv_jumun_check_2(temp_slot, rows[i][0])
                 QtTest.QTest.qWait(350)
+
+    @pyqtSlot(int)
+    def timer_con_finish(self, data) :
+        timestamp = self.func_GET_CurrentTime()
+        self.text_edit.append(timestamp + "Timer Thread Started")
+        self.func_GET_Deposit()
+
+        while True :
+            if self.set_deposit == 1:
+                self.set_deposit = 0
+                break
+            QtTest.QTest.qWait(100)
+
+        self.func_start_check()          # Aloha
+
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -1196,6 +1208,7 @@ class Kiwoom(QMainWindow, form_class):
             self.text_edit.append(timestamp + "Login Complete")
 
             self.timer = module_timer.Timer()
+            self.timer.timer_connected.connect(self.timer_con_finish)
             self.timer.cur_time.connect(self.update_times)
             self.timer.check_slot.connect(self.check_slot)
             self.timer.sig_main_check_jumun.connect(self.min_check_jumun)
@@ -1208,18 +1221,7 @@ class Kiwoom(QMainWindow, form_class):
             self.sig_timer_paused.connect(self.timer.rcv_paused)
             self.reply_buy.connect(self.timer.reply_buy)
             self.timer.start()
-
-            timestamp = self.func_GET_CurrentTime()
-            self.text_edit.append(timestamp + "Timer Thread Started")
-            self.func_GET_Deposit()
-
-            while True :
-                if self.set_deposit == 1:
-                    self.set_deposit = 0
-                    break
-                QtTest.QTest.qWait(100)
-
-            self.func_start_check()          # Aloha
+            print("timer started")
             
         else:
             print(self.now(), "[MAIN] Login Failed")

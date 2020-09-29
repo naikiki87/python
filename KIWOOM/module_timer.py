@@ -30,10 +30,12 @@ class Timer(QThread):
     release_paused = pyqtSignal(int)
     req_slot = pyqtSignal(int)
     sig_main_check_jumun = pyqtSignal(int)
+    timer_connected = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
         # self.make_db_table()
+        self.timer_on = 0
         self.paused = [0,0,0,0,0]
         self.paused_remain_sec = [0,0,0,0,0]
 
@@ -51,69 +53,77 @@ class Timer(QThread):
         self.kiwoom.setControl("KHOPENAPI.KHOpenAPICtrl.1")
         self.kiwoom.dynamicCall("CommConnect()")
 
+        self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
+
+    def event_connect(self, err_code):
+        if err_code == 0 :
+            self.timer_on = 1
+            print("timer connect")
+            self.timer_connected.emit(1)
 
     def run(self):
         temp_time = {}
         while True:
-            now = datetime.datetime.now()
-            mkt_open = now.replace(hour=9, minute=0, second=0)
-            mkt_close = now.replace(hour=15, minute=30, second=0)
-            am930 = now.replace(hour=9, minute=30, second=0)
-            pm240 = now.replace(hour=14, minute=40, second=0)
-            pm320 = now.replace(hour=15, minute=20, second=0)
+            if self.timer_on == 1 :
+                now = datetime.datetime.now()
+                mkt_open = now.replace(hour=9, minute=0, second=0)
+                mkt_close = now.replace(hour=15, minute=30, second=0)
+                am930 = now.replace(hour=9, minute=30, second=0)
+                pm240 = now.replace(hour=14, minute=40, second=0)
+                pm320 = now.replace(hour=15, minute=20, second=0)
 
-            c_hour = now.strftime('%H')
-            c_min = now.strftime('%M')
-            c_sec = now.strftime('%S')
+                c_hour = now.strftime('%H')
+                c_min = now.strftime('%M')
+                c_sec = now.strftime('%S')
 
-            str_time = c_hour + ':' + c_min + ':' + c_sec
-            temp_time['time'] = str_time
+                str_time = c_hour + ':' + c_min + ':' + c_sec
+                temp_time['time'] = str_time
 
-            if now >= mkt_open and now < mkt_close :
-                temp_time['possible'] = 1
-                if now >= am930 and c_sec == "00" :
-                    self.refresh_status.emit(1)
+                if now >= mkt_open and now < mkt_close :
+                    temp_time['possible'] = 1
+                    if now >= am930 and c_sec == "00" :
+                        self.refresh_status.emit(1)
 
-                if now >= am930 and now<=pm240 and c_sec == "30" and self.item_checking == 0 :
-                    self.check_slot.emit(1)
-                
-                if now >= am930 and now<=pm320 and c_sec == "15" :
-                    self.sig_main_check_jumun.emit(1)
+                    if now >= am930 and now<=pm240 and c_sec == "30" and self.item_checking == 0 :
+                        self.check_slot.emit(1)
                     
-            else :
-                temp_time['possible'] = 0
-            self.cur_time.emit(temp_time)       ## 현재시각 및 market status send
+                    if now >= am930 and now<=pm320 and c_sec == "15" :
+                        self.sig_main_check_jumun.emit(1)
+                        
+                else :
+                    temp_time['possible'] = 0
+                self.cur_time.emit(temp_time)       ## 현재시각 및 market status send
 
 
-            if self.waiting_check == 1 :
-                self.waiting_time = self.waiting_time + 1
-                if self.waiting_time % 2 == 0 :
-                    print("[TIMER] [run] item finding : ", self.waiting_time)
+                if self.waiting_check == 1 :
+                    self.waiting_time = self.waiting_time + 1
+                    if self.waiting_time % 2 == 0 :
+                        print("[TIMER] [run] item finding : ", self.waiting_time)
 
-                if self.waiting_time == 100 :        ## item finding 중 100 이상 응답이 없을 경우
-                    print("[TIMER] [run] item finder alive checking END - exceed 100")
-                    self.waiting_time = 0
+                    if self.waiting_time == 100 :        ## item finding 중 100 이상 응답이 없을 경우
+                        print("[TIMER] [run] item finder alive checking END - exceed 100")
+                        self.waiting_time = 0
+                        self.waiting_check = 0
+                        self.finder.terminate()         ## 쓰레드 종료
+                        self.item_checking = 0          ## item checking 해제
+
+                        self.finder = module_finder.Finder()        ## 신규 쓰레드 생성
+                        self.finder.alive.connect(self.finder_alive_checking)
+                        self.finder.candidate.connect(self.check_candidate)
+
+                elif self.waiting_check == 2 :
+                    self.waiting_time = 0       ## waiting time initialize
                     self.waiting_check = 0
-                    self.finder.terminate()         ## 쓰레드 종료
-                    self.item_checking = 0          ## item checking 해제
+                    print("[TIMER] [run] item finder alive checking END")
 
-                    self.finder = module_finder.Finder()        ## 신규 쓰레드 생성
-                    self.finder.alive.connect(self.finder_alive_checking)
-                    self.finder.candidate.connect(self.check_candidate)
-
-            elif self.waiting_check == 2 :
-                self.waiting_time = 0       ## waiting time initialize
-                self.waiting_check = 0
-                print("[TIMER] [run] item finder alive checking END")
-
-            for i in range(5) :
-                if self.paused[i] == 1 :
-                    if self.paused_remain_sec[i] != 0 :
-                        self.paused_remain_sec[i] = self.paused_remain_sec[i] - 1
-                    elif self.paused_remain_sec[i] == 0 :
-                        self.paused[i] = 0
-                        self.release_paused.emit(i)
+                for i in range(5) :
+                    if self.paused[i] == 1 :
+                        if self.paused_remain_sec[i] != 0 :
+                            self.paused_remain_sec[i] = self.paused_remain_sec[i] - 1
+                        elif self.paused_remain_sec[i] == 0 :
+                            self.paused[i] = 0
+                            self.release_paused.emit(i)
 
             time.sleep(1)
     
@@ -158,7 +168,7 @@ class Timer(QThread):
             if data[i] == 0 :
                 empty = empty + 1
 
-        print(self.now(), "[TIMER] [res_check_slot] : ", data, "-> empty : ", empty)
+        print(self.now(), "[TIMER] [res_check_slot] empty : ", empty)
 
         # if empty != 0 :
         if empty > SLOT_EMPTY :

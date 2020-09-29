@@ -210,11 +210,8 @@ class Worker(QThread):
 
     @pyqtSlot(dict)
     def reply_first_check(self, data) :
-        print("Worker replya first check : ", data)
         if data['slot'] == self.seq :
             item_code = data['item_code']
-            # self.rp_dict = {}
-            # self.indicate_release()
             if self.func_UPDATE_db_item(item_code, 2, 0) == 1:          ## ordered -> 0
                 self.first_rcv = 0
                 self.lock = 0
@@ -326,7 +323,6 @@ class Worker(QThread):
 
         elif data['autoTrade'] == 1 :                   ## auto trading 시
             if self.first_rcv == 1 :
-                print("first receive : ", self.seq, self.lock)
                 if self.lock == 0 :
                     self.lock = 1
                     self.prev_data = [data['cur_price'], data['price_buy'], data['price_sell']]
@@ -368,7 +364,7 @@ class Worker(QThread):
                     if self.func_GET_db_item(item_code, 2) == 1 :           ## 프로그램이 시작했는데 현재 item이 order 중인 경우 
                         # self.lock = 1
                         self.rp_dict = {}
-                        # self.indicate_ordered()         ## INDICATE : ordered
+                        self.indicate_ordered()         ## INDICATE : ordered
 
                         ordered_item = {}
                         ordered_item['slot'] = self.seq
