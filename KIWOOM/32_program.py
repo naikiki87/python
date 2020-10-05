@@ -192,7 +192,8 @@ class Kiwoom(QMainWindow, form_class):
 
     @pyqtSlot(dict)
     def rq_order(self, data) :
-        self.table_summary.item(data['slot'], 0).setBackground(QtGui.QColor(0,255,0))
+        # self.tableWidget.setItem(data['slot'], 0, QtGui.QTableWidgetItem())
+        # self.table_summary.item(data['slot'], 0).setBackground(QtGui.QColor(0,255,0))
         buy_or_sell = data['type']
         item_code = data['item_code']
         qty = data['qty']

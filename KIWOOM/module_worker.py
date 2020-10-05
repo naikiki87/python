@@ -278,7 +278,7 @@ class Worker(QThread):
                             order['qty'] = qty
                             order['price'] = price
                             order['order_type'] = orderType
-                            # self.indicate_ordered()         ## INDICATE : ordered
+                            self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)
 
                             # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Gi Buy Manual : ", item_code)
@@ -297,7 +297,7 @@ class Worker(QThread):
                             order['qty'] = qty
                             order['price'] = price
                             order['order_type'] = orderType
-                            # self.indicate_ordered()         ## INDICATE : ordered
+                            self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)
 
                             # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Part Sell Manual : ", item_code)
@@ -316,7 +316,7 @@ class Worker(QThread):
                             order['qty'] = qty
                             order['price'] = price
                             order['order_type'] = orderType
-                            # self.indicate_ordered()         ## INDICATE : ordered
+                            self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)
 
                             # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Full Sell Manual : ", item_code)
@@ -499,7 +499,7 @@ class Worker(QThread):
                             order['qty'] = qty
                             order['price'] = price
                             order['order_type'] = 1
-                            # self.indicate_ordered()         ## INDICATE : ordered
+                            self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)       ## make order to master
 
             # return res
@@ -523,7 +523,7 @@ class Worker(QThread):
                         order['qty'] = qty       ## 전량
                         order['price'] = price   ## 매수 최우선가
                         order['order_type'] = 3
-                        # self.indicate_ordered()         ## INDICATE : ordered
+                        self.indicate_ordered()         ## INDICATE : ordered
                         self.rq_order.emit(order)       ## make order to master
             # return res
 
