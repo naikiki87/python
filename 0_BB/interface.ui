@@ -140,7 +140,7 @@
       </rect>
      </property>
      <property name="text">
-      <string>F</string>
+      <string>Foul</string>
      </property>
     </widget>
     <widget class="QPushButton" name="btn_TEST_4">
@@ -193,6 +193,32 @@
      </property>
      <property name="text">
       <string>HR</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_Fly">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>110</y>
+       <width>89</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Fly</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="btn_HIT_TEST">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>190</y>
+       <width>89</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>HIT_TEST</string>
      </property>
     </widget>
    </widget>
@@ -267,20 +293,20 @@
      </rect>
     </property>
    </widget>
-   <widget class="QTextEdit" name="show_strike_2">
+   <widget class="QTextEdit" name="base2">
     <property name="enabled">
      <bool>true</bool>
     </property>
     <property name="geometry">
      <rect>
       <x>450</x>
-      <y>130</y>
-      <width>21</width>
-      <height>21</height>
+      <y>120</y>
+      <width>31</width>
+      <height>31</height>
      </rect>
     </property>
    </widget>
-   <widget class="QTextEdit" name="show_strike_3">
+   <widget class="QTextEdit" name="base3">
     <property name="enabled">
      <bool>true</bool>
     </property>
@@ -288,12 +314,12 @@
      <rect>
       <x>390</x>
       <y>180</y>
-      <width>21</width>
-      <height>21</height>
+      <width>31</width>
+      <height>31</height>
      </rect>
     </property>
    </widget>
-   <widget class="QTextEdit" name="show_strike_4">
+   <widget class="QTextEdit" name="base_home">
     <property name="enabled">
      <bool>true</bool>
     </property>
@@ -301,12 +327,12 @@
      <rect>
       <x>450</x>
       <y>240</y>
-      <width>21</width>
-      <height>21</height>
+      <width>31</width>
+      <height>31</height>
      </rect>
     </property>
    </widget>
-   <widget class="QTextEdit" name="show_strike_5">
+   <widget class="QTextEdit" name="base1">
     <property name="enabled">
      <bool>true</bool>
     </property>
@@ -314,8 +340,21 @@
      <rect>
       <x>510</x>
       <y>180</y>
-      <width>21</width>
-      <height>21</height>
+      <width>31</width>
+      <height>31</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="show_score">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
+    <property name="geometry">
+     <rect>
+      <x>420</x>
+      <y>10</y>
+      <width>71</width>
+      <height>31</height>
      </rect>
     </property>
    </widget>
