@@ -36,6 +36,7 @@ class BaseBall(QMainWindow, form_class):
         self.btn_HR.clicked.connect(self.hitHR)
         self.btn_HIT_TEST.clicked.connect(self.hitTEST)
 
+        self.inning = 1
         self.base = [0, 0, 0, 0]
         self.score = 0
 
@@ -293,22 +294,27 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 80 :
                         post = post + "OUT : 3rd catch"
+                        self.fly()
                     else :
                         post = post + "SAFE : infield hit"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 10 :
                         post = post + "OUT : P catch"
+                        self.fly()
                     elif temp <= 40 :
                         post = post + "OUT : 2nd catch"
+                        self.fly()
                     elif temp <= 70 :
                         post = post + "OUT : SS catch"
+                        self.fly()
                     else :
                         post = post + "SAFE : infield hit"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 80 :
                         post = post + "OUT : 1st catch"
+                        self.fly()
                     else :
                         post = post + "SAFE : infield hit"
             
@@ -319,22 +325,27 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 90 :
                         post = post + "OUT : 3rd catch"
+                        self.fly()
                     else :
                         post = post + "SAFE : infield hit"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 5 :
                         post = post + "OUT : P catch"
+                        self.fly()
                     elif temp <= 40 :
                         post = post + "OUT : 2nd catch"
+                        self.fly()
                     elif temp <= 75 :
                         post = post + "OUT : SS catch"
+                        self.fly()
                     else :
                         post = post + "SAFE : infield hit"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 90 :
                         post = post + "OUT : 1st catch"
+                        self.fly()
                     else :
                         post = post + "SAFE : infield hit"
 
@@ -342,36 +353,41 @@ class BaseBall(QMainWindow, form_class):
             judge = judge + "in <-> out "
             self.hit_high = random.randint(1, 9)
             
-            
             if self.hit_high <= 3 :
                 judge = judge + "line-drive"
                 if self.hit_direction <= 2 :
                     temp = random.randint(1, 100)
                     if temp <= 35 :
                         post = post + "OUT : 3rd catch"
+                        self.fly()
                     elif temp <= 40 :
                         post = post + "OUT : LF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 18 :
                         post = post + "OUT : SS catch"
+                        self.fly()
                     elif temp <= 36 :
                         post = post + "OUT : 2nd catch"
+                        self.fly()
                     elif temp <= 54 :
                         post = post + "OUT : CF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 35 :
                         post = post + "OUT : 1st catch"
+                        self.fly()
                     elif temp <= 40 :
                         post = post + "OUT : RF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
-
             
             
             elif self.hit_high <= 6 :
@@ -380,29 +396,35 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 5 :
                         post = post + "OUT : 3rd catch"
+                        self.fly()
                     elif temp <= 30 :
                         post = post + "OUT : LF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 5 :
                         post = post + "OUT : SS catch"
+                        self.fly()
                     elif temp <= 10 :
                         post = post + "OUT : 2nd catch"
+                        self.fly()
                     elif temp <= 15 :
                         post = post + "OUT : CF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 5 :
                         post = post + "OUT : 1st catch"
+                        self.fly()
                     elif temp <= 30 :
                         post = post + "OUT : RF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
-
 
 
             elif self.hit_high <= 9 :
@@ -411,32 +433,35 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 15 :
                         post = post + "OUT : 3rd catch"
+                        self.fly()
                     elif temp <= 50 :
                         post = post + "OUT : LF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 20 :
                         post = post + "OUT : SS catch"
+                        self.fly()
                     elif temp <= 40 :
                         post = post + "OUT : 2nd catch"
+                        self.fly()
                     elif temp <= 70 :
                         post = post + "OUT : CF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 15 :
                         post = post + "OUT : 1st catch"
+                        self.fly()
                     elif temp <= 50 :
                         post = post + "OUT : RF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
-
-
-
-
 
         elif self.hit_land_pos == 4 :
             judge = judge + "outfielder position "
@@ -447,22 +472,23 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 55 :
                         post = post + "OUT : LF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 55 :
                         post = post + "OUT : CF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 55 :
                         post = post + "OUT : RF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
-
-
 
 
             elif self.hit_high <= 6 :
@@ -471,21 +497,23 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 75 :
                         post = post + "OUT : LF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 75 :
                         post = post + "OUT : CF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 75 :
                         post = post + "OUT : RF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
-
 
 
             elif self.hit_high <= 9 :
@@ -494,24 +522,23 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 85 :
                         post = post + "OUT : LF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 85 :
                         post = post + "OUT : CF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 85 :
                         post = post + "OUT : RF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
-
-
-
-
 
         elif self.hit_land_pos == 5 :
             judge = judge + "over the outfielder "
@@ -522,18 +549,21 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 15 :
                         post = post + "OUT : LF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 15 :
                         post = post + "OUT : CF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 15 :
                         post = post + "OUT : RF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
 
@@ -544,18 +574,21 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 30 :
                         post = post + "OUT : LF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 30 :
                         post = post + "OUT : CF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 30 :
                         post = post + "OUT : RF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
             elif self.hit_high <= 9 :
@@ -564,24 +597,28 @@ class BaseBall(QMainWindow, form_class):
                     temp = random.randint(1, 100)
                     if temp <= 55 :
                         post = post + "OUT : LF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 5 :
                     temp = random.randint(1, 100)
                     if temp <= 55 :
                         post = post + "OUT : CF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
                 elif self.hit_direction <= 7 :
                     temp = random.randint(1, 100)
                     if temp <= 55 :
                         post = post + "OUT : RF catch"
+                        self.fly()
                     else :
                         post = post + "HIT"
 
         elif self.hit_land_pos == 6 :
             judge = judge + "homerun"
             post = post + "homerun"
+            self.hitHR()
 
         print("hit test : ", judge)
         print("post : ", post)
@@ -618,7 +655,6 @@ class BaseBall(QMainWindow, form_class):
         self.show_count()
 
         self.run(3)
-
 
     def hitHR(self) :
         print("hitHR")
