@@ -3,21 +3,57 @@ import requests
 import threading
 import time
 from bs4 import BeautifulSoup
+import sys
+import schedule
 
-# url = "http://mlbpark.donga.com/mp/b.php?p=1&b=bullpen&id=202006130043772831&select=&query=&user=&site=donga.com&reply=&source=&sig=h6jRHl-gkh9RKfX2hgj9Sf-ghhlq"
+pd.set_option('display.max_row', 20000)
+pd.set_option('display.max_columns', 10000)
 
-for i in range(3):
-    page = i * 30 + 1
-    url = "http://mlbpark.donga.com/mp/b.php?p={page}&b=bullpen&id=202006130043772831&select=&query=&user=&site=donga.com&reply=&source=&sig=h6jRHl-gkh9RKfX2hgj9Sf-ghhlq".format(page = page)
-    res = requests.get(url)
-    soup = BeautifulSoup(res.content, 'lxml')
+def job() :
+    df = pd.DataFrame(columns = ['title', 'count'])
 
-    # topic = soup.findAll("span", {"class" : "word_bullpen"})
-    topic = soup.findAll("span", class_="word_bullpen")
-    title = soup.findAll("span", {"class" : "bullpen"})
-    count = soup.findAll("span", {"class" : "viewV"})
-    print(title[0].text)
+    for i in range(5):
+        page = i * 30 + 1
+        url = "http://mlbpark.donga.com/mp/b.php?p={page}&b=bullpen&id=202006130043772831&select=&query=&user=&site=donga.com&reply=&source=&sig=h6jRHl-gkh9RKfX2hgj9Sf-ghhlq".format(page = page)
+        res = requests.get(url)
+        soup = BeautifulSoup(res.content, 'lxml')
 
-    for j in range(len(title)):
-        # print(i, "/", j, " : ", title[j].text, count[j].text)
-        print(i, "/", j, " : ", topic[j].text, count[j].text)
+        topic = soup.findAll("span", class_="word_bullpen")
+        title = soup.findAll("span", {"class" : "bullpen"})
+        count = soup.findAll("span", {"class" : "viewV"})
+
+        for j in range(len(title)):
+            title_text = title[j].text.strip()
+            # leng = len(title_text)
+            # if title_text[leng-1] == ']' :
+
+
+            if '[' in title[j].text :
+                if title[j].text[0] == '[' :
+                    temp = 1
+                else :
+                    t = title[j].text.index('[')
+                    title_text = title[j].text[0:t].strip()
+            
+            if count[j].text == '0' or count[j].text == '1' or count[j].text == '2' or count[j].text == '3' or count[j].text == '4' or count[j].text == '5':
+                continue
+            else :
+                df.loc[len(df)] = [title_text, count[j].text]
+
+    df = df.sort_values(by=['count'])
+    df = df.reset_index(drop=True)
+    print("detecting")
+    filename = 'basic_info.txt'
+    f = open(filename,'w', encoding='utf8')
+    sys.stdout = f
+    print(df.head(30))
+    sys.stdout = sys.__stdout__
+    f.close()
+
+# job()
+
+schedule.every(1).minutes.do(job)
+
+while True :
+    schedule.run_pending()
+    time.sleep(1)
