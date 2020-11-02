@@ -131,20 +131,23 @@ class Kiwoom(QMainWindow, form_class):
                 # self.func_SET_TableData(1, data['seq'], 4, str(data['cur_price']), 0)
                 # self.func_SET_TableData(1, data['seq'], 5, str(data['price_sell']), 0)
                 self.func_SET_TableData(1, data['seq'], 4, str(data['total_purchase']), 0)
+                
                 self.func_SET_TableData(1, data['seq'], 5, str(data['price_buy']), 0)
-                self.func_SET_TableData(1, data['seq'], 6, str(data['total_evaluation']), 0)
+                self.func_SET_TableData(1, data['seq'], 6, str(data['price_sell']), 0)
+
+                self.func_SET_TableData(1, data['seq'], 7, str(data['total_evaluation']), 0)
                 # self.func_SET_TableData(1, data['seq'], 8, str(data['temp_total']), 0)
-                self.func_SET_TableData(1, data['seq'], 7, str(data['total_fee']), 0)
-                self.func_SET_TableData(1, data['seq'], 8, str(data['total_sum']), 0)
+                self.func_SET_TableData(1, data['seq'], 8, str(data['total_fee']), 0)
+                self.func_SET_TableData(1, data['seq'], 9, str(data['total_sum']), 0)
                 if data['percent'] > 0 :
-                    self.func_SET_TableData(1, data['seq'], 9, str(data['percent']), 1)
+                    self.func_SET_TableData(1, data['seq'], 10, str(data['percent']), 1)
                 elif data['percent'] < 0 :
-                    self.func_SET_TableData(1, data['seq'], 9, str(data['percent']), 2)
+                    self.func_SET_TableData(1, data['seq'], 10, str(data['percent']), 2)
                 elif data['percent'] == 0 :
-                    self.func_SET_TableData(1, data['seq'], 9, str(data['percent']), 0)
-                self.func_SET_TableData(1, data['seq'], 10, str(data['step']), 0)
+                    self.func_SET_TableData(1, data['seq'], 10, str(data['percent']), 0)
+                self.func_SET_TableData(1, data['seq'], 11, str(data['step']), 0)
                 # self.func_SET_TableData(1, data['seq'], 12, str(data['high']), 0)
-                self.func_SET_TableData(1, data['seq'], 11, str(data['chegang']), 0)
+                self.func_SET_TableData(1, data['seq'], 12, str(data['chegang']), 0)
             
         except :
             pass
@@ -1079,8 +1082,9 @@ class Kiwoom(QMainWindow, form_class):
             # self.flag_ItemInfo_click = 1
             self.code_edit.setText(item_code.strip())
 
-            hoga_buy = self.table_summary.item(row, 5).text()
-            hoga_sell = self.table_summary.item(row, 6).text()
+            # hoga_buy = self.table_summary.item(row, 5).text()
+            hoga_sell = self.table_summary.item(row, 5).text()
+            hoga_buy = self.table_summary.item(row, 6).text()
             self.wid_buy_price.setText(str(int(hoga_buy)))
             self.wid_sell_price.setText(str(int(hoga_sell)))
 
@@ -1260,7 +1264,7 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.resizeRowsToContents()
 
         for i in range(SUMMARY_COL_CNT):
-            self.table_summary.setColumnWidth(i, 120)
+            self.table_summary.setColumnWidth(i, 100)
         
         self.table_summary.setColumnWidth(0, 100)
         # self.table_summary.setColumnWidth(1, 120)
@@ -1279,18 +1283,19 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.setHorizontalHeaderItem(2, QTableWidgetItem("수량"))
         self.table_summary.setHorizontalHeaderItem(3, QTableWidgetItem("구입단가"))
         self.table_summary.setHorizontalHeaderItem(4, QTableWidgetItem("매입금액(A)"))
-        self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("현재가(매수최)"))
-        # self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("매도최"))
-        # self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("매수최"))
+        # self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("현재가(매수최)"))
+        self.table_summary.setHorizontalHeaderItem(5, QTableWidgetItem("매수최"))
+        self.table_summary.setHorizontalHeaderItem(6, QTableWidgetItem("매도최"))
         
-        self.table_summary.setHorizontalHeaderItem(6, QTableWidgetItem("평가금액(B)"))
+        
+        self.table_summary.setHorizontalHeaderItem(7, QTableWidgetItem("평가금액(B)"))
         # self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("합계(B-A)"))
-        self.table_summary.setHorizontalHeaderItem(7, QTableWidgetItem("수수료(C)"))
-        self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("손익(B-A-C)"))
-        self.table_summary.setHorizontalHeaderItem(9, QTableWidgetItem("%"))
-        self.table_summary.setHorizontalHeaderItem(10, QTableWidgetItem("단계"))
+        self.table_summary.setHorizontalHeaderItem(8, QTableWidgetItem("수수료(C)"))
+        self.table_summary.setHorizontalHeaderItem(9, QTableWidgetItem("손익(B-A-C)"))
+        self.table_summary.setHorizontalHeaderItem(10, QTableWidgetItem("%"))
+        self.table_summary.setHorizontalHeaderItem(11, QTableWidgetItem("단계"))
         # self.table_summary.setHorizontalHeaderItem(12, QTableWidgetItem("HIGH"))
-        self.table_summary.setHorizontalHeaderItem(11, QTableWidgetItem("체강"))
+        self.table_summary.setHorizontalHeaderItem(12, QTableWidgetItem("체강"))
         
 
         self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)

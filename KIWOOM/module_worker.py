@@ -341,7 +341,8 @@ class Worker(QThread):
                     fee_buy = FEE_BUY * total_purchase
                     fee_sell = FEE_SELL * total_evaluation
                     tax = TAX * total_evaluation
-                    total_fee = round((fee_buy + fee_sell + tax), 1)
+                    # total_fee = round((fee_buy + fee_sell + tax), 1)
+                    total_fee = math.floor(fee_buy + fee_sell + tax)
                     total_sum = total_evaluation - total_purchase - total_fee
                     percent = round((total_sum / total_purchase) * 100, 1)
                     step = self.func_GET_db_item(item_code, 1)

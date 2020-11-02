@@ -20,7 +20,11 @@ AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
 ITEM_FINDER_PERCENT = config.ITEM_FINDER_PERCENT
 EXCEPT_ITEM = config.EXCEPT_ITEM
 DELAY_SEC = config.DELAY_SEC
-SLOT_EMPTY = 0
+# SLOT_EMPTY = 0
+# SLOT_EMPTY = config.SLOT_EMPTY
+SLOT_EMPTY = config.NUM_SLOT - config.SLOT_RUN
+
+print("timer SLOT EMPTY : ", SLOT_EMPTY)
 
 class Timer(QThread):
     cur_time = pyqtSignal(dict)
