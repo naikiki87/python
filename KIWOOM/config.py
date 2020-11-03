@@ -8,15 +8,13 @@ SUMMARY_COL_CNT = 13
 
 ## Worker
 TAX = 0.0025
+
+# 모의
 # FEE_BUY = 0.0035
 # FEE_SELL = 0.0035
 
-# FEE_BUY = 0.00015
-# FEE_SELL = 0.00015
-
-# event 기간
-FEE_BUY = 0
-FEE_SELL = 0
+FEE_BUY = 0.00015
+FEE_SELL = 0.00015
 
 # GOAL_PER = -0.015
 GOAL_PER = -0.01
