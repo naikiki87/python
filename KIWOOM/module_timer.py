@@ -18,11 +18,13 @@ UNIT_PRICE_HI_LIM = config.UNIT_PRICE_HI_LIM
 UNIT_PRICE_LOW_LIM = config.UNIT_PRICE_LOW_LIM
 AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
 ITEM_FINDER_PERCENT = config.ITEM_FINDER_PERCENT
+ITEM_FINDER_PERCENT_LOW = config.ITEM_FINDER_PERCENT_LOW
 EXCEPT_ITEM = config.EXCEPT_ITEM
 DELAY_SEC = config.DELAY_SEC
 # SLOT_EMPTY = 0
 # SLOT_EMPTY = config.SLOT_EMPTY
 SLOT_EMPTY = config.NUM_SLOT - config.SLOT_RUN
+
 
 print("timer SLOT EMPTY : ", SLOT_EMPTY)
 
@@ -231,9 +233,14 @@ class Timer(QThread):
         per_data = float(percent[1:])
 
         if percent[0] == '+' and per_data >= ITEM_FINDER_PERCENT :
-            print("item finder item 등 + 2.5 이상")
+            print("item finder item 등 + 1.6 이상")
             self.candidate_seq = self.candidate_seq + 1
             self.investigate_items()
+        elif percent[0] == '-' and per_data <= ITEM_FINDER_PERCENT_LOW :
+            print("item finder item 낙 - 1.6 이상")
+            self.candidate_seq = self.candidate_seq + 1
+            self.investigate_items()
+
         else :
             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
             self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
