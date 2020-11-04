@@ -513,7 +513,7 @@ class Worker(QThread):
             # return res
 
         # Full Sell
-        elif percent > self.PER_HI and step <= STEP_LIMIT :
+        elif percent >= self.PER_HI and step <= STEP_LIMIT :
             # sell_qty = own_count
             # res['judge'] = 3
             # res['qty'] = own_count  ## 전량
