@@ -167,25 +167,25 @@ class Kiwoom(QMainWindow, form_class):
     def btn_test(self) :
         print("[MAIN] btn test !!!!")
 
-        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-        # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Deposito", "opw00001", 0, "0103")
+        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", "005930")
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SET_hoga2", "opt10004", 0, "0101")
+    
+    def SET_hoga2(self, rqname, trcode, recordname) :
+        print("SET hoga 2")
+        # hoga_buy = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', '')
+        hoga_sell = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', '')
+        sell_0_vol = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선잔량").replace('+', '').replace('-', '')
 
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Deposito", "opw00005", 0, "0104")
-    def func_Deposito(self, rqname, trcode, recordname) :
-        print("func deposito")
-        deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
-        d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+1")
-        d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+2")
-        orderable_money = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "주문가능현금")
+        db_1_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도1차선잔량대비").replace('+', '').replace('-', '')
 
-        print("deposit : ", deposit)
-        print("d1 : ", d_1)
-        print("d2 : ", d_2)
-        # print("d22 : ", d_22)
-        print("o_money : ", orderable_money)
+        hoga_sell_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도2차선호가").replace('+', '').replace('-', '')
+        sell_2_vol = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도2차선잔량").replace('+', '').replace('-', '')
+
+        print("sell_0_vol : ", sell_0_vol, type(sell_0_vol))
+        print("매도1차선잔량대비 : ", db_1_1)
+        print("매도2차선호가 : ", hoga_sell_2)
+        print("매도2차선잔량 : ", sell_2_vol)
+        # print("hoga sell : ", hoga_sell)
 
     def check_deposit_2(self, rqname, trcode, recordname, item_slot, item_code) :
         slot = int(item_slot)
@@ -1440,16 +1440,17 @@ class Kiwoom(QMainWindow, form_class):
 
         elif rqname == "SET_hoga":
             self.SET_hoga(rqname, trcode, recordname)
+
+        elif rqname == "SET_hoga2":
+            self.SET_hoga2(rqname, trcode, recordname)
+
+
         elif rqname == "GET_DailyProfit":
             self.func_SHOW_DailyProfit(rqname, trcode, recordname)
         elif rqname == "SETTING":
             self.func_SET_Items(rqname, trcode, recordname)
         elif rqname == "GET_Deposit":
             self.func_SHOW_Deposit(rqname, trcode, recordname)
-
-        elif rqname == "GET_Deposito":
-            self.func_Deposito(rqname, trcode, recordname)
-
 
         elif rqname == "GET_ItemInfo":
             self.func_SHOW_ItemInfo(rqname, trcode, recordname)
@@ -1466,12 +1467,16 @@ class Kiwoom(QMainWindow, form_class):
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
             if cur_price != '' :
                 try :
+                    vol_comp_remain = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 26).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 잔량
+                    vol_comp_ratio = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 30).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 비율
                     price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()       ## 매도 최우선가
                     price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()        ## 매수 최우선가
                     chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
                     item_name = self.table_summary.item(slot, 1).text()
                     own_count = self.table_summary.item(slot, 2).text()
                     unit_price = self.table_summary.item(slot, 3).text()
+
+                    print("what : ", item_name, vol_comp_remain, vol_comp_ratio)
 
                     temp = {}
                     temp['item_code'] = code
