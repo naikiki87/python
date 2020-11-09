@@ -8,4 +8,8 @@ spark = SparkSession \
     
 iris_df = spark.read.csv("iris.csv", inferSchema = True, header = True)
 
-iris_df.show(5)
+# iris_df.show(5)
+
+iris_df.createOrReplaceTempView("iris")
+
+spark.sql("SELECT * FROM iris LIMIT 5").show()

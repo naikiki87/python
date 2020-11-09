@@ -1468,7 +1468,7 @@ class Kiwoom(QMainWindow, form_class):
             if cur_price != '' :
                 try :
                     vol_comp_remain = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 26).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 잔량
-                    vol_comp_ratio = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 30).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 비율
+                    vol_ratio = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 30).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 비율
                     price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()       ## 매도 최우선가
                     price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()        ## 매수 최우선가
                     chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
@@ -1476,7 +1476,7 @@ class Kiwoom(QMainWindow, form_class):
                     own_count = self.table_summary.item(slot, 2).text()
                     unit_price = self.table_summary.item(slot, 3).text()
 
-                    print("what : ", item_name, vol_comp_remain, vol_comp_ratio)
+                    # print("what : ", item_name, vol_comp_remain, vol_ratio)
 
                     temp = {}
                     temp['item_code'] = code
@@ -1488,6 +1488,9 @@ class Kiwoom(QMainWindow, form_class):
                     temp['price_sell'] = int(price_sell)
                     temp['chegang'] = float(chegang)
                     temp['deposit'] = int(self.wid_show_deposit_d2.text())
+
+                    # print(item_name, vol_ratio)
+                    temp['vol_ratio'] = float(vol_ratio)
 
                     temp['autoTrade'] = 1
 

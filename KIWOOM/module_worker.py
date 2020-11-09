@@ -56,6 +56,9 @@ class Worker(QThread):
         self.pause_time = 0
         self.data_Q = []
 
+        # self.func_INIT_db_item()
+        self.vol_queue = []
+
     def event_connect(self, err_code):
         if err_code == 0:
             self.connected = 1
@@ -98,6 +101,7 @@ class Worker(QThread):
                 elif orderType == 3 :
                     # print(now, "[ TH", self.seq, "]", "[che_result] orderType : ", orderType)
                     self.func_DELETE_db_item(item_code)     ## DB : DELETE Item
+                    self.vol_queue = []     ## vol queue initialize
                     self.lock = 0           ## unlock
 
                 ## Sell & Buy(BUY)
@@ -221,6 +225,9 @@ class Worker(QThread):
         item_code = data['item_code']
         self.item_code = item_code
         deposit = data['deposit']
+
+        vol_ratio = data['vol_ratio']
+        # print("worker", self.seq, ':', vol_ratio)
 
         if data['autoTrade'] == 0 :                                             ## manual trading 시
             self.lock = 1
@@ -382,8 +389,32 @@ class Worker(QThread):
             else :      ## 2번째 receive 부터
                 if self.lock == 0 :
                     self.lock = 1       ## lock 체결
-                    
-                    # step = self.func_GET_db_item(item_code, 1)
+
+                    # WIN_SIZE = 100
+
+                    # if len(self.vol_queue) == WIN_SIZE :
+                    #     diff = []
+                    #     for i in range(WIN_SIZE-1, 0, -1) :
+                    #         temp = self.vol_queue[i] - self.vol_queue[i-1]
+                    #         diff.append(temp)
+
+                    #     avg = sum(diff) / len(diff)
+
+                    #     up_count = 0
+
+                    #     for j in range(WIN_SIZE-1, WIN_SIZE-61, -1) :
+                    #         if diff[j] >= avg :
+                    #             up_count = up_count + 1
+
+                    #     print("upcount : ", up_count)
+
+                    #     if up_count >= 30 :
+                    #         print("upup")
+                    #     self.vol_queue.pop(0)
+                    #     self.vol_queue.append(vol_ratio)
+                    # else :
+                    #     self.vol_queue.append(vol_ratio)
+                    #     print(self.vol_queue)
 
                     ## SHOW -> TABLE ##
                     own_count = data['own_count']
@@ -582,7 +613,8 @@ class Worker(QThread):
     def func_INSERT_db_item(self, code, step, ordered, orderType, trAmount):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
-        sql = "insert into STATUS (code, step, ordered, orderType, trAmount) values(:CODE, :STEP, :ORDERED, :ORDERTYPE, :TRAMOUNT)"
+        tablename = "item" + str(self.seq)
+        sql = "insert into " + tablename + " (code, step) values(:CODE, :STEP)"
         cur.execute(sql, {"CODE" : code, "STEP" : step, "ORDERED" : ordered, "ORDERTYPE" : orderType, "TRAMOUNT" : trAmount})
         conn.commit()
         conn.close()
@@ -649,6 +681,81 @@ class Worker(QThread):
         elif "check_jumun" in rqname :
             item_code = rqname[0:6]
             self.res_check_jumun(rqname, trcode, recordname, item_code)
+
+    def func_INIT_db_item(self) :
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        tablename = "item" + str(self.seq)
+        sql = "create table if not exists " + tablename + " (code text, step integer)"
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
+
+        print(tablename, "item db is initiated")
+
+        self.func_DELETEALL_db_item()
+    def func_GET_db_item(self, code, col):
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        if col == 0:        # get all codes
+            sql = "select code from STATUS"
+            cur.execute(sql)
+            rows = cur.fetchall()
+            conn.close()
+
+            if rows is None :
+                return "none"
+            else:
+                codes = []
+                for row in rows:
+                    codes.append(row[0])
+                return codes
+        else :
+            if col == 1:        # get step
+                sql = "select step from STATUS where code = ?"
+                cur.execute(sql, [code])
+            elif col == 2:      # get ordered
+                sql = "select ordered from STATUS where code = ?"
+                cur.execute(sql, [code])
+            elif col == 3:      # get orderType
+                sql = "select orderType from STATUS where code = ?"
+                cur.execute(sql, [code])
+            elif col == 4:      # get trAmount
+                sql = "select trAmount from STATUS where code = ?"
+                cur.execute(sql, [code])
+
+            row = cur.fetchone()
+            conn.close()
+
+            if row is None:
+                return "none"
+            else:
+                return row[0]
+    def func_INSERT_db_item(self, code, step, ordered, orderType, trAmount):
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "insert into STATUS (code, step, ordered, orderType, trAmount) values(:CODE, :STEP, :ORDERED, :ORDERTYPE, :TRAMOUNT)"
+        cur.execute(sql, {"CODE" : code, "STEP" : step, "ORDERED" : ordered, "ORDERTYPE" : orderType, "TRAMOUNT" : trAmount})
+        conn.commit()
+        conn.close()
+        print(self.now(), "[MAIN] [func_INSERT_db_item] : INSERTED")
+    def func_DELETEALL_db_item(self):
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        tablename = "item" + str(self.seq)
+        sql = "delete from " + tablename
+        cur.execute(sql)
+        conn.commit()
+        conn.close()
+        print(tablename, "items are deleted")
+    def func_DELETE_db_item(self, code):
+        conn = sqlite3.connect("item_status.db")
+        cur = conn.cursor()
+        sql = "delete from STATUS where code = :CODE"
+        cur.execute(sql, {"CODE" : code})
+        conn.commit()
+        conn.close()
+        print(self.now(), "[MAIN] [func_DELETE_db_item] : DELETED")
 
     def now(self) :
         return datetime.datetime.now()
