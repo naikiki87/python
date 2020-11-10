@@ -226,9 +226,6 @@ class Worker(QThread):
         self.item_code = item_code
         deposit = data['deposit']
 
-        vol_ratio = data['vol_ratio']
-        # print("worker", self.seq, ':', vol_ratio)
-
         if data['autoTrade'] == 0 :                                             ## manual trading 시
             self.lock = 1
             orderType = data['orderType']
@@ -391,6 +388,8 @@ class Worker(QThread):
                     self.lock = 1       ## lock 체결
 
                     # WIN_SIZE = 100
+
+                    # vol_ratio = data['vol_ratio']
 
                     # if len(self.vol_queue) == WIN_SIZE :
                     #     diff = []
