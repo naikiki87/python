@@ -2,7 +2,6 @@ import sys
 import time
 import datetime
 import pandas as pd
-import numpy
 import sqlite3
 import math
 from time import localtime, strftime
@@ -13,6 +12,7 @@ from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore
 from collections import deque
 import config
+# import module_delay
 
 ACCOUNT = config.ACCOUNT
 PASSWORD = config.PASSWORD
@@ -58,7 +58,6 @@ class Worker(QThread):
 
         # self.func_INIT_db_item()
         self.vol_queue = []
-        self.percent_queue = []
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -146,6 +145,32 @@ class Worker(QThread):
                         if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                             self.lock = 0           ## unlock
 
+    # @pyqtSlot(int)
+    # def resume_thread(self, data) :
+    #     self.delay.terminate()
+        
+    #     if data == self.seq : 
+    #         item_code = self.delay_item
+    #         orderType = self.func_GET_db_item(item_code, 3)
+
+    #         if orderType != "none" :                ## after get data from db
+    #             if orderType == 1 :                                             ## add water
+    #                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+    #                     self.indicate_release()
+    #                     self.lock = 0                           ## unlock
+
+    #             elif orderType == 5 :                           # 신규 buy인 경우 db삭제 및 lock 해제
+    #                 self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
+    #                 self.lock = 0                               ## unlock
+
+    #             elif orderType == 9 :                           # 신규 item finding buy인 경우 db삭제 및 lock 해제
+    #                 self.func_DELETE_db_item(item_code)         ## DB : DELETE Item
+    #                 self.lock = 0                               ## unlock
+
+    #             else :                                          # 다른 sit인 경우 db order 정보 0으로 세팅 및 lock 해제
+    #                 if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
+    #                     self.lock = 0                           ## unlock
+
     @pyqtSlot(int)
     def resume_paused(self, data) :
         if data == self.seq : 
@@ -168,6 +193,24 @@ class Worker(QThread):
                 else :                                          # 다른 sit인 경우 db order 정보 0으로 세팅 및 lock 해제
                     if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                         self.lock = 0                           ## unlock
+    # def pause_worker(self, item_code) :
+    #     self.rp_dict = {}
+    #     self.pause_time = self.pause_time + 1
+    #     if self.pause_time < 3 :        ## 2번까지 30초 pause 시행
+    #         print("30 sec pause : ", self.seq, self.pause_time)
+    #         self.delay = module_delay.Delay(self.seq, 30000)        ## 30 sec delay
+    #         self.delay.resume.connect(self.resume_thread)
+    #         self.delay_item = item_code
+    #         self.indicate_paused()
+    #         self.delay.start()
+    #     elif self.pause_time == 3 :
+    #         print("1 min pause : ", self.seq, self.pause_time)
+    #         self.pause_time = 0     ## reset
+    #         self.delay = module_delay.Delay(self.seq, 60000)       ## 5min delay
+    #         self.delay.resume.connect(self.resume_thread)
+    #         self.delay_item = item_code
+    #         self.indicate_paused2()
+    #         self.delay.start()
 
     @pyqtSlot(dict)
     def reply_first_check(self, data) :
@@ -303,10 +346,12 @@ class Worker(QThread):
                     fee_sell = int(((FEE_SELL * total_evaluation) // 10) * 10)
                     tax = int(round((TAX * total_evaluation), 0))
                     total_fee = fee_buy + fee_sell + tax
+                    # fee_buy = FEE_BUY * total_purchase
+                    # fee_sell = FEE_SELL * total_evaluation
+                    # tax = TAX * total_evaluation
+                    # total_fee = math.floor(fee_buy + fee_sell + tax)
                     total_sum = total_evaluation - total_purchase - total_fee
                     percent = round((total_sum / total_purchase) * 100, 1)
-
-                    
                     step = self.func_GET_db_item(item_code, 1)
 
                     self.rp_dict = {}
@@ -325,6 +370,7 @@ class Worker(QThread):
                     self.trans_dict.emit(self.rp_dict)
 
                     if self.func_GET_db_item(item_code, 2) == 1 :           ## 프로그램이 시작했는데 현재 item이 order 중인 경우 
+                        # self.lock = 1
                         self.rp_dict = {}
                         self.indicate_ordered()         ## INDICATE : ordered
 
@@ -336,6 +382,7 @@ class Worker(QThread):
                     else :
                         self.first_rcv = 0
                         self.lock = 0
+                # self.first_rcv = 0
             else :      ## 2번째 receive 부터
                 if self.lock == 0 :
                     self.lock = 1       ## lock 체결
@@ -403,15 +450,15 @@ class Worker(QThread):
                     fee_sell = int(((FEE_SELL * total_evaluation) // 10) * 10)
                     tax = int(round((TAX * total_evaluation), 0))
                     total_fee = fee_buy + fee_sell + tax
+                    # fee_buy = FEE_BUY * total_purchase
+                    # fee_sell = FEE_SELL * total_evaluation
+                    # tax = TAX * total_evaluation
+                    # total_fee = round((fee_buy + fee_sell + tax), 1)
                     total_sum = total_evaluation - total_purchase - total_fee
                     percent = round((total_sum / total_purchase) * 100, 1)
                     step = self.func_GET_db_item(item_code, 1)
 
-                    if self.seq == 2 :
-                        print("own count : ", own_count, "/ price buy : ", price_buy)
-                        print(total_evaluation, '/', total_purchase, '/', total_fee)
-                        print("worker", self.seq, " : ", total_sum, '/', total_purchase, '/', (total_sum/total_purchase), '/', percent)
-
+                    # if (cur_price != self.prev_data[0]) or (price_buy != self.prev_data[1]) or (price_sell != self.prev_data[2]) or (chegang != self.prev_data[3]) :
                     if (cur_price != self.prev_data[0]) or (price_buy != self.prev_data[1]) or (price_sell != self.prev_data[2]) :
                         self.rp_dict = {}
                         self.rp_dict.update(data)
@@ -431,26 +478,48 @@ class Worker(QThread):
                     self.prev_data = [cur_price, price_buy, price_sell]
 
                     ## Make Order
+                    # res = self.judge(item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
                     self.judge(item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
+                    # judge_type = res['judge']
+
+                    # if judge_type == 0 :        ## stay
+                    #     self.lock = 0
+
+                    # elif judge_type == 1 :      ## add water
+                    #     if MAKE_ORDER == 1 :
+                    #         qty = res['qty']
+                    #         price = res['price']
+                    #         if qty < 0 :
+                    #             self.lock = 0
+
+                    #         elif qty >= 0 :
+                    #             if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                    #                 if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                    #                     order = {}
+                    #                     order['type'] = 0       ## buy
+                    #                     order['item_code'] = item_code
+                    #                     order['qty'] = qty
+                    #                     order['price'] = price
+                    #                     order['order_type'] = judge_type
+                    #                     self.indicate_ordered()         ## INDICATE : ordered
+                    #                     self.rq_order.emit(order)       ## make order to master
+
+                    # elif judge_type == 3 :      ## full_sell
+                    #     if MAKE_ORDER == 1 :
+                    #         if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                    #             if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                    #                 order = {}
+                    #                 order['type'] = 1       ## sell
+                    #                 order['item_code'] = item_code
+                    #                 order['qty'] = res['qty']       ## 전량
+                    #                 order['price'] = res['price']   ## 매수 최우선가
+                    #                 order['order_type'] = judge_type
+                    #                 self.indicate_ordered()         ## INDICATE : ordered
+                    #                 self.rq_order.emit(order)       ## make order to master
 
         ################## judgement ###################
     def judge(self, item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
         res = {}
-
-        PER_QUEUE_SIZE = 10
-
-        if self.seq == 2 :
-            if len(self.percent_queue) == PER_QUEUE_SIZE :
-                self.percent_queue.pop(0)
-                self.percent_queue.append(percent)
-                print("mean : ", numpy.mean(self.percent_queue))
-                print("var : ", numpy.var(self.percent_queue))
-                print("std : ", numpy.std(self.percent_queue))
-            else :
-                self.percent_queue.append(percent)
-
-            print("worker", self.seq, "Per Queue : ", self.percent_queue)
-
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
             PS = int(price_sell)                # 매도 최우선가
@@ -464,11 +533,17 @@ class Worker(QThread):
 
             X = 1 + P + FB
             Y = 1 - T - FS
+            # buy_qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
+            # res['judge'] = 1
+            # res['qty'] = buy_qty
+            # res['price'] = int(price_sell)      ## 매도 최우선가
 
             qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
             price = int(price_sell)
 
             if MAKE_ORDER == 1 :
+                # qty = res['qty']
+                # price = res['price']
                 if qty < 0 :
                     self.lock = 0
 
@@ -485,9 +560,14 @@ class Worker(QThread):
                             self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)       ## make order to master
 
+            # return res
 
         # Full Sell
         elif percent >= self.PER_HI and step <= STEP_LIMIT :
+            # sell_qty = own_count
+            # res['judge'] = 3
+            # res['qty'] = own_count  ## 전량
+            # res['price'] = int(price_buy)   ## 매수최우선가
             qty = own_count
             price = int(price_buy)
 
@@ -508,6 +588,9 @@ class Worker(QThread):
         # STAY
         else :
             self.lock = 0
+            # res['judge'] = 0
+
+            # return res
             
     def func_GET_db_item(self, code, col):
         conn = sqlite3.connect("item_status.db")
@@ -595,6 +678,16 @@ class Worker(QThread):
         self.rp_dict['ordered'] = 1
         self.rp_dict['seq'] = self.seq
         self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
+
+    # def indicate_paused(self) :
+    #     self.rp_dict['ordered'] = 3
+    #     self.rp_dict['seq'] = self.seq
+    #     self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
+
+    # def indicate_paused2(self) :
+    #     self.rp_dict['ordered'] = 4
+    #     self.rp_dict['seq'] = self.seq
+    #     self.trans_dict.emit(self.rp_dict)      ## INDICATE : ordered
 
     def indicate_release(self) :
         self.rp_dict['ordered'] = 2
