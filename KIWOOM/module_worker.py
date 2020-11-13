@@ -304,7 +304,7 @@ class Worker(QThread):
                     tax = int(round((TAX * total_evaluation), 0))
                     total_fee = fee_buy + fee_sell + tax
                     total_sum = total_evaluation - total_purchase - total_fee
-                    percent = round((total_sum / total_purchase) * 100, 1)
+                    percent = round((total_sum / total_purchase) * 100, 2)
 
                     
                     step = self.func_GET_db_item(item_code, 1)
@@ -404,7 +404,7 @@ class Worker(QThread):
                     tax = int(round((TAX * total_evaluation), 0))
                     total_fee = fee_buy + fee_sell + tax
                     total_sum = total_evaluation - total_purchase - total_fee
-                    percent = round((total_sum / total_purchase) * 100, 1)
+                    percent = round((total_sum / total_purchase) * 100, 2)
                     step = self.func_GET_db_item(item_code, 1)
 
                     if self.seq == 2 :
