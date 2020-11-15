@@ -26,9 +26,10 @@ p_giant = 1.0 / (n - 1)
 p_conn = math.log(n) / float(n)
 
 # the following range of p values should be close to the threshold
-pvals = [0.003, 0.006, 0.008, 0.015, 0.02, 0.025]
+# pvals = [0.003, 0.006, 0.008, 0.015, 0.02, 0.025]
+pvals = [0.005, 0.01, 0.03, 0.05]
 
-region = 330  # for pylab 2x2 subplot layout
+region = 220  # for pylab 3x3 subplot layout
 plt.subplots_adjust(left=0, right=1, bottom=0, top=0.95, wspace=0.01, hspace=0.01)
 for p in pvals:
     # G = nx.binomial_graph(n, p)
