@@ -21,8 +21,6 @@ ITEM_FINDER_PERCENT = config.ITEM_FINDER_PERCENT
 ITEM_FINDER_PERCENT_LOW = config.ITEM_FINDER_PERCENT_LOW
 EXCEPT_ITEM = config.EXCEPT_ITEM
 DELAY_SEC = config.DELAY_SEC
-# SLOT_EMPTY = 0
-# SLOT_EMPTY = config.SLOT_EMPTY
 SLOT_EMPTY = config.NUM_SLOT - config.SLOT_RUN
 
 
@@ -40,7 +38,6 @@ class Timer(QThread):
 
     def __init__(self):
         super().__init__()
-        # self.make_db_table()
         self.timer_on = 0
         self.paused = [0,0,0,0,0]
         self.paused_remain_sec = [0,0,0,0,0]
@@ -75,9 +72,8 @@ class Timer(QThread):
                 now = datetime.datetime.now()
                 mkt_open = now.replace(hour=9, minute=0, second=0)
                 mkt_close = now.replace(hour=15, minute=30, second=0)
-                # am920 = now.replace(hour=9, minute=20, second=0)
-                am930 = now.replace(hour=9, minute=20, second=0)        ######### !!!!!!!!
-                pm240 = now.replace(hour=14, minute=40, second=0)
+                am920 = now.replace(hour=9, minute=20, second=0)        ######### !!!!!!!!
+                pm250 = now.replace(hour=14, minute=50, second=0)
                 pm320 = now.replace(hour=15, minute=20, second=0)
 
                 c_hour = now.strftime('%H')
@@ -89,13 +85,13 @@ class Timer(QThread):
 
                 if now >= mkt_open and now < mkt_close :
                     temp_time['possible'] = 1
-                    if now >= am930 and c_sec == "00" :
+                    if now >= am920 and c_sec == "00" :
                         self.refresh_status.emit(1)
 
-                    if now >= am930 and now<=pm240 and c_sec == "30" and self.item_checking == 0 :
+                    if now >= am920 and now<=pm250 and c_sec == "30" and self.item_checking == 0 :
                         self.check_slot.emit(1)
                     
-                    if now >= am930 and now<=pm320 and c_sec == "15" :
+                    if now >= am920 and now<=pm320 and c_sec == "15" :
                         self.sig_main_check_jumun.emit(1)
                         
                 else :
@@ -177,7 +173,6 @@ class Timer(QThread):
 
         print(self.now(), "[TIMER] [res_check_slot] empty : ", empty)
 
-        # if empty != 0 :
         if empty > SLOT_EMPTY :
             self.item_checking = 1              ## checking 중임을 표시
             self.finder.start()
@@ -220,9 +215,6 @@ class Timer(QThread):
 
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
                 self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_iteminfo", "opt10001", 0, "0102")
-
-                # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
-                # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_hoga", "opt10004", 0, "0101")
 
     def res_iteminfo(self, rqname, trcode, recordname) :
         item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")

@@ -437,19 +437,19 @@ class Worker(QThread):
     def judge(self, item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
         res = {}
 
-        PER_QUEUE_SIZE = 10
+        # PER_QUEUE_SIZE = 10
 
-        if self.seq == 2 :
-            if len(self.percent_queue) == PER_QUEUE_SIZE :
-                self.percent_queue.pop(0)
-                self.percent_queue.append(percent)
-                print("mean : ", numpy.mean(self.percent_queue))
-                print("var : ", numpy.var(self.percent_queue))
-                print("std : ", numpy.std(self.percent_queue))
-            else :
-                self.percent_queue.append(percent)
+        # if self.seq == 2 :
+        #     if len(self.percent_queue) == PER_QUEUE_SIZE :
+        #         self.percent_queue.pop(0)
+        #         self.percent_queue.append(percent)
+        #         print("mean : ", numpy.mean(self.percent_queue))
+        #         print("var : ", numpy.var(self.percent_queue))
+        #         print("std : ", numpy.std(self.percent_queue))
+        #     else :
+        #         self.percent_queue.append(percent)
 
-            print("worker", self.seq, "Per Queue : ", self.percent_queue)
+        #     print("worker", self.seq, "Per Queue : ", self.percent_queue)
 
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
@@ -485,9 +485,9 @@ class Worker(QThread):
                             self.indicate_ordered()         ## INDICATE : ordered
                             self.rq_order.emit(order)       ## make order to master
 
-
         # Full Sell
-        elif percent >= self.PER_HI and step <= STEP_LIMIT :
+        # elif percent >= self.PER_HI and step <= STEP_LIMIT :
+        elif percent >= self.PER_HI :
             qty = own_count
             price = int(price_buy)
 

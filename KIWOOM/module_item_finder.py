@@ -153,8 +153,6 @@ class ItemFinder(QThread):
                 diffq45 = q4 - q5
 
                 if diffq12 > 0 and diffq23 > 0 and diffq34 > 0 and diffq45 > 0 :
-
-                # if q1>ROE_LOW_LIMIT and q2>ROE_LOW_LIMIT and q3>ROE_LOW_LIMIT and q4>ROE_LOW_LIMIT and q5>ROE_LOW_LIMIT:
                     idx3 = len(df4) + 1
                     val_PER = df3['PER'][i]
                     today_ratio = df3['Vol(D)'][i]
