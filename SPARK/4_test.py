@@ -9,16 +9,40 @@ import random
 import time
 
 start_time = time.time()
- 
-conn = pymysql.connect(host='165.132.105.40', user='root', password='Elql27!^',
-                       db='projectBigdata', charset='utf8')
-curs = conn.cursor()
-sql_create = "CREATE TABLE if not exists p_table \
-(pid INTEGER NOT NULL, n integer not null, iid integer not null)"
-curs.execute(sql_create)
-conn.commit()
 
-### p_table 초기화
+# MySQL Connection 연결
+conn = pymysql.connect(host='165.132.105.40', user='root', password='Elql27!^', db='projectBigdata', charset='utf8')
+ 
+# Connection 으로부터 Cursor 생성
+curs = conn.cursor()
+curs.execute("delete from 2_detransaction")
+conn.commit()
+curs.execute("delete from 3_result_transaction")
+conn.commit()
+curs.execute("select * from 1_basic_trans")
+conn.commit()
+ 
+# # 데이타 Fetch
+rows = curs.fetchall()
+cnt_trans = len(rows)
+
+sql_detrans = "insert into 2_detransaction(tid, uid, iid) values (%s, %s, %s)"
+
+for a in range(cnt_trans) :
+    tid = rows[a][0]
+    uid = rows[a][1]
+
+    items = rows[a][2].split(',')
+    cnt_items = len(items)
+    if cnt_items >= 1 :
+        for b in range(cnt_items) :
+            curs.execute(sql_detrans, (tid, uid, items[b]))
+        conn.commit()
+print("detrasaction complete")
+
+### p_table 생성 및 초기화 
+curs.execute("CREATE TABLE if not exists p_table (pid INTEGER NOT NULL, n integer not null, iid integer not null)")
+conn.commit()
 curs.execute("delete from p_table")
 conn.commit()
 
@@ -32,7 +56,7 @@ CONNECT_PWD = "Elql27!^"
 sc = SparkSession.builder.config("spark.driver.extraClassPath", DRIVER_PATH).getOrCreate()
 spark = sql.SQLContext(sc)
 
-query = "select * from testdata"
+query = "select * from 2_detransaction"
 input_df = spark.read.format('jdbc').options(
   driver=DRIVER,
   url=CONNECT_URL,
@@ -85,7 +109,7 @@ for i in range(max_cnt) :
                 curs.execute(sql, (pid, i+1, temp_result_2[k][m]))
             pid = pid + 1
         conn.commit()
-conn.close()
+# conn.close()
 print("4-2 : Making p-table complete")
 
 query = "select * from p_table"
@@ -151,10 +175,36 @@ for i in range(len(temp_recover_tid_list)) :
 
 print("6-2 : Trans NOT-IN data complete")
 
-final_schema = StructType([ StructField("tid", IntegerType(), True)\
-                       ,StructField("uid", IntegerType(), True)\
-                       ,StructField("iid", StringType(), True)])
-sparkdf_final = spark.createDataFrame(pd_df_final, schema=final_schema)
-sparkdf_final.show()
+pd_df_final = pd_df_final.sort_values(by=['tid'], axis=0)
+
+print("final : ", pd_df_final)
+
+temp_recover_tid_list
+
+sql_input_res = "insert into 3_result_transaction(tid, uid, items) values (%s, %s, %s)"
+
+for i in range(len(temp_recover_tid_list)) :
+    target_tid = temp_recover_tid_list[i].tid
+
+    items = []
+    for j in range(len(pd_df_final)) :
+        if pd_df_final.iloc[j][0] == target_tid :
+            items.append(pd_df_final.iloc[j][2])
+            uid = pd_df_final.iloc[j][1]
+
+    items = list(map(str, items))
+    input_item = ','.join(items)
+    print(target_tid, "input items : ", input_item)
+    curs.execute(sql_input_res, (target_tid, uid, input_item))
+    conn.commit()
+
+
+conn.close()
+
+# final_schema = StructType([ StructField("tid", IntegerType(), True)\
+#                        ,StructField("uid", IntegerType(), True)\
+#                        ,StructField("iid", StringType(), True)])
+# sparkdf_final = spark.createDataFrame(pd_df_final, schema=final_schema)
+# sparkdf_final.show()
 
 # print("Time : ", time.time() - start_time)

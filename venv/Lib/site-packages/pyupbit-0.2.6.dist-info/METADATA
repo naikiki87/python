@@ -1,0 +1,16 @@
+Metadata-Version: 2.1
+Name: pyupbit
+Version: 0.2.6
+Summary: python wrapper for Upbit API
+Home-page: https://github.com/sharebook-kr/pyupbit
+Author: Lukas Yoo, Brayden Jo
+Author-email: brayden.jo@outlook.com, jonghun.yoo@outlook.com, pystock@outlook.com
+License: MIT
+Platform: UNKNOWN
+Requires-Dist: requests
+Requires-Dist: pandas
+Requires-Dist: pyjwt
+
+UNKNOWN
+
+

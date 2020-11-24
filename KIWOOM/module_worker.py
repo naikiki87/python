@@ -25,7 +25,13 @@ MAKE_ORDER = config.MAKE_ORDER
 PER_LOW = config.PER_LOW
 STEP_LIMIT = config.STEP_LIMIT
 
+PERCENT_HIGH = config.PERCENT_HIGH
+
+DOWN_DURATION = config.DOWN_DURATION
+
 JUDGE_SHOW = 0
+
+TEST_CODE = config.TEST_CODE
 
 class Worker(QThread):
     connected = 0
@@ -38,8 +44,10 @@ class Worker(QThread):
         super().__init__()
         self.item_code = ''
         self.seq = seq
-        self.PER_HI = 0.5
+        self.PER_HI = PERCENT_HIGH
         self.items = deque()
+
+        print(self.seq, "per hi : ", self.PER_HI)
         
         self.prev_data = [0, 0, 0]          ## save previous data : cur_price, price_buy, price_sell
 
@@ -59,6 +67,16 @@ class Worker(QThread):
         # self.func_INIT_db_item()
         self.vol_queue = []
         self.percent_queue = []
+
+        # self.prev_per = [None, None]
+
+        if TEST_CODE == 1 :
+            self.down_first = 1
+            self.downing = 0
+            self.down_count = 0
+            self.down_level = 0
+            self.down_prev_per = None
+
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -90,7 +108,18 @@ class Worker(QThread):
                     if self.func_UPDATE_db_item(item_code, 1, new_step) == 1 :   ## update step
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
-                                self.lock = 0           ## unlock
+
+                                if TEST_CODE == 1 :
+                                    self.downing = 0
+                                    self.down_first = 1
+                                    self.down_count = 0
+                                    self.down_level = 0
+                                    self.down_prev_per = None
+
+                                    self.lock = 0
+
+                                else :
+                                    self.lock = 0           ## unlock
 
                 ## Sell & Buy(SELL)
                 elif orderType == 2 :
@@ -453,37 +482,104 @@ class Worker(QThread):
 
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
-            PS = int(price_sell)                # 매도 최우선가
-            PB = int(price_buy)                 # 매수 최우선가
-            A = total_purchase              # 총 매입금액
-            B = total_evaluation            # 총 평가금액
-            T = TAX
-            FB = FEE_BUY
-            FS = FEE_SELL
-            P = GOAL_PER
+            if TEST_CODE == 1 :
+                if self.down_first == 1 :
+                    self.down_first = 0
+                    self.downing = 1
+                    
+                    self.down_prev_per = percent
+                    self.down_count = 1
+                    self.down_level = -1
 
-            X = 1 + P + FB
-            Y = 1 - T - FS
-
-            qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
-            price = int(price_sell)
-
-            if MAKE_ORDER == 1 :
-                if qty < 0 :
                     self.lock = 0
+                
+                else :
+                    gap = percent - self.down_prev_per
+                    self.down_prev_per = percent
 
-                elif qty >= 0 :
-                    if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                        if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                            order = {}
-                            order['slot'] = self.seq
-                            order['type'] = 0       ## buy
-                            order['item_code'] = item_code
-                            order['qty'] = qty
-                            order['price'] = price
-                            order['order_type'] = 1
-                            self.indicate_ordered()         ## INDICATE : ordered
-                            self.rq_order.emit(order)       ## make order to master
+                    if gap > 0 :
+                        self.down_level = self.down_level + 1
+                        self.down_count = 0
+
+                        self.lock = 0
+
+                    elif gap < 0 :
+                        self.down_level = self.down_level - 1
+                        self.down_count = 0
+
+                        self.lock = 0
+
+                    elif gap == 0 :
+                        self.down_count = self.down_count + 1
+                        print(self.seq, "Down Level : ", self.down_level, "Down Count : ", self.down_count)
+                        if self.down_count >= DOWN_DURATION : 
+                            print(self.seq, "[ADD WATER] DOWN LEVEL : ", self.down_level)
+                            PS = int(price_sell)                # 매도 최우선가
+                            PB = int(price_buy)                 # 매수 최우선가
+                            A = total_purchase              # 총 매입금액
+                            B = total_evaluation            # 총 평가금액
+                            T = TAX
+                            FB = FEE_BUY
+                            FS = FEE_SELL
+                            P = GOAL_PER
+
+                            X = 1 + P + FB
+                            Y = 1 - T - FS
+
+                            qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
+                            price = int(price_sell)
+
+                            if MAKE_ORDER == 1 :
+                                if qty < 0 :
+                                    self.lock = 0
+
+                                elif qty >= 0 :
+                                    if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                                        if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                                            order = {}
+                                            order['slot'] = self.seq
+                                            order['type'] = 0       ## buy
+                                            order['item_code'] = item_code
+                                            order['qty'] = qty
+                                            order['price'] = price
+                                            order['order_type'] = 1
+                                            self.indicate_ordered()         ## INDICATE : ordered
+                                            self.rq_order.emit(order)       ## make order to master
+                        else :
+                            self.lock = 0
+
+            else :          ## original code
+                PS = int(price_sell)                # 매도 최우선가
+                PB = int(price_buy)                 # 매수 최우선가
+                A = total_purchase              # 총 매입금액
+                B = total_evaluation            # 총 평가금액
+                T = TAX
+                FB = FEE_BUY
+                FS = FEE_SELL
+                P = GOAL_PER
+
+                X = 1 + P + FB
+                Y = 1 - T - FS
+
+                qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
+                price = int(price_sell)
+
+                if MAKE_ORDER == 1 :
+                    if qty < 0 :
+                        self.lock = 0
+
+                    elif qty >= 0 :
+                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                            if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                                order = {}
+                                order['slot'] = self.seq
+                                order['type'] = 0       ## buy
+                                order['item_code'] = item_code
+                                order['qty'] = qty
+                                order['price'] = price
+                                order['order_type'] = 1
+                                self.indicate_ordered()         ## INDICATE : ordered
+                                self.rq_order.emit(order)       ## make order to master
 
         # Full Sell
         # elif percent >= self.PER_HI and step <= STEP_LIMIT :
@@ -507,7 +603,20 @@ class Worker(QThread):
 
         # STAY
         else :
-            self.lock = 0
+            if TEST_CODE == 1 :
+                if self.downing == 1 :
+                    self.down_first = 1
+                    self.downing = 0
+                    self.down_count = 0
+                    self.down_level = 0
+                    self.down_prev_per = None
+
+                    self.lock = 0
+
+                else :
+                    self.lock = 0
+            else :
+                self.lock = 0
             
     def func_GET_db_item(self, code, col):
         conn = sqlite3.connect("item_status.db")
