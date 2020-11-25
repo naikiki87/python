@@ -149,13 +149,16 @@ class Worker(QThread):
                     if percent > TARGET_PER :
                         self.sell(self.item)
 
-                    if percent < TARGET_MINUS_PER and self.get_db_step(self.item) == 0 :
-                        if self.update_db_step(self.item, 1) == 1 :
-                            self.add_water(self.item)
+                    # if percent < TARGET_MINUS_PER and self.get_db_step(self.item) == 0 :
+                    #     if self.update_db_step(self.item, 1) == 1 :
+                    #         self.add_water(self.item)
                     
-                    if percent < TARGET_MINUS_PER and self.get_db_step(self.item) == 1 :
-                        if self.update_db_step(self.item, 0) == 1 :
-                            self.sell(self.item)
+                    # if percent < TARGET_MINUS_PER and self.get_db_step(self.item) == 1 :
+                    #     if self.update_db_step(self.item, 0) == 1 :
+                    #         self.sell(self.item)
+
+                    if percent < TARGET_MINUS_PER :
+                        self.add_water(self.item)
                 except :
                     pass
 
@@ -180,14 +183,14 @@ class Worker(QThread):
 
     def add_water(self, item) :
         try :
-            orderbook = pyupbit.get_orderbook(item)
+            orderbook = pyupbit.get_orderbook(target_item)
             bids_asks = orderbook[0]['orderbook_units']
             ask_price = bids_asks[0]['ask_price']
             bid_price = bids_asks[0]['bid_price']
 
-            qty = round((ADD_WATER_AMT / ask_price), 8)
-            print("buy : ", item, "qty : ", qty, "price : ", ask_price)
-            ret = self.upbit.buy_limit_order(item, ask_price, qty)
+            qty = round(((input_money * 1.5) / ask_price), 8)
+            print("buy : ", target_item, "qty : ", qty, "price : ", ask_price)
+            ret = self.upbit.buy_limit_order(target_item, ask_price, qty)
             print(ret)
         except :
             pass

@@ -436,10 +436,10 @@ class Worker(QThread):
                     percent = round((total_sum / total_purchase) * 100, 2)
                     step = self.func_GET_db_item(item_code, 1)
 
-                    if self.seq == 2 :
-                        print("own count : ", own_count, "/ price buy : ", price_buy)
-                        print(total_evaluation, '/', total_purchase, '/', total_fee)
-                        print("worker", self.seq, " : ", total_sum, '/', total_purchase, '/', (total_sum/total_purchase), '/', percent)
+                    # if self.seq == 2 :
+                    #     print("own count : ", own_count, "/ price buy : ", price_buy)
+                    #     print(total_evaluation, '/', total_purchase, '/', total_fee)
+                    #     print("worker", self.seq, " : ", total_sum, '/', total_purchase, '/', (total_sum/total_purchase), '/', percent)
 
                     if (cur_price != self.prev_data[0]) or (price_buy != self.prev_data[1]) or (price_sell != self.prev_data[2]) :
                         self.rp_dict = {}

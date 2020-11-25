@@ -302,6 +302,8 @@ class Kiwoom(QMainWindow, form_class):
                     count = acc_bal[0][i]['balance']
                     unit_price = acc_bal[0][i]['avg_buy_price']
 
+                    print("count : ", count, "unit_price : ", unit_price, float(count)*float(unit_price))
+
             ret = self.upbit.sell_limit_order(target_item, bid_price, count)
             print(ret)
         except :

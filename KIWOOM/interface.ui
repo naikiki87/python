@@ -68,7 +68,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>640</y>
+      <y>670</y>
       <width>64</width>
       <height>23</height>
      </rect>
@@ -98,24 +98,6 @@
     <property name="alignment">
      <set>Qt::AlignCenter</set>
     </property>
-   </widget>
-   <widget class="QSplitter" name="splitter">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>670</y>
-      <width>1391</width>
-      <height>151</height>
-     </rect>
-    </property>
-    <property name="orientation">
-     <enum>Qt::Vertical</enum>
-    </property>
-    <widget class="QTextEdit" name="text_edit">
-     <property name="enabled">
-      <bool>true</bool>
-     </property>
-    </widget>
    </widget>
    <widget class="QWidget" name="gridLayoutWidget_4">
     <property name="geometry">
@@ -303,7 +285,7 @@
       <x>10</x>
       <y>220</y>
       <width>802</width>
-      <height>141</height>
+      <height>271</height>
      </rect>
     </property>
     <property name="rowCount">
@@ -345,9 +327,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>370</y>
+      <y>500</y>
       <width>561</width>
-      <height>261</height>
+      <height>161</height>
      </rect>
     </property>
     <property name="title">
@@ -357,9 +339,9 @@
      <property name="geometry">
       <rect>
        <x>370</x>
-       <y>70</y>
+       <y>40</y>
        <width>181</width>
-       <height>171</height>
+       <height>111</height>
       </rect>
      </property>
      <layout class="QGridLayout" name="gridLayout_2">
@@ -490,7 +472,7 @@
      <property name="geometry">
       <rect>
        <x>420</x>
-       <y>40</y>
+       <y>20</y>
        <width>91</width>
        <height>20</height>
       </rect>
@@ -502,39 +484,13 @@
       <set>Qt::AlignCenter</set>
      </property>
     </widget>
-    <widget class="QPushButton" name="btn_TEST">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>30</y>
-       <width>89</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Test</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="btn_TEST_2">
-     <property name="geometry">
-      <rect>
-       <x>120</x>
-       <y>30</y>
-       <width>89</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Test2</string>
-     </property>
-    </widget>
     <widget class="QWidget" name="gridLayoutWidget_2">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>65</y>
+       <y>20</y>
        <width>351</width>
-       <height>181</height>
+       <height>131</height>
       </rect>
      </property>
      <layout class="QGridLayout" name="gridLayout">
@@ -653,9 +609,9 @@
     <property name="geometry">
      <rect>
       <x>580</x>
-      <y>370</y>
+      <y>620</y>
       <width>821</width>
-      <height>261</height>
+      <height>201</height>
      </rect>
     </property>
     <property name="title">
@@ -667,7 +623,7 @@
        <x>10</x>
        <y>60</y>
        <width>802</width>
-       <height>191</height>
+       <height>131</height>
       </rect>
      </property>
      <property name="rowCount">
@@ -766,7 +722,7 @@
       <x>820</x>
       <y>240</y>
       <width>602</width>
-      <height>121</height>
+      <height>351</height>
      </rect>
     </property>
     <property name="rowCount">
@@ -986,6 +942,42 @@
     </property>
     <property name="frame">
      <bool>false</bool>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="text_edit">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>690</y>
+      <width>561</width>
+      <height>131</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_TEST">
+    <property name="geometry">
+     <rect>
+      <x>600</x>
+      <y>550</y>
+      <width>89</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Test</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_TEST_2">
+    <property name="geometry">
+     <rect>
+      <x>700</x>
+      <y>550</y>
+      <width>89</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Test2</string>
     </property>
    </widget>
   </widget>

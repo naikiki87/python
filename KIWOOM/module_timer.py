@@ -226,11 +226,11 @@ class Timer(QThread):
         per_data = float(percent[1:])
 
         if percent[0] == '+' and per_data >= ITEM_FINDER_PERCENT :
-            print("item finder item 등 + 1.6 이상")
+            print("item finder item 등 " + str(ITEM_FINDER_PERCENT) + "이상")
             self.candidate_seq = self.candidate_seq + 1
             self.investigate_items()
         elif percent[0] == '-' and per_data <= ITEM_FINDER_PERCENT_LOW :
-            print("item finder item 낙 - 1.6 이상")
+            print("item finder item 낙 " + str(ITEMFINDER_PERCENT_LOW) + "이하")
             self.candidate_seq = self.candidate_seq + 1
             self.investigate_items()
 

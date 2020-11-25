@@ -5,6 +5,7 @@ import uuid
 import hashlib
 from urllib.parse import urlencode
 import requests
+from bs4 import BeautifulSoup
 
 import threading
 
@@ -128,10 +129,26 @@ ITEM = "KRW-BTC"
 
 # print("access key : ", access_key)
 
+# item_code = "005930"
+# url = "http://polling.finance.naver.com/api/realtime.nhn?query=SERVICE_ITEM:{}|SERVICE_RECENT_ITEM:{}&_callback=".format(item_code, item_code)
+# source = requests.get(url)
+# data = source.json()
+# # name = data['result']['areas'][0]['datas'][0]['nm']
+# value = data['result']['areas'][0]['datas'][0]['nv']
 
-a = [1, 2, 3]
-print("a : ", a)
+# print("value : ", value)
 
-a.pop(0)
-print("a2 : ", a)
+item_code = "005930"
+
+url = "https://finance.naver.com/item/main.nhn?code=" + item_code
+result = requests.get(url)
+bs_obj = BeautifulSoup(result.content, "html.parser")
+ 
+no_today = bs_obj.find("p", {"class": "no_today"}) # 태그 p, 속성값 no_today 찾기
+blind = no_today.find("span", {"class": "blind"}) # 태그 span, 속성값 blind 찾기
+now_price = int(blind.text.strip().replace(',', ''))
+
+
+
+print(now_price, type(now_price))
 

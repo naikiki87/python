@@ -162,13 +162,28 @@ class Finder(QThread):
         self.alive.emit(2)
 
     def get_cur_price(self, item_code):
-        url = "http://polling.finance.naver.com/api/realtime.nhn?query=SERVICE_ITEM:{}|SERVICE_RECENT_ITEM:{}&_callback=".format(item_code, item_code)
-        source = requests.get(url)
-        data = source.json()
-        # name = data['result']['areas'][0]['datas'][0]['nm']
-        value = data['result']['areas'][0]['datas'][0]['nv']
+        try :
+            url = "http://polling.finance.naver.com/api/realtime.nhn?query=SERVICE_ITEM:{}|SERVICE_RECENT_ITEM:{}&_callback=".format(item_code, item_code)
+            source = requests.get(url)
+            data = source.json()
+            # name = data['result']['areas'][0]['datas'][0]['nm']
+            value = data['result']['areas'][0]['datas'][0]['nv']
 
-        return value
+            # print("now value : ", value)
+
+            return value
+        except :
+            url = "https://finance.naver.com/item/main.nhn?code=" + item_code
+            result = requests.get(url)
+            bs_obj = BeautifulSoup(result.content, "html.parser")
+            
+            no_today = bs_obj.find("p", {"class": "no_today"}) # 태그 p, 속성값 no_today 찾기
+            blind = no_today.find("span", {"class": "blind"}) # 태그 span, 속성값 blind 찾기
+            now_price = int(blind.text.strip().replace(',', ''))
+
+            # print("now price : ", now_price)
+
+            return now_price
 
     def get_market_sum(self, item_code):
         cnt_0_digit = 0

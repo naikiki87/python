@@ -21,14 +21,14 @@ FEE_BUY = 0.00015
 FEE_SELL = 0.00015
 
 # GOAL_PER = -0.015
-GOAL_PER = -0.008
+GOAL_PER = -0.01
 MAKE_ORDER = 1
-PER_LOW = -1.8
+PER_LOW = -2
 STEP_LIMIT = 5
 
 PERCENT_HIGH = 0.7
 
-DOWN_DURATION = 60      ## wating tick times before add-water order
+DOWN_DURATION = 50      ## wating tick times before add-water order
 
 ## Timer
 UNIT_PRICE_HI_LIM = 65000
