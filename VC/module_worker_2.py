@@ -15,6 +15,7 @@ from PyQt5 import QtTest, QtCore
 from collections import deque
 import config
 import pyupbit
+import func_module
 
 file = open('../../individual/upas.txt', 'r')
 s = file.read()
@@ -50,13 +51,13 @@ class Worker(QThread):
         secret_key = key[1]
         self.upbit = pyupbit.Upbit(access_key, secret_key)
 
-        self.cnt = 0
-        self.lock = 0
-        # self.PER_HI = PERCENT_HIGH
-
         self.movement = []
         self.up_down = []
         self.prev_price = None
+
+        self.order_sell = func_module.sell
+        self.order_buy = func_module.buy
+        self.order_addwater = func_module.add_water
 
     def run(self):
         global upbit
@@ -77,7 +78,6 @@ class Worker(QThread):
                     if price == None :
                         gap = 0
                     else :
-                        # print(self.item, price, self.prev_price)
                         gap = price - self.prev_price
                     if len(self.movement) == MOVEMENT_MAX :
                         self.movement.pop(0)
@@ -110,11 +110,11 @@ class Worker(QThread):
                                     self.is_there = 1
 
                             if self.is_there == 1 :
-                                print("there is already ", self.item)
+                                a = 0
                             elif self.is_there == 0:
                                 for i in range(len(self.movement)) :
                                     self.movement[i] = 0
-                                self.buy(self.item)
+                                self.order_buy(self.item)
 
                     orderbook = pyupbit.get_orderbook(self.item)
                     bids_asks = orderbook[0]['orderbook_units']
@@ -127,11 +127,8 @@ class Worker(QThread):
                     rp_dict['unit_price'] = str("-")
 
                     unit_price = 0
-
-                    
                 
                     acc_bal = self.upbit.get_balances()      ## 잔고조회
-                    # print(acc_bal[0])
                     for i in range(0, len(acc_bal[0]), 1) :
                         item = acc_bal[0][i]['currency']
                         if item != "KRW" and item in self.item :
@@ -148,18 +145,10 @@ class Worker(QThread):
                     rp_dict['ordered'] = 0
                     self.trans_dict.emit(rp_dict)
                     if percent > TARGET_PER :
-                        self.sell(self.item)
-
-                    # if percent < TARGET_MINUS_PER and self.get_db_step(self.item) == 0 :
-                    #     if self.update_db_step(self.item, 1) == 1 :
-                    #         self.add_water(self.item)
-                    
-                    # if percent < TARGET_MINUS_PER and self.get_db_step(self.item) == 1 :
-                    #     if self.update_db_step(self.item, 0) == 1 :
-                    #         self.sell(self.item)
+                        self.order_sell(self.item)
 
                     if percent < TARGET_MINUS_PER :
-                        self.add_water(self.item)
+                        self.order_addwater(self.item)
                 except :
                     pass
 
@@ -167,74 +156,3 @@ class Worker(QThread):
     
     def now(self) :
         return datetime.datetime.now()
-
-    def buy(self, item) :
-        try :
-            orderbook = pyupbit.get_orderbook(item)
-            bids_asks = orderbook[0]['orderbook_units']
-            ask_price = bids_asks[0]['ask_price']
-            bid_price = bids_asks[0]['bid_price']
-
-            qty = round((NEW_BUY_AMT / ask_price), 8)
-            print("buy : ", item, "qty : ", qty, "price : ", ask_price)
-            ret = self.upbit.buy_limit_order(item, ask_price, qty)
-            print(ret)
-        except :
-            pass
-
-    def add_water(self, target_item) :
-        try :
-            orderbook = pyupbit.get_orderbook(target_item)
-            bids_asks = orderbook[0]['orderbook_units']
-            ask_price = bids_asks[0]['ask_price']
-            bid_price = bids_asks[0]['bid_price']
-
-            qty = round(((input_money * 1.5) / ask_price), 8)
-            print("buy : ", target_item, "qty : ", qty, "price : ", ask_price)
-            ret = self.upbit.buy_limit_order(target_item, ask_price, qty)
-            print(ret)
-        except :
-            pass
-
-    def sell(self, target_item) :
-        self.add_water = 0
-        print("sell : ", target_item)
-        orderbook = pyupbit.get_orderbook(target_item)
-        bids_asks = orderbook[0]['orderbook_units']
-        ask_price = bids_asks[0]['ask_price']
-        bid_price = bids_asks[0]['bid_price']
-
-        acc_bal = self.upbit.get_balances()
-        try :
-            for i in range(0, len(acc_bal[0]), 1) :
-                item = acc_bal[0][i]['currency']
-                if item != "KRW" and item in target_item :
-                    count = float(acc_bal[0][i]['balance'])
-                    unit_price = float(acc_bal[0][i]['avg_buy_price'])
-                    locked = float(acc_bal[0][i]['locked'])
-                    print("item : ", item, '/', count, '/', unit_price, locked)
-
-            ret = self.upbit.sell_limit_order(target_item, bid_price, count)
-            print("time : ", ret)
-            
-        except :
-            pass
-
-    def get_db_step(self, item):
-        conn = sqlite3.connect("item_status.db")
-        cur = conn.cursor()
-        sql = "select step from STATUS where item = :ITEM"
-        cur.execute(sql, {"ITEM" : item})
-        row = cur.fetchone()
-        conn.close()
-        return int(row[0])
-
-    def update_db_step(item, step) :
-        conn = sqlite3.connect("item_status.db")
-        cur = conn.cursor()
-        sql = "update STATUS set step=:STEP where item=:ITEM"
-        cur.execute(sql, {"ITEM" : item, "STEP" : step})
-        conn.commit()
-        conn.close()
-
-        return cur.rowcount

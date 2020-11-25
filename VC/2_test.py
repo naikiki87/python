@@ -9,6 +9,26 @@ from bs4 import BeautifulSoup
 
 import threading
 
+import func_module
+
+# func_module.func_test("aaa")
+# aaa = func_module.func_test
+# aaa("ppp")
+
+# bbb = func_module.get_cur_price
+# a = bbb("KRW-XRP")
+# print("a : ", a)
+
+
+order_sell = func_module.sell
+order_sell("KRW-XLM")
+
+# order_buy = func_module.buy
+# order_buy("KRW-XRP")
+
+# order_addwater = func_module.add_water
+# order_addwater("KRW-XRP")
+
 file = open('../../individual/upas.txt', 'r')
 s = file.read()
 row = s.split('\n')
@@ -21,17 +41,16 @@ secret_key = row[1]
 upbit = pyupbit.Upbit(access_key, secret_key)
 
 # #### 티커 조회
-# tickers = pyupbit.get_tickers()
-# # print(tickers)
+tickers = pyupbit.get_tickers()
+# print(tickers)
 
-# #### 티커 중 KRW 만 추출
+#### 티커 중 KRW 만 추출
 # items = []
 # for i in range(len(tickers)) :
 #     if "KRW" in tickers[i] :
 #         items.append(tickers[i])
-# # # print("type : ", type(tickers))
-# # # print("len : ", len(tickers))
 
+# print("Count : ", len(items))
 # print("items : ", items)
 
 
@@ -70,13 +89,13 @@ ITEM = "KRW-BTC"
 
 
 #### 잔고조회
-acc_bal = upbit.get_balances()
-print("acc : ", acc_bal)
-for i in range(0, len(acc_bal[0]), 1) :
-    item = acc_bal[0][i]['currency']
-    count = acc_bal[0][i]['balance']
-    unit_price = acc_bal[0][i]['avg_buy_price']
-    # print("item : ", item, '/', count, '/', unit_price)
+# acc_bal = upbit.get_balances()
+# print("acc : ", acc_bal)
+# for i in range(0, len(acc_bal[0]), 1) :
+#     item = acc_bal[0][i]['currency']
+#     count = acc_bal[0][i]['balance']
+#     unit_price = acc_bal[0][i]['avg_buy_price']
+#     print("item : ", item, '/', count, '/', unit_price)
 
 
 

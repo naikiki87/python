@@ -110,10 +110,9 @@ class Kiwoom(QMainWindow, form_class):
         self.func_start_check()          # Aloha
 
     def func_start_check(self) :
-        print(";fnc start check")
         self.table_summary.clearContents()      ## table clear
         if self.create_thread() == 0 :              ## thread creation
-            print("create thread complete")
+            print("READY")
 
     def create_thread(self) :
         for i in range(len(self.workers_1)) :

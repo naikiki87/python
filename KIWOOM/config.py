@@ -28,8 +28,6 @@ MAKE_ORDER = 1
 PER_LOW = -2
 STEP_LIMIT = 5
 
-
-
 DOWN_DURATION = 60      ## wating tick times before add-water order
 
 ## Timer

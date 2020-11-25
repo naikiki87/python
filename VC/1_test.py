@@ -19,6 +19,9 @@ access_key = row[0]
 secret_key = row[1]
 upbit = pyupbit.Upbit(access_key, secret_key)
 
+def func_test() :
+    print("import func test")
+
 class ThreadJob(threading.Thread):
     def __init__(self,callback,event,interval):
         self.callback = callback
