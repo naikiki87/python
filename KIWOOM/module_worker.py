@@ -70,12 +70,11 @@ class Worker(QThread):
 
         # self.prev_per = [None, None]
 
-        if TEST_CODE == 1 :
-            self.down_first = 1
-            self.downing = 0
-            self.down_count = 0
-            self.down_level = 0
-            self.down_prev_per = None
+        self.down_first = 1
+        self.downing = 0
+        self.down_count = 0
+        self.down_level = 0
+        self.down_prev_per = None
 
 
     def event_connect(self, err_code):
@@ -108,18 +107,13 @@ class Worker(QThread):
                     if self.func_UPDATE_db_item(item_code, 1, new_step) == 1 :   ## update step
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
+                                self.downing = 0
+                                self.down_first = 1
+                                self.down_count = 0
+                                self.down_level = 0
+                                self.down_prev_per = None
 
-                                if TEST_CODE == 1 :
-                                    self.downing = 0
-                                    self.down_first = 1
-                                    self.down_count = 0
-                                    self.down_level = 0
-                                    self.down_prev_per = None
-
-                                    self.lock = 0
-
-                                else :
-                                    self.lock = 0           ## unlock
+                                self.lock = 0
 
                 ## Sell & Buy(SELL)
                 elif orderType == 2 :
@@ -465,124 +459,74 @@ class Worker(QThread):
         ################## judgement ###################
     def judge(self, item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
         res = {}
-
-        # PER_QUEUE_SIZE = 10
-
-        # if self.seq == 2 :
-        #     if len(self.percent_queue) == PER_QUEUE_SIZE :
-        #         self.percent_queue.pop(0)
-        #         self.percent_queue.append(percent)
-        #         print("mean : ", numpy.mean(self.percent_queue))
-        #         print("var : ", numpy.var(self.percent_queue))
-        #         print("std : ", numpy.std(self.percent_queue))
-        #     else :
-        #         self.percent_queue.append(percent)
-
-        #     print("worker", self.seq, "Per Queue : ", self.percent_queue)
-
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
-            if TEST_CODE == 1 :
-                if self.down_first == 1 :
-                    self.down_first = 0
-                    self.downing = 1
-                    
-                    self.down_prev_per = percent
-                    self.down_count = 1
-                    self.down_level = -1
+            if self.down_first == 1 :
+                self.down_first = 0
+                self.downing = 1
+                
+                self.down_prev_per = percent
+                self.down_count = 1
+                self.down_level = -1
+
+                self.lock = 0
+            
+            else :
+                gap = percent - self.down_prev_per
+                self.down_prev_per = percent
+
+                if gap > 0 :
+                    self.down_level = self.down_level + 1
+                    self.down_count = 0
 
                     self.lock = 0
-                
-                else :
-                    gap = percent - self.down_prev_per
-                    self.down_prev_per = percent
 
-                    if gap > 0 :
-                        self.down_level = self.down_level + 1
-                        self.down_count = 0
+                elif gap < 0 :
+                    self.down_level = self.down_level - 1
+                    self.down_count = 0
 
+                    self.lock = 0
+
+                elif gap == 0 :
+                    self.down_count = self.down_count + 1
+                    print(self.seq, "Down Level : ", self.down_level, "Down Count : ", self.down_count)
+                    if self.down_count >= DOWN_DURATION : 
+                        print(self.seq, "[ADD WATER] DOWN LEVEL : ", self.down_level)
+                        PS = int(price_sell)                # 매도 최우선가
+                        PB = int(price_buy)                 # 매수 최우선가
+                        A = total_purchase              # 총 매입금액
+                        B = total_evaluation            # 총 평가금액
+                        T = TAX
+                        FB = FEE_BUY
+                        FS = FEE_SELL
+                        P = GOAL_PER
+
+                        X = 1 + P + FB
+                        Y = 1 - T - FS
+
+                        qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
+                        price = int(price_sell)
+
+                        if MAKE_ORDER == 1 :
+                            if qty < 0 :
+                                self.lock = 0
+
+                            elif qty >= 0 :
+                                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+                                    if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                                        order = {}
+                                        order['slot'] = self.seq
+                                        order['type'] = 0       ## buy
+                                        order['item_code'] = item_code
+                                        order['qty'] = qty
+                                        order['price'] = price
+                                        order['order_type'] = 1
+                                        self.indicate_ordered()         ## INDICATE : ordered
+                                        self.rq_order.emit(order)       ## make order to master
+                    else :
                         self.lock = 0
-
-                    elif gap < 0 :
-                        self.down_level = self.down_level - 1
-                        self.down_count = 0
-
-                        self.lock = 0
-
-                    elif gap == 0 :
-                        self.down_count = self.down_count + 1
-                        print(self.seq, "Down Level : ", self.down_level, "Down Count : ", self.down_count)
-                        if self.down_count >= DOWN_DURATION : 
-                            print(self.seq, "[ADD WATER] DOWN LEVEL : ", self.down_level)
-                            PS = int(price_sell)                # 매도 최우선가
-                            PB = int(price_buy)                 # 매수 최우선가
-                            A = total_purchase              # 총 매입금액
-                            B = total_evaluation            # 총 평가금액
-                            T = TAX
-                            FB = FEE_BUY
-                            FS = FEE_SELL
-                            P = GOAL_PER
-
-                            X = 1 + P + FB
-                            Y = 1 - T - FS
-
-                            qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
-                            price = int(price_sell)
-
-                            if MAKE_ORDER == 1 :
-                                if qty < 0 :
-                                    self.lock = 0
-
-                                elif qty >= 0 :
-                                    if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                                        if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                                            order = {}
-                                            order['slot'] = self.seq
-                                            order['type'] = 0       ## buy
-                                            order['item_code'] = item_code
-                                            order['qty'] = qty
-                                            order['price'] = price
-                                            order['order_type'] = 1
-                                            self.indicate_ordered()         ## INDICATE : ordered
-                                            self.rq_order.emit(order)       ## make order to master
-                        else :
-                            self.lock = 0
-
-            else :          ## original code
-                PS = int(price_sell)                # 매도 최우선가
-                PB = int(price_buy)                 # 매수 최우선가
-                A = total_purchase              # 총 매입금액
-                B = total_evaluation            # 총 평가금액
-                T = TAX
-                FB = FEE_BUY
-                FS = FEE_SELL
-                P = GOAL_PER
-
-                X = 1 + P + FB
-                Y = 1 - T - FS
-
-                qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
-                price = int(price_sell)
-
-                if MAKE_ORDER == 1 :
-                    if qty < 0 :
-                        self.lock = 0
-
-                    elif qty >= 0 :
-                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                            if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                                order = {}
-                                order['slot'] = self.seq
-                                order['type'] = 0       ## buy
-                                order['item_code'] = item_code
-                                order['qty'] = qty
-                                order['price'] = price
-                                order['order_type'] = 1
-                                self.indicate_ordered()         ## INDICATE : ordered
-                                self.rq_order.emit(order)       ## make order to master
-
+  
         # Full Sell
-        # elif percent >= self.PER_HI and step <= STEP_LIMIT :
         elif percent >= self.PER_HI :
             qty = own_count
             price = int(price_buy)
@@ -603,18 +547,15 @@ class Worker(QThread):
 
         # STAY
         else :
-            if TEST_CODE == 1 :
-                if self.downing == 1 :
-                    self.down_first = 1
-                    self.downing = 0
-                    self.down_count = 0
-                    self.down_level = 0
-                    self.down_prev_per = None
+            if self.downing == 1 :
+                self.down_first = 1
+                self.downing = 0
+                self.down_count = 0
+                self.down_level = 0
+                self.down_prev_per = None
 
-                    self.lock = 0
+                self.lock = 0
 
-                else :
-                    self.lock = 0
             else :
                 self.lock = 0
             
