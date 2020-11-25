@@ -180,7 +180,7 @@ class Worker(QThread):
         except :
             pass
 
-    def add_water(self, item) :
+    def add_water(self, target_item) :
         try :
             orderbook = pyupbit.get_orderbook(target_item)
             bids_asks = orderbook[0]['orderbook_units']

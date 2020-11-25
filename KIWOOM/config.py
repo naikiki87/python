@@ -1,5 +1,7 @@
 TEST_CODE = 1
 
+PERCENT_HIGH = 0.7
+
 # ACCOUNT = "8146666311"
 ACCOUNT = "5420162210"
 PASSWORD = "6458"
@@ -26,9 +28,9 @@ MAKE_ORDER = 1
 PER_LOW = -2
 STEP_LIMIT = 5
 
-PERCENT_HIGH = 0.7
 
-DOWN_DURATION = 50      ## wating tick times before add-water order
+
+DOWN_DURATION = 60      ## wating tick times before add-water order
 
 ## Timer
 UNIT_PRICE_HI_LIM = 65000

@@ -1,4 +1,5 @@
 import sys
+import os
 import sqlite3
 import time
 import math
@@ -28,7 +29,7 @@ TICKERS_1 = config.TICKERS_1
 TICKERS_2 = config.TICKERS_2
 TICKERS_3 = config.TICKERS_3
 
-WORKER_GROUP = 6
+WORKER_GROUP = 5
 
 NUM_SLOT = config.NUM_SLOT
 SUMMARY_COL_CNT = config.SUMMARY_COL_CNT
@@ -49,24 +50,32 @@ class Kiwoom(QMainWindow, form_class):
             self.start_timer()
 
     def init_ENV(self) :
-        self.status = pd.DataFrame(columns = ['item', 'price'])
+        self.status_1 = pd.DataFrame(columns = ['item', 'ask_price', 'bid_price', 'own_count', 'unit_price', 'percent', 'wave'])
+        self.status_2 = pd.DataFrame(columns = ['item', 'ask_price', 'bid_price', 'own_count', 'unit_price', 'percent', 'wave'])
+        self.status_3 = pd.DataFrame(columns = ['item', 'ask_price', 'bid_price', 'own_count', 'unit_price', 'percent', 'wave'])
+
         self.list_th_connected = []
         self.list_th_connected_2 = []
         self.list_th_connected_3 = []
 
-        ## 1군
+        self.renew_1 = []
+        self.renew_2 = []
+        self.renew_3 = []
+
         for i in range(WORKER_GROUP) :
+            self.renew_1.append(0)
+            self.renew_2.append(0)
+            self.renew_3.append(0)
+
             self.list_th_connected.append(0)
-        self.workers_1 = list(range(0, WORKER_GROUP))
-
-        ## 2군
-        for i in range(WORKER_GROUP) :
             self.list_th_connected_2.append(0)
-        self.workers_2 = list(range(0, WORKER_GROUP))
-
-        ## 3군
-        for i in range(WORKER_GROUP) :
             self.list_th_connected_3.append(0)
+
+        ## 1군
+        self.workers_1 = list(range(0, WORKER_GROUP))
+        ## 2군
+        self.workers_2 = list(range(0, WORKER_GROUP))
+        ## 3군
         self.workers_3 = list(range(0, WORKER_GROUP))
 
         # ## button 동작 binding
@@ -133,6 +142,17 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(dict)
     def rp_dict_3(self, data):
         try :
+            self.status_3.loc[data['seq']] = [data['item'], data['ask_price'], data['bid_price'], data['own_count'], data['unit_price'], data['percent'], data['wave']]
+            self.renew_3[data['seq']] = 1
+
+            if sum(self.renew_3) == 5 :
+                self.renew_3 = []
+                for i in range(WORKER_GROUP) :
+                    self.renew_3.append(0)
+
+                self.status_3 = self.status_3.sort_index()
+                # self.show_cmd(3)
+
             for i in range(len(SUMMARY_TITLES)) :
                 if SUMMARY_TITLES[i] == 'percent' :
                     if data['percent'] > 0 :
@@ -151,6 +171,17 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(dict)
     def rp_dict_2(self, data):
         try :
+            self.status_2.loc[data['seq']] = [data['item'], data['ask_price'], data['bid_price'], data['own_count'], data['unit_price'], data['percent'], data['wave']]
+            self.renew_2[data['seq']] = 1
+
+            if sum(self.renew_2) == 5 :
+                self.renew_2 = []
+                for i in range(WORKER_GROUP) :
+                    self.renew_2.append(0)
+
+                self.status_2 = self.status_2.sort_index()
+                # self.show_cmd(2)
+
             for i in range(len(SUMMARY_TITLES)) :
                 if SUMMARY_TITLES[i] == 'percent' :
                     if data['percent'] > 0 :
@@ -169,7 +200,16 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(dict)
     def rp_dict(self, data):
         try :
-            # self.status.loc[data['seq']] = [data['item'], data['price']]
+            self.status_1.loc[data['seq']] = [data['item'], data['ask_price'], data['bid_price'], data['own_count'], data['unit_price'], data['percent'], data['wave']]
+            self.renew_1[data['seq']] = 1
+
+            if sum(self.renew_1) == 5 :
+                self.renew_1 = []
+                for i in range(WORKER_GROUP) :
+                    self.renew_1.append(0)
+
+                self.status_1 = self.status_1.sort_index()
+                # self.show_cmd(1)
 
             for i in range(len(SUMMARY_TITLES)) :
                 if SUMMARY_TITLES[i] == 'percent' :
@@ -184,6 +224,16 @@ class Kiwoom(QMainWindow, form_class):
                     self.func_SET_TableData(1, data['seq'], i, str(data[SUMMARY_TITLES[i]]), 0)
         except :
             pass
+
+    def show_cmd(self, group) :
+        os.system('cls')
+        print("GROUP : ", group)
+        print("[GROUP 1]")
+        print(self.status_1)
+        print("[GROUP 2]")
+        print(self.status_2)
+        print("[GROUP 3]")
+        print(self.status_3)
 
     def func_SET_TableData(self, table_no, row, col, content, color):
         item = QTableWidgetItem(content)

@@ -127,6 +127,8 @@ class Worker(QThread):
                     rp_dict['unit_price'] = str("-")
 
                     unit_price = 0
+
+                    
                 
                     acc_bal = self.upbit.get_balances()      ## 잔고조회
                     # print(acc_bal[0])
@@ -145,7 +147,6 @@ class Worker(QThread):
                     rp_dict['percent'] = percent
                     rp_dict['ordered'] = 0
                     self.trans_dict.emit(rp_dict)
-
                     if percent > TARGET_PER :
                         self.sell(self.item)
 
@@ -181,7 +182,7 @@ class Worker(QThread):
         except :
             pass
 
-    def add_water(self, item) :
+    def add_water(self, target_item) :
         try :
             orderbook = pyupbit.get_orderbook(target_item)
             bids_asks = orderbook[0]['orderbook_units']

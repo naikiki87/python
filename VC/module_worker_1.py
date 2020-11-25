@@ -15,6 +15,7 @@ from PyQt5 import QtTest, QtCore
 from collections import deque
 import config
 import pyupbit
+from time import sleep
 
 file = open('../../individual/upas.txt', 'r')
 s = file.read()
@@ -110,7 +111,8 @@ class Worker(QThread):
                                     self.is_there = 1
 
                             if self.is_there == 1 :
-                                print("there is already ", self.item)
+                                a = 1
+                                # print("there is already ", self.item)
                             elif self.is_there == 0:
                                 for i in range(len(self.movement)) :
                                     self.movement[i] = 0
@@ -178,7 +180,7 @@ class Worker(QThread):
             qty = round((NEW_BUY_AMT / ask_price), 8)
             print("buy : ", item, "qty : ", qty, "price : ", ask_price)
             ret = self.upbit.buy_limit_order(item, ask_price, qty)
-            print(ret)
+            # print(ret)
         except :
             pass
 
@@ -197,11 +199,11 @@ class Worker(QThread):
                     count = acc_bal[0][i]['balance']
                     unit_price = acc_bal[0][i]['avg_buy_price']
                     input_money = float(count) * float(unit_price)
-                    
+
             qty = round(((input_money * 1.5) / ask_price), 8)
             print("buy : ", target_item, "qty : ", qty, "price : ", ask_price)
             ret = self.upbit.buy_limit_order(target_item, ask_price, qty)
-            print(ret)
+            # print(ret)
         except :
             pass
 
@@ -224,7 +226,7 @@ class Worker(QThread):
                     print("item : ", item, '/', count, '/', unit_price, locked)
 
             ret = self.upbit.sell_limit_order(target_item, bid_price, count)
-            print("time : ", ret)
+            # print("time : ", ret)
             
         except :
             pass

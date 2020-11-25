@@ -1357,6 +1357,11 @@ class Kiwoom(QMainWindow, form_class):
         for i in range(col_count):
             self.table_order.setColumnWidth(i, 100)
 
+        self.table_order.setColumnWidth(4, 160)
+        self.table_order.setColumnWidth(5, 80)
+        self.table_order.setColumnWidth(6, 80)
+        self.table_order.setColumnWidth(7, 80)
+
         self.table_order.verticalHeader().setVisible(False)
         self.table_order.verticalHeader().setDefaultSectionSize(1)
         self.table_order.setHorizontalHeaderItem(0, QTableWidgetItem("구분"))
