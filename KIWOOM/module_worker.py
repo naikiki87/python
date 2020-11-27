@@ -368,7 +368,8 @@ class Worker(QThread):
                     self.rp_dict['seq'] = self.seq
                     self.rp_dict['sell_buy_vol_ratio'] = sell_buy_vol_ratio
                     self.rp_dict['chegang'] = chegang
-                    self.rp_dict['vol_buy'] = volume_buy
+                    self.rp_dict['volume_sell'] = volume_sell
+                    self.rp_dict['volume_buy'] = volume_buy
                     self.rp_dict['high'] = self.per_high
 
                     self.trans_dict.emit(self.rp_dict)
@@ -424,7 +425,8 @@ class Worker(QThread):
                         self.rp_dict['seq'] = self.seq
                         self.rp_dict['chegang'] = chegang
                         self.rp_dict['sell_buy_vol_ratio'] = sell_buy_vol_ratio
-                        self.rp_dict['vol_buy'] = volume_buy
+                        self.rp_dict['volume_sell'] = volume_sell
+                        self.rp_dict['volume_buy'] = volume_buy
                         self.rp_dict['high'] = self.per_high
 
                         self.trans_dict.emit(self.rp_dict)

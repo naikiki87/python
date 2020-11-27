@@ -153,9 +153,10 @@ class Kiwoom(QMainWindow, form_class):
                 elif data['percent'] == 0 :
                     self.func_SET_TableData(1, data['seq'], 10, str(data['percent']), 0)
                 self.func_SET_TableData(1, data['seq'], 11, str(data['step']), 0)
-                # self.func_SET_TableData(1, data['seq'], 12, str(data['sell_buy_vol_ratio']), 0)
-                # self.func_SET_TableData(1, data['seq'], 13, str(data['chegang']), 0)
-                # self.func_SET_TableData(1, data['seq'], 14, str(data['vol_buy']), 0)
+                self.func_SET_TableData(1, data['seq'], 12, str(data['sell_buy_vol_ratio']), 0)
+                self.func_SET_TableData(1, data['seq'], 13, str(data['chegang']), 0)
+                self.func_SET_TableData(1, data['seq'], 14, str(data['volume_sell']), 0)
+                self.func_SET_TableData(1, data['seq'], 15, str(data['volume_buy']), 0)
                 self.func_SET_TableData(1, data['seq'], 16, str(data['high']), 0)
             
         except :
@@ -896,23 +897,6 @@ class Kiwoom(QMainWindow, form_class):
                             
 
                     self.load_etc_data()
-                
-    # def func_GET_Deposit(self) :
-    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-    #     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-    #     self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Deposit", "opw00001", 0, "0101")
-    # def func_SHOW_Deposit(self, rqname, trcode, recordname) :
-    #     deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
-    #     d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
-    #     d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
-    #     orderable_money = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "주문가능금액")
-
-    #     self.wid_show_deposit.setText(str('{0:,}'.format(int(deposit))))
-    #     self.wid_show_deposit_d1.setText(str('{0:,}'.format(int(d_1))))
-    #     self.wid_show_deposit_d2.setText(str(int(d_2)))
-    #     self.wid_orderable_money.setText(str(int(orderable_money)))
-
-    #     self.set_deposit = 1
 
     def func_GET_Deposit(self) :
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
@@ -1480,14 +1464,13 @@ class Kiwoom(QMainWindow, form_class):
             try :
                 price_sell_1_vol = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 61).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
                 price_buy_1_vol = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 71).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
+                self.sell_buy_vol_ratio[slot] = [price_sell_1_vol, price_buy_1_vol]
 
                 # self.sell_buy_vol_ratio[slot] = [int(price_sell_1_vol), int(price_buy_1_vol)]
-                self.sell_buy_vol_ratio[slot] = [price_sell_1_vol, price_buy_1_vol]
-                sell_buy_vol_ratio = round((price_sell_1_vol / price_buy_1_vol), 2)
-
-                self.func_SET_TableData(1, slot, 12, str(sell_buy_vol_ratio), 0)
-                self.func_SET_TableData(1, slot, 14, str(price_sell_1_vol), 0)
-                self.func_SET_TableData(1, slot, 15, str(price_buy_1_vol), 0)
+                # sell_buy_vol_ratio = round((price_sell_1_vol / price_buy_1_vol), 2)
+                # self.func_SET_TableData(1, slot, 12, str(sell_buy_vol_ratio), 0)
+                # self.func_SET_TableData(1, slot, 14, str(price_sell_1_vol), 0)
+                # self.func_SET_TableData(1, slot, 15, str(price_buy_1_vol), 0)
             except :
                 pass
             
@@ -1497,17 +1480,14 @@ class Kiwoom(QMainWindow, form_class):
                     vol_ratio = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 30).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 비율
                     price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()       ## 매도 최우선가
                     price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()        ## 매수 최우선가
-                    
                     chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
                     item_name = self.table_summary.item(slot, 1).text()
                     own_count = self.table_summary.item(slot, 2).text()
                     unit_price = self.table_summary.item(slot, 3).text()
 
-                    self.func_SET_TableData(1, slot, 13, str(chegang), 0)
+                    # self.func_SET_TableData(1, slot, 13, str(chegang), 0)
 
                     temp = {}
-
-                    
                     
                     temp['item_code'] = code
                     temp['item_name'] = item_name
@@ -1521,7 +1501,6 @@ class Kiwoom(QMainWindow, form_class):
 
                     # print(item_name, vol_ratio)
                     temp['vol_ratio'] = float(vol_ratio)
-
                     temp['autoTrade'] = 1
 
                     try :
