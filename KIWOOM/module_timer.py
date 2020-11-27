@@ -72,7 +72,8 @@ class Timer(QThread):
                 now = datetime.datetime.now()
                 mkt_open = now.replace(hour=9, minute=0, second=0)
                 mkt_close = now.replace(hour=15, minute=30, second=0)
-                am920 = now.replace(hour=9, minute=20, second=0)        ######### !!!!!!!!
+                am920 = now.replace(hour=9, minute=20, second=0)
+                pm230 = now.replace(hour=14, minute=30, second=0)
                 pm250 = now.replace(hour=14, minute=50, second=0)
                 pm320 = now.replace(hour=15, minute=20, second=0)
 
@@ -93,9 +94,18 @@ class Timer(QThread):
                     
                     if now >= am920 and now<=pm320 and c_sec == "15" :
                         self.sig_main_check_jumun.emit(1)
+
+                    if now <= am920 :
+                        temp_time['timezone'] = 1
+                    elif now > am920 and now <= pm230 :
+                        temp_time['timezone'] = 2
+                    elif now > pm230 :
+                        temp_time['timezone'] = 3
                         
                 else :
                     temp_time['possible'] = 0
+                    temp_time['timezone'] = 0
+                # print("[timer] Timezone : ", temp_time['timezone'])
                 self.cur_time.emit(temp_time)       ## 현재시각 및 market status send
 
 

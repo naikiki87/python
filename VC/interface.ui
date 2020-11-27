@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>909</width>
-    <height>585</height>
+    <height>670</height>
    </rect>
   </property>
   <property name="baseSize">
@@ -26,7 +26,7 @@
       <x>10</x>
       <y>90</y>
       <width>882</width>
-      <height>116</height>
+      <height>136</height>
      </rect>
     </property>
     <property name="rowCount">
@@ -155,7 +155,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>520</y>
+      <y>600</y>
       <width>89</width>
       <height>31</height>
      </rect>
@@ -168,7 +168,7 @@
     <property name="geometry">
      <rect>
       <x>100</x>
-      <y>520</y>
+      <y>600</y>
       <width>89</width>
       <height>31</height>
      </rect>
@@ -200,9 +200,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>240</y>
+      <y>280</y>
       <width>882</width>
-      <height>116</height>
+      <height>136</height>
      </rect>
     </property>
     <property name="rowCount">
@@ -228,7 +228,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>210</y>
+      <y>250</y>
       <width>98</width>
       <height>29</height>
      </rect>
@@ -247,7 +247,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>360</y>
+      <y>440</y>
       <width>98</width>
       <height>29</height>
      </rect>
@@ -263,7 +263,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>390</y>
+      <y>470</y>
       <width>882</width>
       <height>116</height>
      </rect>

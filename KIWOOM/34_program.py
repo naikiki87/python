@@ -75,6 +75,7 @@ class Kiwoom(QMainWindow, form_class):
         # self.input_show_status.setText("STOP")
 
         self.possible_time = 0
+        self.timezone = 0
 
         self.reset_time = 1000
         self.set_deposit = 0
@@ -114,6 +115,10 @@ class Kiwoom(QMainWindow, form_class):
     def update_times(self, data) :
         self.text_edit4.setText(data['time'])
         self.possible_time = data['possible']
+        self.timezone = data['timezone']
+
+        # print("[main] update_times / timezone : ", self.timezone)
+
     @pyqtSlot(dict)
     def rp_dict(self, data):
         ordered = data['ordered']
@@ -148,7 +153,8 @@ class Kiwoom(QMainWindow, form_class):
                     self.func_SET_TableData(1, data['seq'], 10, str(data['percent']), 0)
                 self.func_SET_TableData(1, data['seq'], 11, str(data['step']), 0)
                 # self.func_SET_TableData(1, data['seq'], 12, str(data['high']), 0)
-                self.func_SET_TableData(1, data['seq'], 12, str(data['chegang']), 0)
+                # self.func_SET_TableData(1, data['seq'], 12, str(data['chegang']), 0)
+                self.func_SET_TableData(1, data['seq'], 12, str(data['high']), 0)
             
         except :
             pass
@@ -511,7 +517,8 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SET_TableData(1, i, 2, str(int(owncount)), 0)
             self.func_SET_TableData(1, i, 3, str(round(float(unit_price), 1)), 0)
 
-            self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
+            self.SetRealReg("0101", item_code, "10", "1")      ## 실시간 데이터 수신 등록
+            # self.SetRealReg("1000", item_code, "41", "1")      ## 실시간 데이터 수신 등록
         
         print(self.now(), "[MAIN] [func_SET_Items] Set Items END")
 
@@ -842,6 +849,9 @@ class Kiwoom(QMainWindow, form_class):
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.func_restart_check(th_num, item_code)
                             self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
+                            # self.SetRealReg("1000", item_code, "41", "1")      ## 실시간 데이터 수신 등록
+
+                            
 
                     elif orderType == 6 :       ## gi buy (manual)
                         th_num = self.which_thread(item_code)[1]
@@ -876,7 +886,10 @@ class Kiwoom(QMainWindow, form_class):
 
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.func_restart_check(th_num, item_code)
-                            self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
+                            self.SetRealReg("0101", item_code, "10", "1")      ## 실시간 데이터 수신 등록
+                            # self.SetRealReg("1000", item_code, "41", "1")      ## 실시간 데이터 수신 등록
+
+                            
 
                     self.load_etc_data()
                 
@@ -1319,7 +1332,7 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.setHorizontalHeaderItem(10, QTableWidgetItem("%"))
         self.table_summary.setHorizontalHeaderItem(11, QTableWidgetItem("단계"))
         # self.table_summary.setHorizontalHeaderItem(12, QTableWidgetItem("HIGH"))
-        self.table_summary.setHorizontalHeaderItem(12, QTableWidgetItem("체강"))
+        self.table_summary.setHorizontalHeaderItem(12, QTableWidgetItem("High"))
         
 
         self.table_summary.clicked.connect(self.func_GET_ItemInfo_by_click)
@@ -1415,6 +1428,8 @@ class Kiwoom(QMainWindow, form_class):
         self.kiwoom.dynamicCall("SetRealReg(QString, QString, QString, QString)", screenNo, item_code, fid, realtype)
     def SetRealRemove(self, screenNo, item_code):
         self.kiwoom.dynamicCall("SetRealRemove(QString, QString)", screenNo, item_code)
+    def DisConnectRealData(self, screen_no):
+        self.kiwoom.dynamicCall("DisConnectRealData(QString)", screen_no)
 
     def receive_tr_data(self, screen_no, rqname, trcode, recordname, prev_next, data_len, err_code, msg1, msg2):
         print("[MAIN] [receive_tr_data] : ", rqname)
@@ -1471,12 +1486,26 @@ class Kiwoom(QMainWindow, form_class):
         if self.possible_time == 1 and self.send_data == 1 :
             slot = self.which_thread(code)[1]
             cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
+            price_sell_1 = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 41).replace('+', '').replace('-', '').strip()       ## 매도호가 1
+            price_sell_1_vol = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 61).replace('+', '').replace('-', '').strip()       ## 매도호가 수량 1
+            # print("price sell 1 : ", price_sell_1)
+            # print("price sell 1 vol : ", price_sell_1_vol)
+            # print("cur price : ", cur_price)
             if cur_price != '' :
                 try :
                     vol_comp_remain = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 26).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 잔량
                     vol_ratio = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 30).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 비율
                     price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()       ## 매도 최우선가
                     price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()        ## 매수 최우선가
+
+                    price_sell_1 = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 41).replace('+', '').replace('-', '').strip()       ## 매도호가 1
+                    price_sell_1_vol = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 61).replace('+', '').replace('-', '').strip()       ## 매도호가 수량 1
+                    price_buy_1 = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 51).replace('+', '').replace('-', '').strip()       ## 매도호가 1
+                    price_buy_1_vol = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 71).replace('+', '').replace('-', '').strip()       ## 매도호가 수량 1
+
+                    # print("code : ", code, "ps : ", price_sell, "ps1 : ", price_sell_1, "pb : ", price_buy, "pb1 : ", price_buy_1)
+                    
+                    
                     chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
                     item_name = self.table_summary.item(slot, 1).text()
                     own_count = self.table_summary.item(slot, 2).text()
@@ -1499,6 +1528,9 @@ class Kiwoom(QMainWindow, form_class):
                     temp['vol_ratio'] = float(vol_ratio)
 
                     temp['autoTrade'] = 1
+
+
+                    temp['timezone'] = self.timezone
 
                     if slot == 0:
                         self.test_dict0.emit(temp)

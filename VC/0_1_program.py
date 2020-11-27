@@ -29,7 +29,7 @@ TICKERS_1 = config.TICKERS_1
 TICKERS_2 = config.TICKERS_2
 TICKERS_3 = config.TICKERS_3
 
-WORKER_GROUP = 5
+WORKER_GROUP = 6
 
 NUM_SLOT = config.NUM_SLOT
 SUMMARY_COL_CNT = config.SUMMARY_COL_CNT
@@ -129,12 +129,12 @@ class Kiwoom(QMainWindow, form_class):
             self.workers_2[i].trans_dict.connect(self.rp_dict_2)
             self.workers_2[i].start()
 
-        for i in range(len(self.workers_3)) :
-            self.th_seq = i
-            self.workers_3[i] = module_worker_3.Worker(self.th_seq)
-            self.workers_3[i].th_con.connect(self.th_connected)
-            self.workers_3[i].trans_dict.connect(self.rp_dict_3)
-            self.workers_3[i].start()
+        # for i in range(len(self.workers_3)) :
+        #     self.th_seq = i
+        #     self.workers_3[i] = module_worker_3.Worker(self.th_seq)
+        #     self.workers_3[i].th_con.connect(self.th_connected)
+        #     self.workers_3[i].trans_dict.connect(self.rp_dict_3)
+        #     self.workers_3[i].start()
 
         return 0
 

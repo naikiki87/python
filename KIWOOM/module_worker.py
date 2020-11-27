@@ -33,6 +33,10 @@ JUDGE_SHOW = 0
 
 TEST_CODE = config.TEST_CODE
 
+TIME1_PER_HIGH = config.TIME1_PER_HIGH
+TIME2_PER_HIGH = config.TIME2_PER_HIGH
+TIME3_PER_HIGH = config.TIME3_PER_HIGH
+
 class Worker(QThread):
     connected = 0
     trans_dict = pyqtSignal(dict)
@@ -42,6 +46,7 @@ class Worker(QThread):
 
     def __init__(self, seq):
         super().__init__()
+        # print("[worker] : ", TIME1_PER_HIGH, TIME2_PER_HIGH, TIME3_PER_HIGH)
         self.item_code = ''
         self.seq = seq
         self.PER_HI = PERCENT_HIGH
@@ -76,6 +81,8 @@ class Worker(QThread):
         self.down_level = 0
         self.down_prev_per = None
 
+        self.timezone = 0
+        self.per_high = 0.5
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -202,6 +209,17 @@ class Worker(QThread):
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
+        try :
+            self.timezone = data['timezone']
+            if data['timezone'] == 1 :
+                self.per_high = TIME1_PER_HIGH
+            elif data['timezone'] == 2 :
+                self.per_high = TIME2_PER_HIGH
+            elif data['timezone'] == 3 :
+                self.per_high = TIME3_PER_HIGH
+        except :
+            pass
+
         item_code = data['item_code']
         self.item_code = item_code
         deposit = data['deposit']
@@ -343,7 +361,8 @@ class Worker(QThread):
                     self.rp_dict['percent'] = percent
                     self.rp_dict['step'] = step
                     self.rp_dict['seq'] = self.seq
-                    self.rp_dict['high'] = self.PER_HI
+                    # self.rp_dict['high'] = self.PER_HI
+                    self.rp_dict['high'] = self.per_high
 
                     self.trans_dict.emit(self.rp_dict)
 
@@ -447,7 +466,8 @@ class Worker(QThread):
                         self.rp_dict['percent'] = percent
                         self.rp_dict['step'] = step
                         self.rp_dict['seq'] = self.seq
-                        self.rp_dict['high'] = self.PER_HI
+                        # self.rp_dict['high'] = self.PER_HI
+                        self.rp_dict['high'] = self.per_high
 
                         self.trans_dict.emit(self.rp_dict)
                     
@@ -527,7 +547,8 @@ class Worker(QThread):
                         self.lock = 0
   
         # Full Sell
-        elif percent >= self.PER_HI :
+        # elif percent >= self.PER_HI :
+        elif percent >= self.per_high :
             qty = own_count
             price = int(price_buy)
 

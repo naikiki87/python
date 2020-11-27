@@ -73,7 +73,7 @@ def add_water(target_item) :
                 unit_price = acc_bal[0][i]['avg_buy_price']
                 input_money = float(count) * float(unit_price)
 
-        qty = round(((input_money * 1.5) / ask_price), 8)
+        qty = round(((input_money * 1.1) / ask_price), 8)
         
         ret = upbit.buy_limit_order(target_item, ask_price, qty)
         print("[add water] item : ", target_item, "/ price : ", ask_price, "/ qty : ", qty)

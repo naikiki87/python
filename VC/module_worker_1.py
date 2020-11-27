@@ -67,7 +67,7 @@ class Worker(QThread):
             now = datetime.now()
             t_sec = now.second
             
-            if t_sec % 3 == 0 :
+            if t_sec % 2 == 0 :
                 rp_dict = {}
                 rp_dict['seq'] = self.seq
                 rp_dict['item'] = self.item

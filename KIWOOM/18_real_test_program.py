@@ -11,7 +11,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5 import QtTest, QtCore, QtWidgets, uic
 import module_timer
-import module_get_summary
+# import module_get_summary
 import module_item_finder
 
 form_class = uic.loadUiType("interface.ui")[0]
