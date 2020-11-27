@@ -138,10 +138,8 @@ class Kiwoom(QMainWindow, form_class):
                 # self.func_SET_TableData(1, data['seq'], 4, str(data['cur_price']), 0)
                 # self.func_SET_TableData(1, data['seq'], 5, str(data['price_sell']), 0)
                 self.func_SET_TableData(1, data['seq'], 4, str(data['total_purchase']), 0)
-                
                 self.func_SET_TableData(1, data['seq'], 5, str(data['price_buy']), 0)
                 self.func_SET_TableData(1, data['seq'], 6, str(data['price_sell']), 0)
-
                 self.func_SET_TableData(1, data['seq'], 7, str(data['total_evaluation']), 0)
                 # self.func_SET_TableData(1, data['seq'], 8, str(data['temp_total']), 0)
                 self.func_SET_TableData(1, data['seq'], 8, str(data['total_fee']), 0)
@@ -153,10 +151,10 @@ class Kiwoom(QMainWindow, form_class):
                 elif data['percent'] == 0 :
                     self.func_SET_TableData(1, data['seq'], 10, str(data['percent']), 0)
                 self.func_SET_TableData(1, data['seq'], 11, str(data['step']), 0)
-                self.func_SET_TableData(1, data['seq'], 12, str(data['sell_buy_vol_ratio']), 0)
+                # self.func_SET_TableData(1, data['seq'], 12, str(data['sell_buy_vol_ratio']), 0)
                 self.func_SET_TableData(1, data['seq'], 13, str(data['chegang']), 0)
-                self.func_SET_TableData(1, data['seq'], 14, str(data['volume_sell']), 0)
-                self.func_SET_TableData(1, data['seq'], 15, str(data['volume_buy']), 0)
+                # self.func_SET_TableData(1, data['seq'], 14, str(data['volume_sell']), 0)
+                # self.func_SET_TableData(1, data['seq'], 15, str(data['volume_buy']), 0)
                 self.func_SET_TableData(1, data['seq'], 16, str(data['high']), 0)
             
         except :
@@ -512,7 +510,6 @@ class Kiwoom(QMainWindow, form_class):
             owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
             unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
 
-
             self.item_slot[i] = item_code
 
             self.func_SET_TableData(1, i, 0, item_code, 0)
@@ -521,8 +518,8 @@ class Kiwoom(QMainWindow, form_class):
             self.func_SET_TableData(1, i, 3, str(round(float(unit_price), 1)), 0)
 
             # self.SetRealReg("0101", item_code, "10", "1")      ## 실시간 데이터 수신 등록
-            self.SetRealReg("0101", item_code, "10;41;228", "1")      ## 실시간 데이터 수신 등록
-            
+            # self.SetRealReg("0101", item_code, "10;41", "1")      ## 실시간 데이터 수신 등록
+            self.SetRealReg("0101", item_code, "41", "1")      ## 실시간 데이터 수신 등록
         
         print(self.now(), "[MAIN] [func_SET_Items] Set Items END")
 
@@ -853,8 +850,8 @@ class Kiwoom(QMainWindow, form_class):
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.func_restart_check(th_num, item_code)
                             # self.SetRealReg("0101", item_code, "10", 1)      ## 실시간 데이터 수신 등록
-
-                            self.SetRealReg("0101", item_code, "10;41", "1")      ## 실시간 데이터 수신 등록
+                            # self.SetRealReg("0101", item_code, "10;41", "1")      ## 실시간 데이터 수신 등록
+                            self.SetRealReg("0101", item_code, "41", "1")      ## 실시간 데이터 수신 등록
 
                             
 
@@ -892,7 +889,8 @@ class Kiwoom(QMainWindow, form_class):
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.func_restart_check(th_num, item_code)
                             # self.SetRealReg("0101", item_code, "10", "1")      ## 실시간 데이터 수신 등록
-                            self.SetRealReg("0101", item_code, "10;41", "1")      ## 실시간 데이터 수신 등록
+                            # self.SetRealReg("0101", item_code, "10;41", "1")      ## 실시간 데이터 수신 등록
+                            self.SetRealReg("0101", item_code, "41", "1")      ## 실시간 데이터 수신 등록
 
                             
 
@@ -1456,85 +1454,130 @@ class Kiwoom(QMainWindow, form_class):
         elif rqname == "GET_History":
             self.func_SHOW_TradeHistory(rqname, trcode, recordname)
     def receive_real_data(self, code, real_type, real_data): 
-        # print("[MAIN] receive real : ", code)
+        # print("[MAIN] receive real : ", code, real_data)
         if self.possible_time == 1 and self.send_data == 1 :
             slot = self.which_thread(code)[1]
-            cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
-            chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
-            print("cur_p : ", cur_price)
-            print("code : ", code, "chegang : ", chegang)
-            
+            # cur_price = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 10).replace('+', '').replace('-', '').strip()
             try :
-                price_sell_1 = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 41).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
-                price_sell_1_vol = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 61).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
-                price_buy_1 = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 51).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
-                price_buy_1_vol = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 71).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
-                self.sell_buy_vol_ratio[slot] = [price_sell_1_vol, price_buy_1_vol]
+                price_sell = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 41).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
+                price_buy = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 51).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
+                volume_sell = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 61).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
+                volume_buy = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 71).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
+                item_name = self.table_summary.item(slot, 1).text()
+                own_count = self.table_summary.item(slot, 2).text()
+                unit_price = self.table_summary.item(slot, 3).text()
 
-                # self.sell_buy_vol_ratio[slot] = [int(price_sell_1_vol), int(price_buy_1_vol)]
-                # sell_buy_vol_ratio = round((price_sell_1_vol / price_buy_1_vol), 2)
-                # self.func_SET_TableData(1, slot, 12, str(sell_buy_vol_ratio), 0)
-                # self.func_SET_TableData(1, slot, 14, str(price_sell_1_vol), 0)
-                # self.func_SET_TableData(1, slot, 15, str(price_buy_1_vol), 0)
+                print("sell : ", price_sell, volume_sell, "buy : ", price_buy, volume_buy)
+
+                volume_ratio = round((volume_sell / volume_buy), 2)
+
+                self.func_SET_TableData(1, slot, 12, str(volume_ratio), 0)
+                self.func_SET_TableData(1, slot, 14, str(volume_sell), 0)
+                self.func_SET_TableData(1, slot, 15, str(volume_buy), 0)
+
+                temp = {}
+
+                temp['autoTrade'] = 1
+                temp['item_code'] = code
+                temp['item_name'] = item_name
+                temp['own_count'] = int(own_count)
+                temp['unit_price'] = float(unit_price)
+                temp['price_buy'] = price_buy
+                temp['price_sell'] = price_sell
+                temp['volume_sell'] = volume_sell
+                temp['volume_buy'] = volume_buy
+                temp['volume_ratio'] = volume_ratio
+                temp['chegang'] = 0
+                temp['deposit'] = int(self.wid_show_deposit_d2.text())
+                temp['timezone'] = self.timezone
+
+                # temp['chegang'] = float(chegang)
+                # temp['cur_price'] = int(cur_price)
+
+                
+
+                # try :
+                #     volume_sell = self.sell_buy_vol_ratio[slot][0]
+                #     volume_buy = self.sell_buy_vol_ratio[slot][1]
+                #     sell_buy_vol_ratio = round((volume_sell / volume_buy), 2)
+                #     temp["volume_sell"] = volume_sell
+                #     temp["volume_buy"] = volume_buy
+                #     temp['sell_buy_vol_ratio'] = sell_buy_vol_ratio
+                # except :
+                #     temp["volume_sell"] = 0
+                #     temp["volume_buy"] = 0
+                #     temp['sell_buy_vol_ratio'] = 0
+
+                if slot == 0:
+                    self.test_dict0.emit(temp)
+                elif slot == 1:
+                    self.test_dict1.emit(temp)
+                elif slot == 2:
+                    self.test_dict2.emit(temp)
+                elif slot == 3:
+                    self.test_dict3.emit(temp)
+                elif slot == 4:
+                    self.test_dict4.emit(temp)
+            
             except :
                 pass
             
-            if cur_price != '' :
-                try :
-                    vol_comp_remain = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 26).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 잔량
-                    vol_ratio = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 30).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 비율
-                    price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()       ## 매도 최우선가
-                    price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()        ## 매수 최우선가
-                    chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
-                    item_name = self.table_summary.item(slot, 1).text()
-                    own_count = self.table_summary.item(slot, 2).text()
-                    unit_price = self.table_summary.item(slot, 3).text()
+            # if cur_price != '' :
+            #     try :
+            #         # vol_comp_remain = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 26).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 잔량
+            #         # vol_ratio = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 30).replace('+', '').replace('-', '').strip()       ## 전일대비 거래량 비율
+            #         price_sell = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 27).replace('+', '').replace('-', '').strip()       ## 매도 최우선가
+            #         price_buy = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 28).replace('+', '').replace('-', '').strip()        ## 매수 최우선가
+            #         chegang = self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 228)
+            #         item_name = self.table_summary.item(slot, 1).text()
+            #         own_count = self.table_summary.item(slot, 2).text()
+            #         unit_price = self.table_summary.item(slot, 3).text()
 
-                    # self.func_SET_TableData(1, slot, 13, str(chegang), 0)
+            #         # self.func_SET_TableData(1, slot, 13, str(chegang), 0)
 
-                    temp = {}
+            #         temp = {}
                     
-                    temp['item_code'] = code
-                    temp['item_name'] = item_name
-                    temp['own_count'] = int(own_count)
-                    temp['unit_price'] = float(unit_price)
-                    temp['cur_price'] = int(cur_price)
-                    temp['price_buy'] = int(price_buy)
-                    temp['price_sell'] = int(price_sell)
-                    temp['chegang'] = float(chegang)
-                    temp['deposit'] = int(self.wid_show_deposit_d2.text())
+            #         temp['item_code'] = code
+            #         temp['item_name'] = item_name
+            #         temp['own_count'] = int(own_count)
+            #         temp['unit_price'] = float(unit_price)
+            #         temp['cur_price'] = int(cur_price)
+            #         temp['price_buy'] = int(price_buy)
+            #         temp['price_sell'] = int(price_sell)
+            #         temp['chegang'] = float(chegang)
+            #         temp['deposit'] = int(self.wid_show_deposit_d2.text())
 
-                    # print(item_name, vol_ratio)
-                    temp['vol_ratio'] = float(vol_ratio)
-                    temp['autoTrade'] = 1
+            #         # print(item_name, vol_ratio)
+            #         temp['vol_ratio'] = float(vol_ratio)
+            #         temp['autoTrade'] = 1
 
-                    try :
-                        volume_sell = self.sell_buy_vol_ratio[slot][0]
-                        volume_buy = self.sell_buy_vol_ratio[slot][1]
-                        sell_buy_vol_ratio = round((volume_sell / volume_buy), 2)
-                        temp["volume_sell"] = volume_sell
-                        temp["volume_buy"] = volume_buy
-                        temp['sell_buy_vol_ratio'] = sell_buy_vol_ratio
-                    except :
-                        temp["volume_sell"] = 0
-                        temp["volume_buy"] = 0
-                        temp['sell_buy_vol_ratio'] = 0
+            #         try :
+            #             volume_sell = self.sell_buy_vol_ratio[slot][0]
+            #             volume_buy = self.sell_buy_vol_ratio[slot][1]
+            #             sell_buy_vol_ratio = round((volume_sell / volume_buy), 2)
+            #             temp["volume_sell"] = volume_sell
+            #             temp["volume_buy"] = volume_buy
+            #             temp['sell_buy_vol_ratio'] = sell_buy_vol_ratio
+            #         except :
+            #             temp["volume_sell"] = 0
+            #             temp["volume_buy"] = 0
+            #             temp['sell_buy_vol_ratio'] = 0
 
-                    temp['timezone'] = self.timezone
+            #         temp['timezone'] = self.timezone
 
-                    if slot == 0:
-                        self.test_dict0.emit(temp)
-                    elif slot == 1:
-                        self.test_dict1.emit(temp)
-                    elif slot == 2:
-                        self.test_dict2.emit(temp)
-                    elif slot == 3:
-                        self.test_dict3.emit(temp)
-                    elif slot == 4:
-                        self.test_dict4.emit(temp)
+            #         if slot == 0:
+            #             self.test_dict0.emit(temp)
+            #         elif slot == 1:
+            #             self.test_dict1.emit(temp)
+            #         elif slot == 2:
+            #             self.test_dict2.emit(temp)
+            #         elif slot == 3:
+            #             self.test_dict3.emit(temp)
+            #         elif slot == 4:
+            #             self.test_dict4.emit(temp)
                 
-                except :
-                    pass
+            #     except :
+            #         pass
         
         else :
             timestamp = self.func_GET_CurrentTime()

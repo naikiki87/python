@@ -54,8 +54,7 @@ class Worker(QThread):
 
         print(self.seq, "per hi : ", self.PER_HI)
         
-        # self.prev_data = [0, 0, 0]          ## save previous data : cur_price, price_buy, price_sell
-        self.prev_price = [0,0]     ## save previous data : price_buy, price_sell
+        self.prev_data = [0, 0, 0]          ## save previous data : cur_price, price_buy, price_sell
 
         self.first_rcv = 1
         
@@ -332,13 +331,12 @@ class Worker(QThread):
             if self.first_rcv == 1 :
                 if self.lock == 0 :
                     self.lock = 1
-                    # self.prev_data = [data['cur_price'], data['price_buy'], data['price_sell']]
-                    self.prev_price = [data['price_buy'], data['price_sell']]
+                    self.prev_data = [data['cur_price'], data['price_buy'], data['price_sell']]
 
                     ## SHOW -> TABLE ##
                     own_count = data['own_count']
                     unit_price = data['unit_price']
-                    # cur_price = data['cur_price']
+                    cur_price = data['cur_price']
                     price_buy = data['price_buy']
                     price_sell = data['price_sell']
                     chegang = data['chegang']
@@ -352,6 +350,7 @@ class Worker(QThread):
                     total_fee = fee_buy + fee_sell + tax
                     total_sum = total_evaluation - total_purchase - total_fee
                     percent = round((total_sum / total_purchase) * 100, 2)
+
                     
                     step = self.func_GET_db_item(item_code, 1)
 
@@ -366,10 +365,10 @@ class Worker(QThread):
                     self.rp_dict['percent'] = percent
                     self.rp_dict['step'] = step
                     self.rp_dict['seq'] = self.seq
+                    self.rp_dict['sell_buy_vol_ratio'] = sell_buy_vol_ratio
                     self.rp_dict['chegang'] = chegang
-                    # self.rp_dict['volume_ratio'] = volume_ratio
-                    # self.rp_dict['volume_sell'] = volume_sell
-                    # self.rp_dict['volume_buy'] = volume_buy
+                    self.rp_dict['volume_sell'] = volume_sell
+                    self.rp_dict['volume_buy'] = volume_buy
                     self.rp_dict['high'] = self.per_high
 
                     self.trans_dict.emit(self.rp_dict)
@@ -390,10 +389,12 @@ class Worker(QThread):
                 if self.lock == 0 :
                     self.lock = 1       ## lock 체결
 
+                    WIN_SIZE = 10
+
                     ## SHOW -> TABLE ##
                     own_count = data['own_count']
                     unit_price = data['unit_price']
-                    # cur_price = data['cur_price']
+                    cur_price = data['cur_price']
                     price_buy = data['price_buy']
                     price_sell = data['price_sell']
                     chegang = data['chegang']
@@ -409,11 +410,9 @@ class Worker(QThread):
                     percent = round((total_sum / total_purchase) * 100, 2)
                     step = self.func_GET_db_item(item_code, 1)
 
-                    # if (cur_price != self.prev_data[0]) or (price_buy != self.prev_data[1]) or (price_sell != self.prev_data[2]) :
-                    if (price_buy != self.prev_price[0]) or (price_sell != self.prev_price[1]) :        ## 가격의 변경이 있을 경우에만 표시데이터 갱신
+                    if (cur_price != self.prev_data[0]) or (price_buy != self.prev_data[1]) or (price_sell != self.prev_data[2]) :
                         self.rp_dict = {}
                         self.rp_dict.update(data)
-                        self.rp_dict['seq'] = self.seq
                         self.rp_dict['ordered'] = 0
                         self.rp_dict['total_purchase'] = int(total_purchase)
                         self.rp_dict['total_evaluation'] = int(total_evaluation)
@@ -422,16 +421,16 @@ class Worker(QThread):
                         self.rp_dict['total_sum'] = int(total_sum)
                         self.rp_dict['percent'] = percent
                         self.rp_dict['step'] = step
+                        self.rp_dict['seq'] = self.seq
                         self.rp_dict['chegang'] = chegang
-                        # self.rp_dict['volume_ratio'] = volume_ratio
-                        # self.rp_dict['volume_sell'] = volume_sell
-                        # self.rp_dict['volume_buy'] = volume_buy
+                        self.rp_dict['sell_buy_vol_ratio'] = sell_buy_vol_ratio
+                        self.rp_dict['volume_sell'] = volume_sell
+                        self.rp_dict['volume_buy'] = volume_buy
                         self.rp_dict['high'] = self.per_high
 
                         self.trans_dict.emit(self.rp_dict)
                     
-                    # self.prev_data = [cur_price, price_buy, price_sell]
-                    self.prev_price = [price_buy, price_sell]
+                    self.prev_data = [cur_price, price_buy, price_sell]
 
                     ## Make Order
                     self.judge(item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
