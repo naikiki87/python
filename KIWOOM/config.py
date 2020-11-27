@@ -13,7 +13,7 @@ SLOT_RUN = 4
 
 ## Main
 NUM_SLOT = 5
-SUMMARY_COL_CNT = 13
+SUMMARY_COL_CNT = 17
 
 ## Worker
 TAX = 0.0025

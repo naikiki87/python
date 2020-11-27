@@ -221,6 +221,11 @@ class Worker(QThread):
             pass
 
         item_code = data['item_code']
+        volume_sell = data['volume_sell']
+        volume_buy = data['volume_buy']
+        sell_buy_vol_ratio = data['sell_buy_vol_ratio']
+        # print("worker", self.seq, "item : ", item_code, "vol_sell : ", volume_sell, "vol_buy : ", volume_buy, "sell buy ratio : ", sell_buy_vol_ratio)
+        
         self.item_code = item_code
         deposit = data['deposit']
 
@@ -361,7 +366,9 @@ class Worker(QThread):
                     self.rp_dict['percent'] = percent
                     self.rp_dict['step'] = step
                     self.rp_dict['seq'] = self.seq
-                    # self.rp_dict['high'] = self.PER_HI
+                    self.rp_dict['sell_buy_vol_ratio'] = sell_buy_vol_ratio
+                    self.rp_dict['chegang'] = chegang
+                    self.rp_dict['vol_buy'] = volume_buy
                     self.rp_dict['high'] = self.per_high
 
                     self.trans_dict.emit(self.rp_dict)
@@ -383,52 +390,6 @@ class Worker(QThread):
                     self.lock = 1       ## lock 체결
 
                     WIN_SIZE = 10
-                    # CHK_SIZE = int((WIN_SIZE * 0.4) - 1)
-                    # UP_CNT = int(CHK_SIZE * 0.65)
-
-                    # print("WINSIZE : ", WIN_SIZE)
-                    # print("CHKSIZE : ", CHK_SIZE)
-
-                    # try :
-                    #     vol_ratio = data['vol_ratio']
-
-                    #     if len(self.vol_queue) == WIN_SIZE :
-                    #         diff = []
-                    #         for i in range(WIN_SIZE-1, 0, -1) :
-                    #             temp = self.vol_queue[i] - self.vol_queue[i-1]
-                    #             diff.append(temp)
-
-                    #         avg = sum(diff) / len(diff)
-
-                    #         print("worker", self.seq, "avg : ", avg, "diff : ", diff)
-
-                    #         up_count = 0
-                    #         print("upcount1 : ", up_count)
-
-                    #         # for j in range(WIN_SIZE-1, WIN_SIZE-61, -1) :
-                    #         # for j in range(WIN_SIZE-1, CHK_SIZE, -1) :
-                    #         CHK_SIZE = int((len(diff) * 0.4) - 1)
-                    #         UP_CNT = int(CHK_SIZE * 0.65)
-
-                    #         print("CHK_SIZE : ", CHK_SIZE)
-                    #         print("UP CNT : ", UP_CNT)
-
-                    #         for j in range(len(diff), CHK_SIZE, -1) :
-                    #             if diff[j] >= avg :
-                    #                 up_count = up_count + 1
-
-                    #         print("upcount2 : ", up_count)
-
-                    #         if up_count >= UP_CNT :
-                    #             print("upup")
-
-                    #         self.vol_queue.pop(0)
-                    #         self.vol_queue.append(vol_ratio)
-                    #     else :
-                    #         self.vol_queue.append(vol_ratio)
-                    #         print(self.vol_queue)
-                    # except :
-                    #     pass
 
                     ## SHOW -> TABLE ##
                     own_count = data['own_count']
@@ -449,11 +410,6 @@ class Worker(QThread):
                     percent = round((total_sum / total_purchase) * 100, 2)
                     step = self.func_GET_db_item(item_code, 1)
 
-                    # if self.seq == 2 :
-                    #     print("own count : ", own_count, "/ price buy : ", price_buy)
-                    #     print(total_evaluation, '/', total_purchase, '/', total_fee)
-                    #     print("worker", self.seq, " : ", total_sum, '/', total_purchase, '/', (total_sum/total_purchase), '/', percent)
-
                     if (cur_price != self.prev_data[0]) or (price_buy != self.prev_data[1]) or (price_sell != self.prev_data[2]) :
                         self.rp_dict = {}
                         self.rp_dict.update(data)
@@ -466,7 +422,9 @@ class Worker(QThread):
                         self.rp_dict['percent'] = percent
                         self.rp_dict['step'] = step
                         self.rp_dict['seq'] = self.seq
-                        # self.rp_dict['high'] = self.PER_HI
+                        self.rp_dict['chegang'] = chegang
+                        self.rp_dict['sell_buy_vol_ratio'] = sell_buy_vol_ratio
+                        self.rp_dict['vol_buy'] = volume_buy
                         self.rp_dict['high'] = self.per_high
 
                         self.trans_dict.emit(self.rp_dict)
