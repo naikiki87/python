@@ -2,6 +2,8 @@ import pyupbit
 import config
 
 NEW_BUY_AMT = config.NEW_BUY_AMT
+# NEW_BUY_AMT = 5000
+ADD_WATER_PER = config.ADD_WATER_PER
 
 file = open('../../individual/upas.txt', 'r')
 s = file.read()
@@ -20,6 +22,7 @@ def get_cur_price(item) :
     return price
 
 def sell(target_item) :
+    print("func module sell : ", target_item)
     orderbook = pyupbit.get_orderbook(target_item)
     bids_asks = orderbook[0]['orderbook_units']
     ask_price = bids_asks[0]['ask_price']
@@ -44,6 +47,7 @@ def sell(target_item) :
 
 def buy(item) :
     try :
+        print("func module buy : ", item)
         orderbook = pyupbit.get_orderbook(item)
         bids_asks = orderbook[0]['orderbook_units']
         ask_price = bids_asks[0]['ask_price']
@@ -77,6 +81,43 @@ def add_water(target_item) :
         
         ret = upbit.buy_limit_order(target_item, ask_price, qty)
         print("[add water] item : ", target_item, "/ price : ", ask_price, "/ qty : ", qty)
-        # print(ret)
+        print(ret)
+    except :
+        pass
+
+def add_water_1_item(target_item) :
+    try :
+        print("add water 1 item : ", target_item)
+
+        orderbook = pyupbit.get_orderbook(target_item)
+        bids_asks = orderbook[0]['orderbook_units']
+        price_sell = bids_asks[0]['ask_price']
+        price_buy = bids_asks[0]['bid_price']
+
+        acc_bal = upbit.get_balances()
+
+        for i in range(0, len(acc_bal[0]), 1) :
+            item = acc_bal[0][i]['currency']
+            if item != "KRW" and item in target_item :
+                count = float(acc_bal[0][i]['balance'])
+                unit_price = float(acc_bal[0][i]['avg_buy_price'])
+
+        A = count * unit_price              # 총 매입금액
+        B = count * price_buy               # 총 평가금액
+        T = 0
+        FB = 0.0005
+        FS = 0.0005
+        # P = -0.01
+        P = ADD_WATER_PER
+
+        X = 1 + P + FB
+        Y = 1 - T - FS
+
+        qty = round(((Y*B - X*A) / (price_sell*X - price_buy*Y)), 8)
+        price = price_sell
+        
+        ret = upbit.buy_limit_order(target_item, price, qty)
+        print("[add water] item : ", target_item, "/ price : ", price, "/ qty : ", qty)
+        # # print(ret)
     except :
         pass

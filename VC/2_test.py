@@ -20,8 +20,8 @@ import func_module
 # print("a : ", a)
 
 
-order_sell = func_module.sell
-order_sell("KRW-XLM")
+# order_sell = func_module.sell
+# order_sell("KRW-SNT")
 
 # order_buy = func_module.buy
 # order_buy("KRW-XRP")
@@ -71,16 +71,23 @@ tickers = pyupbit.get_tickers()
 # orderbook = pyupbit.get_orderbook("KRW-XRP")
 # print(orderbook)
 
-ITEM = "KRW-BTC"
+ITEM = "KRW-ETH"
 
 #### 10 호가
-# orderbook = pyupbit.get_orderbook(ITEM)
-# bids_asks = orderbook[0]['orderbook_units']
-# ask_price = bids_asks[0]['ask_price']
-# bid_price = bids_asks[0]['bid_price']
-# # print("aaa : ", ask_price, bid_price)
-# # for bid_ask in bids_asks:
-# #     print(bid_ask)
+orderbook = pyupbit.get_orderbook(ITEM)
+# print("orderbook : ", orderbook)
+bids_asks = orderbook[0]['orderbook_units']
+ask_price = bids_asks[0]['ask_price']
+bid_price = bids_asks[0]['bid_price']
+ask_size = bids_asks[0]['ask_size']
+bid_size = bids_asks[0]['bid_size']
+
+print("ask : ", ask_price, '/', ask_size)
+print("bid : ", bid_price, '/', bid_size, type(bid_size))
+ratio = round((ask_size / bid_size), 2)
+print("ratio : ", ratio)
+# for bid_ask in bids_asks:
+#     print(bid_ask)
 
 # price = pyupbit.get_current_price(ITEM)
 # print("현재가 : ", price)
