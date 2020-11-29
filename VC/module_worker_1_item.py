@@ -17,6 +17,7 @@ import config
 import pyupbit
 from time import sleep
 import func_module
+from time import localtime, strftime
 
 file = open('../../individual/upas.txt', 'r')
 s = file.read()
@@ -189,8 +190,13 @@ class Worker(QThread):
                     rp_dict['ordered'] = 0
                     self.trans_dict.emit(rp_dict)
 
+
                     if percent >= TARGET_PER :
                         print("<< UP >>")
+                        f_sell = open("trade_log.txt",'a')
+                        data = self.get_now() + "[UP] item : " + str(self.item) + "percent : " + str(percent) + '\n'
+                        f_sell.write(data)
+                        f_sell.close()
                         if self.uping == 0 :
                             self.uping = 1
                         
@@ -201,6 +207,11 @@ class Worker(QThread):
                                 print("[WO] SELL [매수물량 적음] : ", buy_qty_ratio, "per : ", percent)
                                 self.order_sell(self.item)
                                 self.lock = 1
+
+                                f_sell = open("trade_log.txt",'a')
+                                data = self.get_now() + "[sell buy_qty_low] item : " + str(self.item) + "/ price : " + str(bid_price) + "/ Qty : " + str(own_count) + "percent : " + str(percent) + '\n'
+                                f_sell.write(data)
+                                f_sell.close()
                             
                             else :
                                 if volume_ratio >= 50 :
@@ -210,10 +221,16 @@ class Worker(QThread):
                                 else :
                                     wait = 1
 
+                    
+
                     elif percent <= TARGET_MINUS_PER :
-                        print("[WO] ADD_WATER : ", percent, TARGET_MINUS_PER)
+                        # print("[WO] ADD_WATER : ", percent, TARGET_MINUS_PER)
                         self.order_addwater(self.item)
                         self.lock = 1
+                        # f1 = open("trade_log.txt",'a')
+                        # data = self.get_now() + "[add water] " + str(self.item) + '\n'
+                        # f1.write(data)
+                        # f1.close()
                     
                     else :
                         if self.uping == 1 :
@@ -226,4 +243,17 @@ class Worker(QThread):
             sleep(0.5)
     
     def now(self) :
+
         return datetime.datetime.now()
+
+    def get_now(self) :
+        year = strftime("%Y", localtime())
+        month = strftime("%m", localtime())
+        day = strftime("%d", localtime())
+        hour = strftime("%H", localtime())
+        cmin = strftime("%M", localtime())
+        sec = strftime("%S", localtime())
+
+        now = "[" + year + "/" + month +"/" + day + " " + hour + ":" + cmin + ":" + sec + "] "
+
+        return now

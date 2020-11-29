@@ -1,5 +1,6 @@
 import pyupbit
 import config
+from time import localtime, strftime
 
 NEW_BUY_AMT = config.NEW_BUY_AMT
 # NEW_BUY_AMT = 5000
@@ -11,6 +12,8 @@ row = s.split('\n')
 access_key = row[0]
 secret_key = row[1]
 upbit = pyupbit.Upbit(access_key, secret_key)
+
+
 
 def func_test(item) :
     print("import func test : ", item)
@@ -41,6 +44,8 @@ def sell(target_item) :
         ret = upbit.sell_limit_order(target_item, bid_price, qty)
         print("[sell] item : ", target_item, "/ price : ", bid_price, "/ Qty : ", qty)
         # print("time : ", ret)
+
+        
         
     except :
         pass
@@ -80,8 +85,8 @@ def add_water(target_item) :
         qty = round(((input_money * 1.1) / ask_price), 8)
         
         ret = upbit.buy_limit_order(target_item, ask_price, qty)
-        print("[add water] item : ", target_item, "/ price : ", ask_price, "/ qty : ", qty)
-        print(ret)
+        # print("[add water] item : ", target_item, "/ price : ", ask_price, "/ qty : ", qty)
+        # print(ret)
     except :
         pass
 
@@ -117,7 +122,21 @@ def add_water_1_item(target_item) :
         price = price_sell
         
         ret = upbit.buy_limit_order(target_item, price, qty)
-        print("[add water] item : ", target_item, "/ price : ", price, "/ qty : ", qty)
+        # print("[add water] item : ", target_item, "/ price : ", price, "/ qty : ", qty)
         # # print(ret)
+        
+        
     except :
         pass
+
+def get_now() :
+    year = strftime("%Y", localtime())
+    month = strftime("%m", localtime())
+    day = strftime("%d", localtime())
+    hour = strftime("%H", localtime())
+    cmin = strftime("%M", localtime())
+    sec = strftime("%S", localtime())
+
+    now = "[" + year + "/" + month +"/" + day + " " + hour + ":" + cmin + ":" + sec + "] "
+
+    return now

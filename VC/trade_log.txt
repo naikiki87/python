@@ -1,0 +1,8 @@
+[2020/11/29 18:27:32] [UP] item : KRW-BTCpercent : 0.74
+[2020/11/29 18:27:32] [sell buy_qty_low] item : KRW-BTC/ price : 19982000.0/ Qty : 0.00050413percent : 0.74
+[2020/11/29 18:28:43] [UP] item : KRW-ETHpercent : 0.5
+[2020/11/29 18:28:43] [sell buy_qty_low] item : KRW-ETH/ price : 606700.0/ Qty : 0.01656452percent : 0.5
+[2020/11/29 20:07:23] [UP] item : KRW-ETHpercent : 0.51
+[2020/11/29 20:07:23] [sell buy_qty_low] item : KRW-ETH/ price : 610300.0/ Qty : 0.01646904percent : 0.51
+[2020/11/29 20:14:30] [UP] item : KRW-ETHpercent : 0.51
+[2020/11/29 20:14:31] [sell buy_qty_low] item : KRW-ETH/ price : 614300.0/ Qty : 0.03272251percent : 0.51
