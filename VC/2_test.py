@@ -29,19 +29,25 @@ import func_module
 # order_addwater = func_module.add_water
 # order_addwater("KRW-XRP")
 
-file = open('../../individual/upas.txt', 'r')
-s = file.read()
-row = s.split('\n')
+f_sell = open("trade_log2.txt",'a')
+# data = self.get_now() + "[sell volume_ratio_low] item : " + str(item_code) + "volume_ratio : " + str(volume_ratio) + "percent : " + str(percent) + '\n'
+data = "test 1234"
+f_sell.write(data)
+f_sell.close()
 
-cnt = 0
-cont = 1
+# file = open('../../individual/upas.txt', 'r')
+# s = file.read()
+# row = s.split('\n')
 
-access_key = row[0]
-secret_key = row[1]
-upbit = pyupbit.Upbit(access_key, secret_key)
+# cnt = 0
+# cont = 1
 
-# #### 티커 조회
-tickers = pyupbit.get_tickers()
+# access_key = row[0]
+# secret_key = row[1]
+# upbit = pyupbit.Upbit(access_key, secret_key)
+
+# # #### 티커 조회
+# tickers = pyupbit.get_tickers()
 # print(tickers)
 
 #### 티커 중 KRW 만 추출
@@ -74,18 +80,18 @@ tickers = pyupbit.get_tickers()
 ITEM = "KRW-ETH"
 
 #### 10 호가
-orderbook = pyupbit.get_orderbook(ITEM)
-# print("orderbook : ", orderbook)
-bids_asks = orderbook[0]['orderbook_units']
-ask_price = bids_asks[0]['ask_price']
-bid_price = bids_asks[0]['bid_price']
-ask_size = bids_asks[0]['ask_size']
-bid_size = bids_asks[0]['bid_size']
+# orderbook = pyupbit.get_orderbook(ITEM)
+# # print("orderbook : ", orderbook)
+# bids_asks = orderbook[0]['orderbook_units']
+# ask_price = bids_asks[0]['ask_price']
+# bid_price = bids_asks[0]['bid_price']
+# ask_size = bids_asks[0]['ask_size']
+# bid_size = bids_asks[0]['bid_size']
 
-print("ask : ", ask_price, '/', ask_size)
-print("bid : ", bid_price, '/', bid_size, type(bid_size))
-ratio = round((ask_size / bid_size), 2)
-print("ratio : ", ratio)
+# print("ask : ", ask_price, '/', ask_size)
+# print("bid : ", bid_price, '/', bid_size, type(bid_size))
+# ratio = round((ask_size / bid_size), 2)
+# print("ratio : ", ratio)
 # for bid_ask in bids_asks:
 #     print(bid_ask)
 

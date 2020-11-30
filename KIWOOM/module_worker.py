@@ -2,7 +2,7 @@ import sys
 import time
 import datetime
 import pandas as pd
-import numpy
+import numpy as np
 import sqlite3
 import math
 from time import localtime, strftime
@@ -16,7 +16,6 @@ import config
 
 ACCOUNT = config.ACCOUNT
 PASSWORD = config.PASSWORD
-
 TAX = config.TAX
 FEE_BUY = config.FEE_BUY
 FEE_SELL = config.FEE_SELL
@@ -24,18 +23,18 @@ GOAL_PER = config.GOAL_PER
 MAKE_ORDER = config.MAKE_ORDER
 PER_LOW = config.PER_LOW
 STEP_LIMIT = config.STEP_LIMIT
-
 PERCENT_HIGH = config.PERCENT_HIGH
-
 DOWN_DURATION = config.DOWN_DURATION
-
 JUDGE_SHOW = 0
+TEST_CODE = 1
+# TIME1_PER_HIGH = config.TIME1_PER_HIGH
+# TIME2_PER_HIGH = config.TIME2_PER_HIGH
+# TIME3_PER_HIGH = config.TIME3_PER_HIGH
+TIME1_PER_HIGH = config.TIME_PER_HIGH[0]
+TIME2_PER_HIGH = config.TIME_PER_HIGH[1]
+TIME3_PER_HIGH = config.TIME_PER_HIGH[2]
 
-TEST_CODE = config.TEST_CODE
-
-TIME1_PER_HIGH = config.TIME1_PER_HIGH
-TIME2_PER_HIGH = config.TIME2_PER_HIGH
-TIME3_PER_HIGH = config.TIME3_PER_HIGH
+print("TIME 1 : ", TIME1_PER_HIGH, TIME2_PER_HIGH, TIME3_PER_HIGH)
 
 class Worker(QThread):
     connected = 0
@@ -54,7 +53,6 @@ class Worker(QThread):
 
         print(self.seq, "per hi : ", self.PER_HI)
         
-        # self.prev_data = [0, 0, 0]          ## save previous data : cur_price, price_buy, price_sell
         self.prev_price = [0,0]     ## save previous data : price_buy, price_sell
 
         self.first_rcv = 1
@@ -84,6 +82,18 @@ class Worker(QThread):
 
         self.timezone = 0
         self.per_high = 0.7
+
+        self.avg_vol_diff = [0, 0, 0]      ## total diff, cnt, average
+
+        self.gap_vol_sell = []
+        self.gap_vol_buy = []
+        self.prev_vol = [0, 0]
+
+        self.mean_vol_buy_diff = 0
+        self.mean_vol_sell_diff = 0
+
+        self.uping = 0
+        self.sell_or_wait = 1
 
     def event_connect(self, err_code):
         if err_code == 0:
@@ -210,8 +220,6 @@ class Worker(QThread):
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
-        
-
         item_code = data['item_code']
         self.item_code = item_code
         deposit = data['deposit']
@@ -326,51 +334,46 @@ class Worker(QThread):
                     self.per_high = TIME3_PER_HIGH
             except :
                 pass
+
             volume_sell = data['volume_sell']
             volume_buy = data['volume_buy']
             volume_ratio = data['volume_ratio']
+            own_count = data['own_count']
+            unit_price = data['unit_price']
+            price_buy = data['price_buy']
+            price_sell = data['price_sell']
+
+            # print(self.seq, volume_sell, volume_buy)
+
+            t_purchase = own_count * unit_price
+            t_evaluation = own_count * price_buy    ## 매수 최우선가 기준
+            temp_total = t_evaluation - t_purchase
+            fee_buy = int(((FEE_BUY * t_purchase) // 10) * 10)
+            fee_sell = int(((FEE_SELL * t_evaluation) // 10) * 10)
+            tax = int(round((TAX * t_evaluation), 0))
+            total_fee = fee_buy + fee_sell + tax
+            total_sum = t_evaluation - t_purchase - total_fee
+            percent = round((total_sum / t_purchase) * 100, 2)
+            step = self.func_GET_db_item(item_code, 1)
+
+            self.rp_dict = {}
+            self.rp_dict.update(data)
+            self.rp_dict['ordered'] = 0
+            self.rp_dict['t_purchase'] = int(t_purchase)
+            self.rp_dict['t_evaluation'] = int(t_evaluation)
+            self.rp_dict['temp_total'] = int(temp_total)
+            self.rp_dict['total_fee'] = int(total_fee)
+            self.rp_dict['total_sum'] = int(total_sum)
+            self.rp_dict['percent'] = percent
+            self.rp_dict['step'] = step
+            self.rp_dict['seq'] = self.seq
+            self.rp_dict['high'] = self.per_high
+
             if self.first_rcv == 1 :
                 if self.lock == 0 :
                     self.lock = 1
-                    # self.prev_data = [data['cur_price'], data['price_buy'], data['price_sell']]
                     self.prev_price = [data['price_buy'], data['price_sell']]
-
-                    ## SHOW -> TABLE ##
-                    own_count = data['own_count']
-                    unit_price = data['unit_price']
-                    # cur_price = data['cur_price']
-                    price_buy = data['price_buy']
-                    price_sell = data['price_sell']
-                    chegang = data['chegang']
-
-                    total_purchase = own_count * unit_price
-                    total_evaluation = own_count * price_buy    ## 매수 최우선가 기준
-                    temp_total = total_evaluation - total_purchase
-                    fee_buy = int(((FEE_BUY * total_purchase) // 10) * 10)
-                    fee_sell = int(((FEE_SELL * total_evaluation) // 10) * 10)
-                    tax = int(round((TAX * total_evaluation), 0))
-                    total_fee = fee_buy + fee_sell + tax
-                    total_sum = total_evaluation - total_purchase - total_fee
-                    percent = round((total_sum / total_purchase) * 100, 2)
-                    
-                    step = self.func_GET_db_item(item_code, 1)
-
-                    self.rp_dict = {}
-                    self.rp_dict.update(data)
-                    self.rp_dict['ordered'] = 0
-                    self.rp_dict['total_purchase'] = int(total_purchase)
-                    self.rp_dict['total_evaluation'] = int(total_evaluation)
-                    self.rp_dict['temp_total'] = int(temp_total)
-                    self.rp_dict['total_fee'] = int(total_fee)
-                    self.rp_dict['total_sum'] = int(total_sum)
-                    self.rp_dict['percent'] = percent
-                    self.rp_dict['step'] = step
-                    self.rp_dict['seq'] = self.seq
-                    self.rp_dict['chegang'] = chegang
-                    # self.rp_dict['volume_ratio'] = volume_ratio
-                    # self.rp_dict['volume_sell'] = volume_sell
-                    # self.rp_dict['volume_buy'] = volume_buy
-                    self.rp_dict['high'] = self.per_high
+                    self.prev_vol = [volume_sell, volume_buy]
 
                     self.trans_dict.emit(self.rp_dict)
 
@@ -390,54 +393,23 @@ class Worker(QThread):
                 if self.lock == 0 :
                     self.lock = 1       ## lock 체결
 
-                    ## SHOW -> TABLE ##
-                    own_count = data['own_count']
-                    unit_price = data['unit_price']
-                    # cur_price = data['cur_price']
-                    price_buy = data['price_buy']
-                    price_sell = data['price_sell']
-                    chegang = data['chegang']
+                    if volume_buy != self.prev_vol[1] :
+                        gap_vol_buy = abs(volume_buy - self.prev_vol[1])
+                        if len(self.gap_vol_buy) == 10 :       ## calc recent 10 items
+                            self.gap_vol_buy.pop(0)
+                        self.gap_vol_buy.append(gap_vol_buy)
+                        self.mean_vol_buy_diff = int(np.mean(self.gap_vol_buy))
 
-                    total_purchase = own_count * unit_price
-                    total_evaluation = own_count * price_buy    ## 매수 최우선가 기준
-                    temp_total = total_evaluation - total_purchase
-                    fee_buy = int(((FEE_BUY * total_purchase) // 10) * 10)
-                    fee_sell = int(((FEE_SELL * total_evaluation) // 10) * 10)
-                    tax = int(round((TAX * total_evaluation), 0))
-                    total_fee = fee_buy + fee_sell + tax
-                    total_sum = total_evaluation - total_purchase - total_fee
-                    percent = round((total_sum / total_purchase) * 100, 2)
-                    step = self.func_GET_db_item(item_code, 1)
-
-                    # if (cur_price != self.prev_data[0]) or (price_buy != self.prev_data[1]) or (price_sell != self.prev_data[2]) :
                     if (price_buy != self.prev_price[0]) or (price_sell != self.prev_price[1]) :        ## 가격의 변경이 있을 경우에만 표시데이터 갱신
-                        self.rp_dict = {}
-                        self.rp_dict.update(data)
-                        self.rp_dict['seq'] = self.seq
-                        self.rp_dict['ordered'] = 0
-                        self.rp_dict['total_purchase'] = int(total_purchase)
-                        self.rp_dict['total_evaluation'] = int(total_evaluation)
-                        self.rp_dict['temp_total'] = int(temp_total)
-                        self.rp_dict['total_fee'] = int(total_fee)
-                        self.rp_dict['total_sum'] = int(total_sum)
-                        self.rp_dict['percent'] = percent
-                        self.rp_dict['step'] = step
-                        self.rp_dict['chegang'] = chegang
-                        # self.rp_dict['volume_ratio'] = volume_ratio
-                        # self.rp_dict['volume_sell'] = volume_sell
-                        # self.rp_dict['volume_buy'] = volume_buy
-                        self.rp_dict['high'] = self.per_high
-
                         self.trans_dict.emit(self.rp_dict)
                     
-                    # self.prev_data = [cur_price, price_buy, price_sell]
                     self.prev_price = [price_buy, price_sell]
+                    self.prev_vol = [volume_sell, volume_buy]
 
-                    ## Make Order
-                    self.judge(item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang)
+                    self.judge(item_code, percent, step, own_count, price_buy, price_sell, t_purchase, t_evaluation, volume_buy, volume_ratio)
 
         ################## judgement ###################
-    def judge(self, item_code, percent, step, own_count, price_buy, price_sell, total_purchase, total_evaluation, chegang) :
+    def judge(self, item_code, percent, step, own_count, price_buy, price_sell, t_purchase, t_evaluation, volume_buy, volume_ratio) :
         res = {}
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
@@ -474,8 +446,8 @@ class Worker(QThread):
                         print(self.seq, "[ADD WATER] DOWN LEVEL : ", self.down_level)
                         PS = int(price_sell)                # 매도 최우선가
                         PB = int(price_buy)                 # 매수 최우선가
-                        A = total_purchase              # 총 매입금액
-                        B = total_evaluation            # 총 평가금액
+                        A = t_purchase              # 총 매입금액
+                        B = t_evaluation            # 총 평가금액
                         T = TAX
                         FB = FEE_BUY
                         FS = FEE_SELL
@@ -507,27 +479,92 @@ class Worker(QThread):
                         self.lock = 0
   
         # Full Sell
-        # elif percent >= self.PER_HI :
         elif percent >= self.per_high :
-            qty = own_count
-            price = int(price_buy)
+            if TEST_CODE == 0 :
+                qty = own_count
+                price = int(price_buy)
 
-            if MAKE_ORDER == 1 :
-                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                    if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
-                        order = {}
-                        order['slot'] = self.seq
-                        order['type'] = 1       ## sell
-                        order['item_code'] = item_code
-                        order['qty'] = qty       ## 전량
-                        order['price'] = price   ## 매수 최우선가
-                        order['order_type'] = 3
-                        self.indicate_ordered()         ## INDICATE : ordered
-                        self.rq_order.emit(order)       ## make order to master
+                if MAKE_ORDER == 1 :
+                    if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                        if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                            order = {}
+                            order['slot'] = self.seq
+                            order['type'] = 1       ## sell
+                            order['item_code'] = item_code
+                            order['qty'] = qty       ## 전량
+                            order['price'] = price   ## 매수 최우선가
+                            order['order_type'] = 3
+                            self.indicate_ordered()         ## INDICATE : ordered
+                            self.rq_order.emit(order)       ## make order to master
             # return res
+
+            if TEST_CODE == 1 :
+                print(self.seq, "<< HOOK >> : ", percent)
+                if self.uping == 0 :
+                    self.uping = 1
+                
+                if self.uping == 1 :
+                    if self.mean_vol_buy_diff == 0 :
+                        self.sell_or_wait == 1
+
+                    else :
+                        buy_qty_ratio = round((volume_buy / self.mean_vol_buy_diff), 2)
+                        print(self.seq, "[111111] : ", buy_qty_ratio, volume_ratio)
+                        if buy_qty_ratio < 10 :         ## 평균치의 5배 보다 작을때
+                            print(self.seq, "[22222 buy_qty_ratio] : ", buy_qty_ratio)
+                            try :
+                                f_sell = open("trade_log.txt",'a')
+                                data = self.get_now() + "[sell buy_qty_low] item : " + str(item_code) + "buy_qty_ratio : " + str(buy_qty_ratio) + "percent : " + str(percent) + '\n'
+                                f_sell.write(data)
+                                f_sell.close()
+                                self.sell_or_wait = 0
+                            except :
+                                self.sell_or_wait = 0
+                        else :
+                            if volume_ratio >= 10 :
+                                print(self.seq, "[33333 vol ratio] : ", volume_ratio)
+                                try :
+                                    f_sell = open("trade_log.txt",'a')
+                                    data = self.get_now() + "[sell volume_ratio_low] item : " + str(item_code) + "volume_ratio : " + str(volume_ratio) + "percent : " + str(percent) + '\n'
+                                    f_sell.write(data)
+                                    f_sell.close()
+                                    self.sell_or_wait = 0
+                                except :
+                                    self.sell_or_wait = 0
+                            else :
+                                print(self.seq, "[44444] : Fine")
+                                self.sell_or_wait = 1
+
+                    if self.sell_or_wait == 1 :       ## wait
+                        print(self.seq, "[[ WAIT ]] : ", percent)
+                        self.lock = 0
+                    
+                    elif self.sell_or_wait == 0 :     ## sell
+                        self.sell_or_wait = 1
+                        
+                        qty = own_count
+                        price = int(price_buy)
+                        if MAKE_ORDER == 1 :
+                            if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+                                if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                                    order = {}
+                                    order['slot'] = self.seq
+                                    order['type'] = 1       ## sell
+                                    order['item_code'] = item_code
+                                    order['qty'] = qty       ## 전량
+                                    order['price'] = price   ## 매수 최우선가
+                                    order['order_type'] = 3
+                                    self.indicate_ordered()         ## INDICATE : ordered
+                                    self.rq_order.emit(order)       ## make order to master
+
+                        print(self.seq, "[[ UP SELL ]] : ", percent)
 
         # STAY
         else :
+            # if self.mean_vol_buy_diff != 0 :
+            #     buy_qty_ratio = round((volume_buy / self.mean_vol_buy_diff), 2)
+            #     print(self.seq, "[매수물량 비] : ", buy_qty_ratio)
+
             if self.downing == 1 :
                 self.down_first = 1
                 self.downing = 0
@@ -537,8 +574,12 @@ class Worker(QThread):
 
                 self.lock = 0
 
+            elif self.uping == 1 :
+                self.uping = 0
+
             else :
                 self.lock = 0
+
             
     def func_GET_db_item(self, code, col):
         conn = sqlite3.connect("item_status.db")
@@ -716,3 +757,15 @@ class Worker(QThread):
 
     def now(self) :
         return datetime.datetime.now()
+
+    def get_now(self) :
+        year = strftime("%Y", localtime())
+        month = strftime("%m", localtime())
+        day = strftime("%d", localtime())
+        hour = strftime("%H", localtime())
+        cmin = strftime("%M", localtime())
+        sec = strftime("%S", localtime())
+
+        now = "[" + year + "/" + month +"/" + day + " " + hour + ":" + cmin + ":" + sec + "] "
+
+        return now
