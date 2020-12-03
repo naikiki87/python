@@ -17,7 +17,7 @@ from PyQt5 import QtTest, QtCore, QtWidgets, uic, QtGui
 import module_timer
 import module_worker_1_item
 
-form_class = uic.loadUiType("interface.ui")[0]
+form_class = uic.loadUiType("interface_0_1.ui")[0]
 
 file = open('../../individual/upas.txt', 'r')
 s = file.read()
@@ -40,6 +40,7 @@ class Kiwoom(QMainWindow, form_class):
 
         super().__init__()
         self.setupUi(self)
+        self.setWindowTitle("ddd")
         if self.init_ENV() == 1 :
             self.start_timer()
 
@@ -75,6 +76,27 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(dict)
     def update_times(self, data) :
         self.show_time.setText(data['time'])
+
+
+        try :
+            t_evaluation = 0
+            for i in range(WORKER_GROUP) :
+                bid_price = float(self.table_summary.item(i, 2).text())
+                own_count = float(self.table_summary.item(i, 3).text())
+                unit_price = float(self.table_summary.item(i, 5).text())
+
+                # print("temp : ", bid_price, own_count,  bid_price * own_count)
+
+                t_evaluation = t_evaluation + int(bid_price * own_count)
+                
+                # print("bid price : ", bid_price)
+            # print("t_eval : ", t_evaluation)
+        except :
+            pass
+
+        # self.show_cashKRW.setText(str(data['cashKRW']))
+        self.show_coinKRW.setText(str(t_evaluation))
+        # self.show_totalKRW.setText(str(data['totalKRW']))
         
     
     @pyqtSlot(int)
@@ -168,14 +190,7 @@ class Kiwoom(QMainWindow, form_class):
         row = clicked.row()
         target_item = self.table_summary.item(row, 0).text()
         self.sellItem(target_item)
-    def sell_click_2(self, clicked):
-        row = clicked.row()
-        target_item = self.table_summary_2.item(row, 0).text()
-        self.sellItem(target_item)
-    def sell_click_3(self, clicked):
-        row = clicked.row()
-        target_item = self.table_summary_3.item(row, 0).text()
-        self.sellItem(target_item)
+
     def sellItem(self, target_item) :
         orderbook = pyupbit.get_orderbook(target_item)
         bids_asks = orderbook[0]['orderbook_units']

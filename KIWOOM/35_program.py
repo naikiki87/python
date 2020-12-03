@@ -20,10 +20,9 @@ form_class = uic.loadUiType("interface.ui")[0]
 ACCOUNT = config.ACCOUNT
 PASSWORD = config.PASSWORD
 NUM_SLOT = config.NUM_SLOT
-SUMMARY_COL_CNT = config.SUMMARY_COL_CNT
-SUMMARY_TITLES = ["code", "item", "qty", "unit_p", "매입(A)", "p_BUY", "평가(B)", "수수료(C)", "손익(B-A-C)", "%", "step", "high", "vol_ratio", "vol_sell", "vol_buy"]
+SUMMARY_TITLES = ["code", "item", "qty", "unit_p", "매입(A)", "p_BUY", "평가(B)", "수수료(C)", "손익(B-A-C)", "%", "high", "step", "vol_ratio", "vol_sell", "vol_buy"]
 SUMMARY_COL_CNT = len(SUMMARY_TITLES)
-RP_TITLES = ["code", "item", "qty", "unit_p", "t_purchase", "price_buy", "t_evaluation", "total_fee", "total_sum", "percent", "step", "high", "vol_ratio", "vol_sell", "vol_buy"]
+RP_TITLES = ["code", "item", "qty", "unit_p", "t_purchase", "price_buy", "t_evaluation", "total_fee", "total_sum", "percent", "high", "step", "vol_ratio", "vol_sell", "vol_buy"]
 
 class Kiwoom(QMainWindow, form_class):
     test_dict0 = pyqtSignal(dict)
@@ -185,7 +184,18 @@ class Kiwoom(QMainWindow, form_class):
         print("[MAIN] btn test !!!!")
 
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", "005930")
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SET_hoga2", "opt10004", 0, "0101")
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_ItemInfo_test", "opt10001", 0, "0101")
+
+    def func_SHOW_ItemInfo_test(self, rqname, trcode, recordname):
+        print("func show iteminfo test")
+        item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
+        name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
+        volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "거래량")
+        percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율")
+        current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가")
+        current_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가").replace('+', '').replace('-', '').strip()
+
+        print("name : ", name, volume, percent)
     
     def SET_hoga2(self, rqname, trcode, recordname) :
         print("SET hoga 2")
@@ -1116,8 +1126,11 @@ class Kiwoom(QMainWindow, form_class):
             self.code_edit.setText(item_code.strip())
 
             # hoga_buy = self.table_summary.item(row, 5).text()
+            own_qty = self.table_summary.item(row, 2).text()
             hoga_sell = self.table_summary.item(row, 5).text()
             hoga_buy = self.table_summary.item(row, 6).text()
+
+            self.buy_sell_count.setText(str(int(own_qty)))
             self.wid_buy_price.setText(str(int(hoga_buy)))
             self.wid_sell_price.setText(str(int(hoga_sell)))
 
@@ -1455,6 +1468,10 @@ class Kiwoom(QMainWindow, form_class):
 
         elif rqname == "GET_ItemInfo":
             self.func_SHOW_ItemInfo(rqname, trcode, recordname)
+
+        elif rqname == "GET_ItemInfo_test":
+            self.func_SHOW_ItemInfo_test(rqname, trcode, recordname)
+
         elif rqname == "GET_Ordering":
             self.func_SHOW_Ordering(rqname, trcode, recordname)
         elif rqname == "opw00018_req":

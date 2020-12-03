@@ -171,11 +171,11 @@ class Worker(QThread):
                             
                             rp_dict['own_count'] = own_count
                             rp_dict['unit_price'] = unit_price
-                            rp_dict['total_buy'] = round((own_count * unit_price), 1)
+                            rp_dict['total_buy'] = math.ceil(own_count * unit_price)
 
                     if unit_price == 0 :
                         percent = 0
-                        self.order_buy(self.item)
+                        # self.order_buy(self.item)
                         self.lock = 1
                     else :
                         percent = round((((bid_price - unit_price) / unit_price) * 100), 2)
@@ -240,7 +240,7 @@ class Worker(QThread):
                 pass
 
             # time.sleep(1)
-            sleep(0.5)
+            sleep(0.3)
     
     def now(self) :
 

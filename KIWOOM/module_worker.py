@@ -395,10 +395,14 @@ class Worker(QThread):
 
                     if volume_buy != self.prev_vol[1] :
                         gap_vol_buy = abs(volume_buy - self.prev_vol[1])
-                        if len(self.gap_vol_buy) == 10 :       ## calc recent 10 items
-                            self.gap_vol_buy.pop(0)
-                        self.gap_vol_buy.append(gap_vol_buy)
-                        self.mean_vol_buy_diff = int(np.mean(self.gap_vol_buy))
+
+                        if gap_vol_buy <= 2 :                ## eliminate outlier
+                            nothing = 1
+                        else :
+                            if len(self.gap_vol_buy) == 10 :       ## calc recent 10 items
+                                self.gap_vol_buy.pop(0)
+                            self.gap_vol_buy.append(gap_vol_buy)
+                            self.mean_vol_buy_diff = int(np.mean(self.gap_vol_buy))
 
                     if (price_buy != self.prev_price[0]) or (price_sell != self.prev_price[1]) :        ## 가격의 변경이 있을 경우에만 표시데이터 갱신
                         self.trans_dict.emit(self.rp_dict)
@@ -499,7 +503,14 @@ class Worker(QThread):
             # return res
 
             if TEST_CODE == 1 :
-                print(self.seq, "<< HOOK >> : ", percent)
+                try :
+                    f_sell = open("trade_log.txt",'a')
+                    data = self.get_now() + "[HOOKING] item : " + str(item_code) + "percent : " + str(percent) + '\n'
+                    f_sell.write(data)
+                    f_sell.close()
+                except :
+                    print(self.seq, "<< HOOK >> : ", percent)
+
                 if self.uping == 0 :
                     self.uping = 1
                 

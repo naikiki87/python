@@ -59,11 +59,6 @@ class Timer(QThread):
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
 
-        self.list_surprise = []
-        self.list_surprise_vol = []
-
-        self.pagenum = 1050
-
     def event_connect(self, err_code):
         if err_code == 0 :
             self.timer_on = 1
@@ -95,22 +90,17 @@ class Timer(QThread):
                         self.refresh_status.emit(1)
 
                     if now >= am920 and now<=pm250 and c_sec == "30" and self.item_checking == 0 :
-                        print("checking1")
                         self.check_slot.emit(1)
                     
                     if now >= am920 and now<=pm320 and c_sec == "15" :
                         self.sig_main_check_jumun.emit(1)
-                        
-                    if c_sec == "10":
-                        print("find surprise vol : ", self.pagenum)
-                        # self.check_surprise_vol()
 
                     if now <= am920 :
                         temp_time['timezone'] = 1
                     elif now > am920 and now <= pm230 :
                         temp_time['timezone'] = 2
                     elif now > pm230 :
-                        temp_time['timezone'] = 2
+                        temp_time['timezone'] = 3
                         
                 else :
                     temp_time['possible'] = 0
@@ -149,84 +139,6 @@ class Timer(QThread):
                             self.release_paused.emit(i)
 
             time.sleep(1)
-
-    def check_surprise_vol(self) :
-        print("[timer] check surprise vol")
-        try :
-            self.list_surprise_vol = []
-
-            self.pagenum = self.pagenum + 1
-
-            print("1")
-
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시장구분", "000")
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "정렬구분", 1)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시간구분", 1)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "거래량구분", 500)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시간", 1)
-            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_surprise_vol", "OPT10023", 0, str(self.pagenum))
-            print("send order surprise vol")
-        except :
-            pass
-
-    def func_SHOW_surprise_vol(self, rqname, trcode, recordname):
-        print("func show surprise volume")
-        data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
-        print("data cnt : ", data_cnt)
-        for i in range(15) :
-            try :
-                item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목코드").strip()
-                item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
-                price_cur = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가").replace('+', '').replace('-', '').strip()
-                percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "등락률")
-                vol_prev = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "이전거래량")
-                vol_cur = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재거래량")
-                amount_surprise = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "급증량")
-                percent_surprise = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "급증률")
-
-                # print(i, item_code, item_name, price_cur, percent, vol_prev, vol_cur, amount_surprise, percent_surprise)
-
-                self.list_surprise_vol.append(item_code)
-
-            except :
-                pass
-
-        print("surprise vol : ", self.list_surprise_vol)
-
-
-    def check_surprise(self) :
-        print("[timer] check surprise")
-        self.list_surprise = []
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시장구분", "000")
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "등락구분", 1)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시간구분", 1)
-        self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "시간", 1)
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_surprise", "opt10019", 0, "0101")
-
-    def func_SHOW_surprise(self, rqname, trcode, recordname):
-        print("func show surprise")
-        data_cnt = int(self.func_GET_RepeatCount(trcode, rqname))
-
-        print("data cnt : ", data_cnt)
-        for i in range(data_cnt) :
-            try :
-                item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목코드").strip()
-                # item_div = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목분류").strip()
-                # item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명")
-                # before_flag = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "전일대비기호")
-                # before = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "전일대비")
-                # percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "등락률")
-                # price_axis = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "기준가")
-                # price_cur = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "현재가")
-                # volume = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "거래량")
-                # percent_surprise = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "급등률")
-
-                # print(i, item_code, item_div, item_name, before_flag, before, percent, price_axis, price_cur, volume, percent_surprise)
-
-                self.list_surprise.append(item_code)
-
-            except :
-                pass
     
     @pyqtSlot(list)
     def jumun_check(self, data):
@@ -345,12 +257,6 @@ class Timer(QThread):
         elif rqname == "GET_iteminfo":
             self.res_iteminfo(rqname, trcode, recordname)
 
-        elif rqname == "GET_surprise":
-            self.func_SHOW_surprise(rqname, trcode, recordname)
-
-        elif rqname == "GET_surprise_vol":
-            self.func_SHOW_surprise_vol(rqname, trcode, recordname)
-
     def func_GET_hoga(self, rqname, trcode, recordname) :
         price_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
         price_sell = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매도최우선호가").replace('+', '').replace('-', ''))
@@ -384,7 +290,3 @@ class Timer(QThread):
     
     def now(self) :
         return datetime.datetime.now()
-
-    def func_GET_RepeatCount(self, trcode, rqname):
-        ret = self.kiwoom.dynamicCall("GetRepeatCnt(QString, QString)", trcode, rqname)
-        return ret           
