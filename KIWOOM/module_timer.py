@@ -101,8 +101,8 @@ class Timer(QThread):
                     if now >= am920 and now<=pm320 and c_sec == "15" :
                         self.sig_main_check_jumun.emit(1)
                         
-                    if c_sec == "10":
-                        print("find surprise vol : ", self.pagenum)
+                    # if c_sec == "10":
+                    #     print("find surprise vol : ", self.pagenum)
                         # self.check_surprise_vol()
 
                     if now <= am920 :
