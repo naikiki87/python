@@ -23,3 +23,5 @@
 [2020/12/03 15:15:43] [HOOKING] item : 131370percent : 0.44
 [2020/12/03 15:15:43] [HOOKING] item : 131370percent : 0.44
 [2020/12/03 15:15:43] [sell buy_qty_low] item : 131370buy_qty_ratio : 1.59percent : 0.44
+[2020/12/04 09:00:39] [HOOKING] item : 131370percent : 1.13
+[2020/12/04 09:00:39] [sell buy_qty_low] item : 131370buy_qty_ratio : 0.33percent : 1.13

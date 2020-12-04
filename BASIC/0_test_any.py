@@ -26,7 +26,7 @@ df_last = pd.DataFrame(columns = ['code', 'p_avr', 'stdev'])
 # code_df2 = pd.DataFrame(columns={'name', 'code'}) 
 code_df2 = []
 
-for i in range(500) :
+for i in range(2000) :
     try :
         code_df2.append(code_df.code[i])
     except:
