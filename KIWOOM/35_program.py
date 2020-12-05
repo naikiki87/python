@@ -663,8 +663,10 @@ class Kiwoom(QMainWindow, form_class):
                 self.func_check_jumun(item_code, slot)                  ## re-check jumun
         
     def ORDER_SELL(self, item_code, qty, price) :
+        # order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
+        #              ["ORDER_SELL", "0101", ACCOUNT, 2, item_code, qty, price, "00", ""])
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
-                     ["ORDER_SELL", "0101", ACCOUNT, 2, item_code, qty, price, "00", ""])
+                     ["ORDER_SELL", "0101", ACCOUNT, 2, item_code, qty, 0, "03", ""])             
                     #  [rqname, screen_no, ACCOUNT, order_type, item_code, qty, price, hogagb, orgorderno])
         if order == 0 :
             print(self.now(), "[MAIN] [ORDER_SELL] : ", item_code, qty, price)
