@@ -221,6 +221,8 @@ class Worker(QThread):
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
         item_code = data['item_code']
+        if self.lock == 1 :
+            print("worker ", self.seq, " Lock : ", self.lock)
         self.item_code = item_code
         deposit = data['deposit']
 
@@ -246,7 +248,7 @@ class Worker(QThread):
                             self.rq_order.emit(order)
 
 
-            elif orderType == 9 :         ## 신규 item item finding 매수
+            elif orderType == 9 :         ## 신규 item finding 매수
                 if MAKE_ORDER == 1 :
                     qty = data['qty']
                     price = data['price']
@@ -368,6 +370,9 @@ class Worker(QThread):
             self.rp_dict['step'] = step
             self.rp_dict['seq'] = self.seq
             self.rp_dict['high'] = self.per_high
+            # self.rp_dict['vol_sell'] = volume_sell
+            # self.rp_dict['vol_buy'] = volume_buy
+            # self.rp_dict['vol_ratio'] = volume_ratio
 
             if self.first_rcv == 1 :
                 if self.lock == 0 :
@@ -406,7 +411,7 @@ class Worker(QThread):
 
                     if (price_buy != self.prev_price[0]) or (price_sell != self.prev_price[1]) :        ## 가격의 변경이 있을 경우에만 표시데이터 갱신
                         self.trans_dict.emit(self.rp_dict)
-                    
+                        
                     self.prev_price = [price_buy, price_sell]
                     self.prev_vol = [volume_sell, volume_buy]
 
@@ -414,6 +419,8 @@ class Worker(QThread):
 
         ################## judgement ###################
     def judge(self, item_code, percent, step, own_count, price_buy, price_sell, t_purchase, t_evaluation, volume_buy, volume_ratio) :
+        # if item_code != "005930" :
+        #     print("worker", self.seq, " judge : ", item_code, percent, own_count)
         res = {}
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
@@ -521,7 +528,7 @@ class Worker(QThread):
                     else :
                         buy_qty_ratio = round((volume_buy / self.mean_vol_buy_diff), 2)
                         print(self.seq, "[111111] : ", buy_qty_ratio, volume_ratio)
-                        if buy_qty_ratio < 10 :         ## 평균치의 5배 보다 작을때
+                        if buy_qty_ratio <= 5 :         ## 평균치의 5배 보다 작을때
                             print(self.seq, "[22222 buy_qty_ratio] : ", buy_qty_ratio)
                             try :
                                 f_sell = open("trade_log.txt",'a')
@@ -572,10 +579,6 @@ class Worker(QThread):
 
         # STAY
         else :
-            # if self.mean_vol_buy_diff != 0 :
-            #     buy_qty_ratio = round((volume_buy / self.mean_vol_buy_diff), 2)
-            #     print(self.seq, "[매수물량 비] : ", buy_qty_ratio)
-
             if self.downing == 1 :
                 self.down_first = 1
                 self.downing = 0
@@ -583,13 +586,10 @@ class Worker(QThread):
                 self.down_level = 0
                 self.down_prev_per = None
 
-                self.lock = 0
-
-            elif self.uping == 1 :
+            if self.uping == 1 :
                 self.uping = 0
 
-            else :
-                self.lock = 0
+            self.lock = 0
 
             
     def func_GET_db_item(self, code, col):

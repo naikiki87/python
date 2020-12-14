@@ -25,3 +25,59 @@
 [2020/12/03 15:15:43] [sell buy_qty_low] item : 131370buy_qty_ratio : 1.59percent : 0.44
 [2020/12/04 09:00:39] [HOOKING] item : 131370percent : 1.13
 [2020/12/04 09:00:39] [sell buy_qty_low] item : 131370buy_qty_ratio : 0.33percent : 1.13
+[2020/12/08 09:22:05] [HOOKING] item : 025980percent : 0.72
+[2020/12/08 09:22:05] [sell buy_qty_low] item : 025980buy_qty_ratio : 3.01percent : 0.72
+[2020/12/08 09:24:23] [HOOKING] item : 093370percent : 0.71
+[2020/12/08 09:24:23] [sell buy_qty_low] item : 093370buy_qty_ratio : 6.97percent : 0.71
+[2020/12/08 09:24:51] [HOOKING] item : 032640percent : 1.03
+[2020/12/08 09:24:51] [sell buy_qty_low] item : 032640buy_qty_ratio : 0.02percent : 1.03
+[2020/12/08 11:45:50] [HOOKING] item : 950130percent : 0.75
+[2020/12/08 11:45:50] [sell buy_qty_low] item : 950130buy_qty_ratio : 7.81percent : 0.75
+[2020/12/08 13:19:18] [HOOKING] item : 042670percent : 0.73
+[2020/12/08 13:19:18] [sell buy_qty_low] item : 042670buy_qty_ratio : 2.01percent : 0.73
+[2020/12/08 14:45:00] [HOOKING] item : 950130percent : 0.81
+[2020/12/08 14:45:00] [sell buy_qty_low] item : 950130buy_qty_ratio : 8.16percent : 0.81
+[2020/12/09 09:03:00] [HOOKING] item : 093370percent : 0.9
+[2020/12/09 09:03:00] [sell buy_qty_low] item : 093370buy_qty_ratio : 2.09percent : 0.9
+[2020/12/09 09:14:02] [HOOKING] item : 018000percent : 0.92
+[2020/12/09 09:14:02] [sell buy_qty_low] item : 018000buy_qty_ratio : 0.0percent : 0.92
+[2020/12/09 11:39:36] [HOOKING] item : 025980percent : 0.7
+[2020/12/09 11:39:36] [sell buy_qty_low] item : 025980buy_qty_ratio : 0.25percent : 0.7
+[2020/12/10 09:03:09] [HOOKING] item : 950130percent : 1.0
+[2020/12/10 09:03:09] [sell buy_qty_low] item : 950130buy_qty_ratio : 0.0percent : 1.0
+[2020/12/10 09:39:02] [HOOKING] item : 018000percent : 0.87
+[2020/12/10 09:39:02] [sell buy_qty_low] item : 018000buy_qty_ratio : 0.12percent : 0.87
+[2020/12/10 10:54:10] [HOOKING] item : 025980percent : 0.81
+[2020/12/10 10:54:11] [sell buy_qty_low] item : 025980buy_qty_ratio : 0.39percent : 0.81
+[2020/12/11 09:00:02] [HOOKING] item : 018000percent : 0.87
+[2020/12/11 09:00:03] [HOOKING] item : 018000percent : 0.87
+[2020/12/11 09:00:04] [HOOKING] item : 018000percent : 0.87
+[2020/12/11 09:00:05] [HOOKING] item : 018000percent : 0.87
+[2020/12/11 09:00:11] [HOOKING] item : 018000percent : 1.06
+[2020/12/11 09:00:11] [sell buy_qty_low] item : 018000buy_qty_ratio : 0.02percent : 1.06
+[2020/12/11 10:05:42] [HOOKING] item : 950130percent : 0.79
+[2020/12/11 10:05:42] [sell buy_qty_low] item : 950130buy_qty_ratio : 2.55percent : 0.79
+[2020/12/11 10:40:55] [HOOKING] item : 003560percent : 0.94
+[2020/12/11 10:40:55] [sell volume_ratio_low] item : 003560volume_ratio : 60.67percent : 0.94
+[2020/12/14 09:00:03] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:04] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:05] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:07] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:08] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:09] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:10] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:11] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:12] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:12] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:13] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:14] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:15] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:16] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:17] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:18] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:19] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:20] [HOOKING] item : 950130percent : 3.07
+[2020/12/14 09:00:22] [HOOKING] item : 950130percent : 3.28
+[2020/12/14 09:00:22] [sell buy_qty_low] item : 950130buy_qty_ratio : 0.06percent : 3.28
+[2020/12/14 09:36:17] [HOOKING] item : 005930percent : 0.81
+[2020/12/14 09:36:17] [sell buy_qty_low] item : 005930buy_qty_ratio : 4.72percent : 0.81
