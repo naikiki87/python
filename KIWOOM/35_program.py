@@ -137,8 +137,8 @@ class Kiwoom(QMainWindow, form_class):
             elif ordered == 0 :                     ## indicate normal state
                 self.table_summary.item(data['seq'], 0).setBackground(QtGui.QColor(255,255,255))
 
-                # for i in range(4, len(RP_TITLES), 1) :
-                for i in range(4, 12, 1) :
+                for i in range(4, len(RP_TITLES), 1) :
+                # for i in range(4, 12, 1) :
                     if RP_TITLES[i] == "percent" :
                         if data[RP_TITLES[i]] > 0 :
                             self.func_SET_TableData(1, data['seq'], i, str(data[RP_TITLES[i]]), 1)
@@ -1531,9 +1531,9 @@ class Kiwoom(QMainWindow, form_class):
                     # if code != "005930" :
                     #     print("real 2 : ", price_sell, price_buy, volume_sell, volume_buy)
 
-                    self.func_SET_TableData(1, slot, 12, str(volume_ratio), 0)
-                    self.func_SET_TableData(1, slot, 13, str(volume_sell), 0)
-                    self.func_SET_TableData(1, slot, 14, str(volume_buy), 0)
+                    # self.func_SET_TableData(1, slot, 12, str(volume_ratio), 0)
+                    # self.func_SET_TableData(1, slot, 13, str(volume_sell), 0)
+                    # self.func_SET_TableData(1, slot, 14, str(volume_buy), 0)
 
                     temp = {}
 

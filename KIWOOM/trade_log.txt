@@ -81,3 +81,38 @@
 [2020/12/14 09:00:22] [sell buy_qty_low] item : 950130buy_qty_ratio : 0.06percent : 3.28
 [2020/12/14 09:36:17] [HOOKING] item : 005930percent : 0.81
 [2020/12/14 09:36:17] [sell buy_qty_low] item : 005930buy_qty_ratio : 4.72percent : 0.81
+[2020/12/14 12:21:33] [HOOKING] item : 009830percent : 0.7
+[2020/12/14 12:21:33] [sell buy_qty_low] item : 009830buy_qty_ratio : 0.07percent : 0.7
+[2020/12/15 09:00:02] [HOOKING] item : 950130percent : 1.6
+[2020/12/15 09:00:03] [HOOKING] item : 950130percent : 1.6
+[2020/12/15 09:00:04] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:05] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:06] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:07] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:08] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:09] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:10] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:11] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:12] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:13] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:13] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:14] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:15] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:16] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:17] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:18] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:19] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:20] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:21] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:21] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:22] [HOOKING] item : 950130percent : 1.39
+[2020/12/15 09:00:22] [sell buy_qty_low] item : 950130buy_qty_ratio : 0.01percent : 1.39
+[2020/12/15 09:32:46] [HOOKING] item : 042670percent : 0.8
+[2020/12/15 09:32:47] [HOOKING] item : 042670percent : 0.8
+[2020/12/15 09:32:48] [HOOKING] item : 042670percent : 0.8
+[2020/12/15 09:32:49] [HOOKING] item : 042670percent : 0.8
+[2020/12/15 09:32:50] [HOOKING] item : 042670percent : 0.8
+[2020/12/15 09:32:51] [HOOKING] item : 042670percent : 0.8
+[2020/12/15 09:32:52] [HOOKING] item : 042670percent : 0.8
+[2020/12/15 09:32:53] [HOOKING] item : 042670percent : 0.92
+[2020/12/15 09:32:53] [sell buy_qty_low] item : 042670buy_qty_ratio : 0.24percent : 0.92

@@ -370,9 +370,9 @@ class Worker(QThread):
             self.rp_dict['step'] = step
             self.rp_dict['seq'] = self.seq
             self.rp_dict['high'] = self.per_high
-            # self.rp_dict['vol_sell'] = volume_sell
-            # self.rp_dict['vol_buy'] = volume_buy
-            # self.rp_dict['vol_ratio'] = volume_ratio
+            self.rp_dict['vol_sell'] = volume_sell
+            self.rp_dict['vol_buy'] = volume_buy
+            self.rp_dict['vol_ratio'] = volume_ratio
 
             if self.first_rcv == 1 :
                 if self.lock == 0 :
@@ -409,8 +409,8 @@ class Worker(QThread):
                             self.gap_vol_buy.append(gap_vol_buy)
                             self.mean_vol_buy_diff = int(np.mean(self.gap_vol_buy))
 
-                    if (price_buy != self.prev_price[0]) or (price_sell != self.prev_price[1]) :        ## 가격의 변경이 있을 경우에만 표시데이터 갱신
-                        self.trans_dict.emit(self.rp_dict)
+                    # if (price_buy != self.prev_price[0]) or (price_sell != self.prev_price[1]) :        ## 가격의 변경이 있을 경우에만 표시데이터 갱신
+                    self.trans_dict.emit(self.rp_dict)
                         
                     self.prev_price = [price_buy, price_sell]
                     self.prev_vol = [volume_sell, volume_buy]
