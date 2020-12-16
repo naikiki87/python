@@ -103,14 +103,10 @@ class Kiwoom(QMainWindow, form_class):
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL)
         self.btn_TEST.clicked.connect(self.btn_test)
         self.btn_TEST_2.clicked.connect(self.btn_test_2)
-        self.btn_START.clicked.connect(self.order_start)
-        self.btn_STOP.clicked.connect(self.order_stop)
-        self.btn_HISTORY.clicked.connect(self.func_GET_TradeHistory)
-        self.btn_dailyprofit.clicked.connect(lambda: self.func_GET_DailyProfit(1))
 
         ## table setting
         self.func_SET_tableSUMMARY()        # monitoring table
-        self.func_SET_tableHISTORY()        # history table
+        # self.func_SET_tableHISTORY()        # history table
         self.func_SET_tableORDER()          # order 현황 table
         self.func_SET_table_dailyprofit()   # dailyprofit table
 
@@ -310,8 +306,6 @@ class Kiwoom(QMainWindow, form_class):
             self.DELETE_Table_Summary_item(slot)        ## recursive call
     
     def create_thread(self) :
-        timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "CREATE THREADS")
         ## 1st        
         self.th_seq = 0
         self.worker0 = module_worker.Worker(0)
@@ -391,8 +385,7 @@ class Kiwoom(QMainWindow, form_class):
         self.worker4.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
-                timestamp = self.func_GET_CurrentTime()
-                self.text_edit.append(timestamp + "ALL THREAD CREATED")
+                print("ALL Threads Created")
                 break
             QtTest.QTest.qWait(100)
         
@@ -453,23 +446,6 @@ class Kiwoom(QMainWindow, form_class):
         elif res == 1 :
             self.first_check_times[slot] = 0
 
-
-    def order_start(self) :
-        try :
-            self.send_data = 1
-            # self.input_show_status.setText("RUNNING")
-        except Exception as e : 
-            timestamp = self.func_GET_CurrentTime()
-            self.text_edit.append(timestamp + str(e))
-        self.load_etc_data()
-    def order_stop(self) :
-        try :
-            self.send_data = 0
-            # self.input_show_status.setText("STOP")
-        except Exception as e : 
-            timestamp = self.func_GET_CurrentTime()
-            self.text_edit.append(timestamp + str(e))
-        self.load_etc_data()
     def func_start_check(self) :
         self.load_etc_data()
         if self.create_thread() == 0 :              ## thread creation
@@ -542,10 +518,8 @@ class Kiwoom(QMainWindow, form_class):
 
     def func_stop_check(self):
         self.SetRealRemove("ALL", "ALL")
-        timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "Monitoring STOP")
-
         self.load_etc_data()
+
     def ORDER_BUY(self, item_code, qty, price, order_type) :
         print(self.now(), "[MAIN] [ORDER_BUY] : ", item_code, qty, price)
         slot = self.which_thread(item_code)[1]
@@ -700,9 +674,7 @@ class Kiwoom(QMainWindow, form_class):
                 self.test_dict4.emit(temp)
 
         except Exception as e:
-            timestamp = self.func_GET_CurrentTime()
-            self.text_edit.append(timestamp + str(e))
-
+            print(e)
             pass
     ## 매도 ##
     def func_ORDER_SELL(self) :
@@ -750,8 +722,7 @@ class Kiwoom(QMainWindow, form_class):
             print(self.now(), "[MAIN] [func_ORDER_SELL] : ", item_code, qty, price, th_num)
 
         except Exception as e:
-            timestamp = self.func_GET_CurrentTime()
-            self.text_edit.append(timestamp + str(e))
+            print(e)
 
     def func_restart_check(self, th_num, item_code) :
         print("func restart check : ", item_code)
@@ -923,12 +894,11 @@ class Kiwoom(QMainWindow, form_class):
         deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
         d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+1")
         d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+2")
-        orderable_money = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "주문가능현금")
+        # orderable_money = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "주문가능현금")
 
         self.wid_show_deposit.setText(str('{0:,}'.format(int(deposit))))
         self.wid_show_deposit_d1.setText(str('{0:,}'.format(int(d_1))))
         self.wid_show_deposit_d2.setText(str(int(d_2)))
-        self.wid_orderable_money.setText(str(int(orderable_money)))
 
         self.set_deposit = 1
 
@@ -1257,8 +1227,7 @@ class Kiwoom(QMainWindow, form_class):
 
     @pyqtSlot(int)
     def timer_con_finish(self, data) :
-        timestamp = self.func_GET_CurrentTime()
-        self.text_edit.append(timestamp + "Timer Thread Started")
+        print("Timer Thread Started")
         self.func_GET_Deposit()
 
         while True :
@@ -1271,10 +1240,10 @@ class Kiwoom(QMainWindow, form_class):
 
 
     def event_connect(self, err_code):
-        if err_code == 0:
-            timestamp = self.func_GET_CurrentTime()
-            self.text_edit.append(timestamp + "Login Complete")
+        timestamp = self.func_GET_CurrentTime()
+        self.wid_login.setText("Login : " + timestamp)
 
+        if err_code == 0:
             self.timer = module_timer.Timer()
             self.timer.timer_connected.connect(self.timer_con_finish)
             self.timer.cur_time.connect(self.update_times)
@@ -1321,7 +1290,7 @@ class Kiwoom(QMainWindow, form_class):
         for i in range(SUMMARY_COL_CNT):
             self.table_summary.setColumnWidth(i, 90)
         
-        self.table_summary.setColumnWidth(1, 140)
+        self.table_summary.setColumnWidth(1, 150)
         # self.table_summary.setColumnWidth(2, 70)
         # self.table_summary.setColumnWidth(10, 70)
         # self.table_summary.setColumnWidth(11, 70)
@@ -1553,8 +1522,7 @@ class Kiwoom(QMainWindow, form_class):
             except :
                 pass
         else :
-            timestamp = self.func_GET_CurrentTime()
-            self.text_edit.append(timestamp + "Market NOT OPEN")
+            print("Market Not OPEN")
 
     def func_SET_db_table(self) :
         conn = sqlite3.connect("item_status.db")
