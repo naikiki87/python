@@ -24,6 +24,21 @@ for i in range(len(nodes)) :
 
 file.close()
 
+filename = "edge_list.txt"
+file = open(filename, 'r', encoding='utf8')
+s = file.read()
+edges = s.split('\n')
+
+for i in range(len(edges)) :
+    data = edges[i].split('\t')
+
+    node_1 = data[0]
+    node_2 = data[1]
+
+    G.add_edge(node_1, node_2)
+
+file.close()
+
 harmonic = node_classification.harmonic_function(G)
 for i in range(len(harmonic)) :
     df.loc[len(df)] = [i+1, harmonic[i]]
