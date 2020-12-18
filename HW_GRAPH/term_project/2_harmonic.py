@@ -6,7 +6,7 @@ import sys
 pd.set_option('display.max_row', 20000)
 pd.set_option('display.max_columns', 10000)
 
-df = pd.DataFrame(columns = ['web_site', 'popularity'])
+df = pd.DataFrame(columns = ['node', 'popularity'])
 
 G = nx.Graph()
 
@@ -43,11 +43,18 @@ harmonic = node_classification.harmonic_function(G)
 for i in range(len(harmonic)) :
     df.loc[len(df)] = [i+1, harmonic[i]]
 
+
+res = ''
+for i in range(len(df)) :
+    if i == (len(df)-1) :
+        res = res + str(df.node[i]) + '\t' + str(df.popularity[i])
+    else :
+        res = res + str(df.node[i]) + '\t' + str(df.popularity[i]) + '\n'
+
 filename = "res_harmonic.txt"
 f = open(filename,'w', encoding='utf8')
 sys.stdout = f
-print("Title : ", "Harmonic Function")
-print(df)
+print(res)
 
 sys.stdout = sys.__stdout__
 f.close()

@@ -6,7 +6,7 @@ import sys
 pd.set_option('display.max_row', 20000)
 pd.set_option('display.max_columns', 10000)
 
-df = pd.DataFrame(columns = ['web_site', 'popularity'])
+df = pd.DataFrame(columns = ['node', 'popularity'])
 
 G = nx.Graph()
 
@@ -44,11 +44,17 @@ lg_consis = node_classification.local_and_global_consistency(G)
 for i in range(len(lg_consis)) :
     df.loc[len(df)] = [i+1, lg_consis[i]]
 
-filename = "res_local_and_global.txt"
+res = ''
+for i in range(len(df)) :
+    if i == (len(df)-1) :
+        res = res + str(df.node[i]) + '\t' + str(df.popularity[i])
+    else :
+        res = res + str(df.node[i]) + '\t' + str(df.popularity[i]) + '\n'
+
+filename = "res_local_global.txt"
 f = open(filename,'w', encoding='utf8')
 sys.stdout = f
-print("Title : ", "Local and Global Consistency")
-print(df)
+print(res)
 
 sys.stdout = sys.__stdout__
 f.close()
