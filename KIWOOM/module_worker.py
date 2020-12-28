@@ -34,6 +34,8 @@ TIME1_PER_HIGH = config.TIME_PER_HIGH[0]
 TIME2_PER_HIGH = config.TIME_PER_HIGH[1]
 TIME3_PER_HIGH = config.TIME_PER_HIGH[2]
 
+TARGET_PERCENT = config.TARGET_PERCENT
+
 print("TIME 1 : ", TIME1_PER_HIGH, TIME2_PER_HIGH, TIME3_PER_HIGH)
 
 class Worker(QThread):
@@ -326,16 +328,16 @@ class Worker(QThread):
                             # print(self.now(), "[ TH", self.seq, "] [dict_from_main] Full Sell Manual : ", item_code)
 
         elif data['autoTrade'] == 1 :                   ## auto trading 시
-            try :
-                self.timezone = data['timezone']
-                if data['timezone'] == 1 :
-                    self.per_high = TIME1_PER_HIGH
-                elif data['timezone'] == 2 :
-                    self.per_high = TIME2_PER_HIGH
-                elif data['timezone'] == 3 :
-                    self.per_high = TIME3_PER_HIGH
-            except :
-                pass
+            # try :
+            #     self.timezone = data['timezone']
+            #     if data['timezone'] == 1 :
+            #         self.per_high = TIME1_PER_HIGH
+            #     elif data['timezone'] == 2 :
+            #         self.per_high = TIME2_PER_HIGH
+            #     elif data['timezone'] == 3 :
+            #         self.per_high = TIME3_PER_HIGH
+            # except :
+            #     pass
 
             volume_sell = data['volume_sell']
             volume_buy = data['volume_buy']
@@ -358,6 +360,10 @@ class Worker(QThread):
             percent = round((total_sum / t_purchase) * 100, 2)
             step = self.func_GET_db_item(item_code, 1)
 
+            # self.per_high = round((TARGET_PER + 0.1*step), 1)
+
+            # print("self.perhigh : ", self.per_high)
+
             self.rp_dict = {}
             self.rp_dict.update(data)
             self.rp_dict['ordered'] = 0
@@ -369,7 +375,8 @@ class Worker(QThread):
             self.rp_dict['percent'] = percent
             self.rp_dict['step'] = step
             self.rp_dict['seq'] = self.seq
-            self.rp_dict['high'] = self.per_high
+            # self.rp_dict['high'] = self.per_high
+            self.rp_dict['high'] = TARGET_PERCENT
             self.rp_dict['vol_sell'] = volume_sell
             self.rp_dict['vol_buy'] = volume_buy
             self.rp_dict['vol_ratio'] = volume_ratio
@@ -419,8 +426,6 @@ class Worker(QThread):
 
         ################## judgement ###################
     def judge(self, item_code, percent, step, own_count, price_buy, price_sell, t_purchase, t_evaluation, volume_buy, volume_ratio) :
-        # if item_code != "005930" :
-        #     print("worker", self.seq, " judge : ", item_code, percent, own_count)
         res = {}
         # Add Water
         if percent < PER_LOW and step < STEP_LIMIT :
@@ -490,7 +495,8 @@ class Worker(QThread):
                         self.lock = 0
   
         # Full Sell
-        elif percent >= self.per_high :
+        # elif percent >= self.per_high :
+        elif percent >= TARGET_PERCENT :
             if TEST_CODE == 0 :
                 qty = own_count
                 price = int(price_buy)

@@ -1,15 +1,17 @@
-from pyspark.sql import *
+import pandas as pd
 
-spark = SparkSession \
-    .builder \
-    .appName("Python Spark SQL basic example") \
-    .config("spark.some.config.option") \
-    .getOrCreate()
-    
-iris_df = spark.read.csv("iris.csv", inferSchema = True, header = True)
+temp1 = pd.DataFrame(columns=['tid', 'uid', 'iid'])
+temp2 = pd.DataFrame(columns=['pid', 'iid'])
 
-# iris_df.show(5)
+temp1.loc[0] = [1, 1, 1]
+temp1.loc[1] = [1, 1, 2]
 
-iris_df.createOrReplaceTempView("iris")
+temp2.loc[0] = [10, 3]
+temp2.loc[1] = [10, 4]
+temp2.loc[2] = [10, 5]
 
-spark.sql("SELECT * FROM iris LIMIT 5").show()
+print(temp1)
+print(temp2)
+
+df_merge = pd.merge(temp1, temp2, how="right", on="iid")
+print(df_merge)

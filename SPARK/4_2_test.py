@@ -7,6 +7,9 @@ import pandas as pd
 import pymysql
 import random
 import time
+import math
+from pandas.api.types import is_numeric_dtype
+from pandas.api.types import is_string_dtype
 
 start_time = time.time()
 
@@ -67,6 +70,7 @@ input_df = spark.read.format('jdbc').options(
 
 print("2 : Raw data loading complete")
 
+df_origin = input_df.select('*').toPandas()
 pid = 0
 
 pd_df_in = pd.DataFrame(columns = ['tid', 'uid', 'iid'])
@@ -98,7 +102,6 @@ for i in range(max_cnt) :
 
     total_query = "SELECT " + sel_query + ", COUNT(DISTINCT t1.uid) as cnt FROM testdata t1 " + join_query + where_query + gb_query
 
-    # print(str(i+1) + "-item QUERY : ", total_query)
 
     temp_result_2 = spark.sql(total_query).filter("cnt >= 2").collect()
     sql = "insert into p_table(pid, n, iid) values (%s, %s, %s)"
@@ -110,57 +113,68 @@ for i in range(max_cnt) :
                 curs.execute(sql, (pid, i+1, temp_result_2[k][m]))
             pid = pid + 1
         conn.commit()
-# conn.close()
 print("4-2 : Making p-table complete")
 
 query = "select * from p_table"
-df_p = spark.read.format('jdbc').options(
+df_p_table = spark.read.format('jdbc').options(
   driver=DRIVER,
   url=CONNECT_URL,
   query=query,
   user=CONNECT_USER,
-  password=CONNECT_PWD).load().sort(col("pid").desc()).registerTempTable("p_table")
+  password=CONNECT_PWD).load().sort(col("pid").desc())
 
-temp_tid_list = spark.sql("select distinct tid from testdata").sort(col("tid").asc()).collect()
-temp_pid_list = spark.sql("select distinct pid from p_table").sort(col("pid").desc()).collect()
 
-print("temp tid list : ", temp_tid_list)
-print("temp pid list : ", temp_pid_list)
+df_p = df_p_table.select('*').toPandas()
+print("<< p Table >>")
+print(df_p)
+
+temp_tid_list = []
+temp_pid_list = []
+
+for i in range(len(df_origin)) :
+    if df_origin.tid[i] not in temp_tid_list :
+        temp_tid_list.append(df_origin.tid[i])
+
+for i in range(len(df_p)) :
+    if df_p.pid[i] not in temp_pid_list :
+        temp_pid_list.append(df_p.pid[i])
+
 
 print("5-1 : Diminishing raw data start")
 
+df_merge = pd.DataFrame(columns=['tid','uid','iid','pid','n'])
+pd_df_in = pd.DataFrame(columns=['tid','uid','iid'])
+pd_df_not_in = pd.DataFrame(columns=['tid','uid','iid'])
+
 for i in range(len(temp_tid_list)) :
-    testdata_tid = temp_tid_list[i][0]
+    print(i, '/', len(temp_tid_list))
+    temp_tid = temp_tid_list[i]
+    temp_df_origin = df_origin[df_origin['tid'] == temp_tid]
     for j in range(len(temp_pid_list)) :
-        temp_pid = temp_pid_list[j][0]
-        query = "SELECT t1.tid AS tid, t1.uid AS uid, t1.iid AS iid FROM (SELECT * FROM testdata WHERE tid = " + str(testdata_tid) + ") AS t1 right JOIN p_table ON t1.iid = p_table.iid WHERE p_table.pid = " + str(temp_pid) + " and tid IS NOT null"
-        cnt = spark.sql(query).count()
-        pid_cnt = spark.sql("select * from p_table where pid = " + str(temp_pid)).count()
-        if cnt == pid_cnt :
-            query_in = "SELECT t1.tid as tid, t1.uid as uid, t1.iid as iid FROM (SELECT * FROM testdata WHERE tid = " + str(testdata_tid) + ") AS t1 left outer JOIN (SELECT * from p_table WHERE pid = " + str(temp_pid) + ") AS p ON t1.iid = p.iid WHERE pid IS not null"
-            query_not_in = "SELECT t1.tid as tid, t1.uid as uid, t1.iid as iid FROM (SELECT * FROM testdata WHERE tid = " + str(testdata_tid) + ") AS t1 left outer JOIN (SELECT * from p_table WHERE pid = " + str(temp_pid) + ") AS p ON t1.iid = p.iid WHERE pid IS null"
+        temp_pid = temp_pid_list[j]
+        temp_df_p = df_p[df_p["pid"] == temp_pid].copy()
+        
+        temp_df_p['iid'] = temp_df_p['iid'].astype(str)     ## 데이터 타입이 달라 동일하게 맞춰줌
+        temp_temp = pd.merge(temp_df_origin, temp_df_p, how='right', on='iid')
+        del(df_merge)
+        df_merge = pd.DataFrame(columns=['tid','uid','iid','pid','n'])
+        cnt_merge = 0
+        for k in range(len(temp_temp)) :
+            if not math.isnan(temp_temp.tid[k]) :
+                cnt_merge = cnt_merge + 1
 
-            temp_in = spark.sql(query_in).collect()
-            temp_not_in = spark.sql(query_not_in).collect()
+        cnt_p = temp_df_p.count()[0]
 
-            for p in range(len(temp_in)) :
-                in_tid = temp_in[p][0]
-                in_uid = temp_in[p][1]
-                in_iid = temp_in[p][2]
+        if cnt_merge == cnt_p :
+            temp_merge = pd.merge(temp_df_origin, temp_df_p, how='left', on='iid')
 
-                pd_df_in.loc[len(pd_df_in)] = [in_tid, in_uid, in_iid]
-
-            for m in range(len(temp_not_in)) :
-                not_in_tid = temp_not_in[m][0]
-                not_in_uid = temp_not_in[m][1]
-                not_in_iid = temp_not_in[m][2]
-
-                pd_df_not_in.loc[len(pd_df_not_in)] = [not_in_tid, not_in_uid, not_in_iid]
+            for k in range(len(temp_merge)) :
+                if math.isnan(temp_merge.pid[k]) :
+                    pd_df_not_in.loc[len(pd_df_not_in)] = [temp_merge.tid[k], temp_merge.uid[k], temp_merge.iid[k]]
+                else :
+                    pd_df_in.loc[len(pd_df_in)] = [temp_merge.tid[k], temp_merge.uid[k], temp_merge.iid[k]]
 
             break
-
-print("AA : ", pd_df_in)
-print("BB : ", pd_df_not_in)
 
 print("5-2 : Diminishing raw data complete")
 print("6-1 : Trans NOT-IN data start")
@@ -201,17 +215,11 @@ for i in range(len(temp_recover_tid_list)) :
 
     items = list(map(str, items))
     input_item = ','.join(items)
+    if input_item == '' :
+        input_item = "12"
     print(target_tid, "input items : ", input_item)
     curs.execute(sql_input_res, (target_tid, uid, input_item))
     conn.commit()
 
 
 conn.close()
-
-# final_schema = StructType([ StructField("tid", IntegerType(), True)\
-#                        ,StructField("uid", IntegerType(), True)\
-#                        ,StructField("iid", StringType(), True)])
-# sparkdf_final = spark.createDataFrame(pd_df_final, schema=final_schema)
-# sparkdf_final.show()
-
-# print("Time : ", time.time() - start_time)
