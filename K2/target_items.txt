@@ -1,0 +1,3 @@
+Empty DataFrame
+Columns: [code, ratio_end_deg, ratio_min, mean_vol, today_vol]
+Index: []
