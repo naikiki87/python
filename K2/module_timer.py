@@ -78,6 +78,7 @@ class Timer(QThread):
                 mkt_close = now.replace(hour=15, minute=30, second=0)
                 am901 = now.replace(hour=9, minute=1, second=0)
                 am920 = now.replace(hour=9, minute=20, second=0)
+                am921 = now.replace(hour=9, minute=21, second=0)
                 am930 = now.replace(hour=9, minute=30, second=0)
                 am931 = now.replace(hour=9, minute=31, second=0)
                 pm230 = now.replace(hour=14, minute=30, second=0)
@@ -114,8 +115,12 @@ class Timer(QThread):
                         print(str_time)
                         self.check_real.emit(1)
 
-                    if now >= am901 and now<=pm250 and self.item_checking == 0 :
+                    if now >= am901 and now<=am920 and self.item_checking == 0 :
                         if c_sec == "20" or c_sec == "50" :
+                            self.check_slot.emit(1)
+                    
+                    if now >= am921 and now<=pm250 and self.item_checking == 0 :
+                        if c_sec == "20" :
                             self.check_slot.emit(1)
                     
                     if now >= am901 and now<=pm320 and c_sec == "15" :
@@ -165,11 +170,12 @@ class Timer(QThread):
             self.candidate_queue = []
             self.candidate_queue = TARGET_ITEMS
 
-            print("res_check_slot : ", self.candidate_queue)
+            # print("res_check_slot : ", self.candidate_queue)
             self.investigate_items()
     
     def investigate_items(self) :
-        print(self.now(), "[TIMER] [investigate_items] : ", self.candidate_queue, self.candidate_seq)
+        print("[Investigate Items]")
+        # print(self.now(), "[TIMER] [investigate_items] : ", self.candidate_queue, self.candidate_seq)
 
         if self.candidate_seq >= len(self.candidate_queue) :
             print(self.now(), "[TIMER] [investigate_items] : candidate seq overflow / FINISH")
@@ -185,7 +191,7 @@ class Timer(QThread):
                 self.candidate_seq = self.candidate_seq + 1
                 self.investigate_items()
             else :
-                print(self.now(), "[TIMER] [investigate_items] checking item : ", self.candidate)
+                print("[investigate_items] checking item : ", self.candidate)
 
                 self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
                 self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_iteminfo", "opt10001", 0, "0102")

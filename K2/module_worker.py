@@ -39,7 +39,8 @@ PER_LOW_1 = config.PER_LOW_1
 
 print("TARGET PERCENT : ", TARGET_PER)
 print("AUTO BUY PRICE : ", AUTO_BUY_PRICE_LIM)
-print("ADD PRICE : ", ADD_PRICE_1, ADD_PRICE_2)
+# print("ADD PRICE : ", ADD_PRICE_1, ADD_PRICE_2)
+print("ADD PRICE : ", ADD_PRICE)
 
 class Worker(QThread):
     connected = 0
@@ -56,6 +57,8 @@ class Worker(QThread):
         self.first_rcv = 1
 
         self.step = 0
+        self.per_low = 0
+        self.add_water = 0
 
         self.uping = 0
         self.up_level = 0
@@ -99,6 +102,7 @@ class Worker(QThread):
                                 self.down_level = 0
                                 self.down_maginot = -2
                                 self.down_hook_per = 0
+                                self.add_water = 1
                                 self.lock = 0
 
                 ## full sell
@@ -188,7 +192,7 @@ class Worker(QThread):
                     qty = data['qty']
                     price = data['price']
 
-                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)             ## 신규 item db insert
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1)             ## 신규 item db insert
 
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:          ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
@@ -206,7 +210,7 @@ class Worker(QThread):
                     qty = data['qty']
                     price = data['price']
 
-                    self.func_INSERT_db_item(item_code, 0, 0, 0, 0)     ## 신규 item db insert
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1)     ## 신규 item db insert
 
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 9) == 1:       ## orderType -> 9(manual item finding buy)
@@ -289,14 +293,15 @@ class Worker(QThread):
             temp_total = t_evaluation - t_purchase
             fee_buy = int(((FEE_BUY * t_purchase) // 10) * 10)
             fee_sell = int(((FEE_SELL * t_evaluation) // 10) * 10)
-            # tax = int(round((TAX * t_evaluation), 0))
             tax = int(TAX * t_evaluation)
             total_fee = fee_buy + fee_sell + tax
             total_sum = t_evaluation - t_purchase - total_fee
             percent = round((total_sum / t_purchase) * 100, 2)
-            # step = self.func_GET_db_item(item_code, 1)
 
-            # print("Tax : ", tax, tax1)
+            if self.add_water == 1 :
+                self.per_low = round((percent - 1), 2)
+                if self.func_UPDATE_db_item(item_code, 4, self.per_low) == 1:      ## 현재 perlow 저장
+                    self.add_water = 0
 
             self.rp_dict = {}
             self.rp_dict.update(data)
@@ -309,18 +314,19 @@ class Worker(QThread):
             self.rp_dict['percent'] = percent
             self.rp_dict['step'] = self.step
             self.rp_dict['seq'] = self.seq
-            # self.rp_dict['high'] = self.per_high
             self.rp_dict['vol_sell'] = data['volume_sell']
             self.rp_dict['vol_buy'] = data['volume_buy']
             self.rp_dict['vol_ratio'] = data['volume_ratio']
 
-            self.trans_dict.emit(self.rp_dict)
+            self.trans_dict.emit(self.rp_dict)                  ## show data
 
             if self.first_rcv == 1 :
                 self.step = self.func_GET_db_item(item_code, 1)
+                self.per_low = self.func_GET_db_item(item_code, 4)
 
                 if self.lock == 0 :
                     self.lock = 1
+                    self.first_rcv = 0
 
                     if self.func_GET_db_item(item_code, 2) == 1 :           ## 프로그램이 시작했는데 현재 item이 order 중인 경우 
                         self.rp_dict = {}
@@ -332,7 +338,7 @@ class Worker(QThread):
                         self.first_jumun_check.emit(ordered_item)
 
                     else :
-                        self.first_rcv = 0
+                        # self.first_rcv = 0
                         self.lock = 0
 
             else :      ## 2번째 receive 부터
@@ -340,27 +346,11 @@ class Worker(QThread):
                     self.lock = 1       ## lock 체결
 
                     if self.downing == 0 and self.uping == 0 :
-                        if self.step == 0 and percent <= PER_LOW_0 :
+                        if self.step < STEP_LIMIT and percent <= self.per_low :
                             print("worker", self.seq, "down hooked")
                             try :
                                 f_hook = open("trade_log.txt",'a')
                                 data = self.get_now() + "[HOOKING DOWN] item : " + str(item_code) + str(percent) + '\n'
-                                f_hook.write(data)
-                                f_hook.close()
-                            except :
-                                pass
-                            
-                            self.down_hook_per = percent
-                            self.down_level = 0
-                            self.down_maginot = -2
-                            self.downing = 1
-                            self.lock = 0
-
-                        if self.step == 1 and percent <= PER_LOW_1 :
-                            print("worker", self.seq, "down hooked")
-                            try :
-                                f_hook = open("trade_log.txt",'a')
-                                data = self.get_now() + "[HOOKING DOWN] item : " + str(item_code) + ' ' + str(percent) + '\n'
                                 f_hook.write(data)
                                 f_hook.close()
                             except :
@@ -454,10 +444,11 @@ class Worker(QThread):
 
                             if self.down_level == self.down_maginot :
                                 price = int(price_sell)
-                                if self.step == 0 :
-                                    qty = math.ceil(ADD_PRICE_1 / price)
-                                elif self.step == 1 :
-                                    qty = math.ceil(ADD_PRICE_2 / price)
+                                qty = math.ceil(ADD_PRICE / price)
+                                # if self.step == 0 :
+                                #     qty = math.ceil(ADD_PRICE_1 / price)
+                                # elif self.step == 1 :
+                                #     qty = math.ceil(ADD_PRICE_2 / price)
 
                                 if MAKE_ORDER == 1 :
                                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
@@ -509,8 +500,8 @@ class Worker(QThread):
             elif col == 3:      # get orderType
                 sql = "select orderType from STATUS where code = ?"
                 cur.execute(sql, [code])
-            elif col == 4:      # get trAmount
-                sql = "select trAmount from STATUS where code = ?"
+            elif col == 4:      # get perlow
+                sql = "select perlow from STATUS where code = ?"
                 cur.execute(sql, [code])
 
             row = cur.fetchone()
@@ -539,8 +530,8 @@ class Worker(QThread):
             # 2 : 수익실현 및 복구
             # 3 : full 매도
             # 4 : 존버
-        elif col == 4:  # update trAmount
-            sql = "update STATUS set trAmount = :DATA where code = :CODE"    
+        elif col == 4:  # update perlow
+            sql = "update STATUS set perlow = :DATA where code = :CODE"    
             cur.execute(sql, {"DATA" : data, "CODE" : code})
 
         conn.commit()
@@ -566,37 +557,15 @@ class Worker(QThread):
         elif "check_jumun" in rqname :
             item_code = rqname[0:6]
             self.res_check_jumun(rqname, trcode, recordname, item_code)
-
-    def func_INIT_db_item(self) :
-        conn = sqlite3.connect("item_status.db")
-        cur = conn.cursor()
-        tablename = "item" + str(self.seq)
-        sql = "create table if not exists " + tablename + " (code text, step integer)"
-        cur.execute(sql)
-        conn.commit()
-        conn.close()
-
-        print(tablename, "item db is initiated")
-
-        self.func_DELETEALL_db_item()
     
-    def func_INSERT_db_item(self, code, step, ordered, orderType, trAmount):
+    def func_INSERT_db_item(self, code, step, ordered, orderType, perlow):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()
-        sql = "insert into STATUS (code, step, ordered, orderType, trAmount) values(:CODE, :STEP, :ORDERED, :ORDERTYPE, :TRAMOUNT)"
-        cur.execute(sql, {"CODE" : code, "STEP" : step, "ORDERED" : ordered, "ORDERTYPE" : orderType, "TRAMOUNT" : trAmount})
+        sql = "insert into STATUS (code, step, ordered, orderType, perlow) values(:CODE, :STEP, :ORDERED, :ORDERTYPE, :PERLOW)"
+        cur.execute(sql, {"CODE" : code, "STEP" : step, "ORDERED" : ordered, "ORDERTYPE" : orderType, "PERLOW" : perlow})
         conn.commit()
         conn.close()
         print(self.now(), "[WORKER] [func_INSERT_db_item] : INSERTED")
-    def func_DELETEALL_db_item(self):
-        conn = sqlite3.connect("item_status.db")
-        cur = conn.cursor()
-        tablename = "item" + str(self.seq)
-        sql = "delete from " + tablename
-        cur.execute(sql)
-        conn.commit()
-        conn.close()
-        print(tablename, "items are deleted")
 
     def func_DELETE_db_item(self, code):
         conn = sqlite3.connect("item_status.db")
@@ -611,6 +580,7 @@ class Worker(QThread):
         return datetime.datetime.now()
 
     def get_now(self) :
+
         year = strftime("%Y", localtime())
         month = strftime("%m", localtime())
         day = strftime("%d", localtime())
@@ -621,3 +591,26 @@ class Worker(QThread):
         now = "[" + year + "/" + month +"/" + day + " " + hour + ":" + cmin + ":" + sec + "] "
 
         return now
+
+    # def func_INIT_db_item(self) :
+    #     conn = sqlite3.connect("item_status.db")
+    #     cur = conn.cursor()
+    #     tablename = "item" + str(self.seq)
+    #     sql = "create table if not exists " + tablename + " (code text, step integer)"
+    #     cur.execute(sql)
+    #     conn.commit()
+    #     conn.close()
+
+    #     print(tablename, "item db is initiated")
+
+    #     self.func_DELETEALL_db_item()
+
+    # def func_DELETEALL_db_item(self):
+    #     conn = sqlite3.connect("item_status.db")
+    #     cur = conn.cursor()
+    #     tablename = "item" + str(self.seq)
+    #     sql = "delete from " + tablename
+    #     cur.execute(sql)
+    #     conn.commit()
+    #     conn.close()
+    #     print(tablename, "items are deleted")
