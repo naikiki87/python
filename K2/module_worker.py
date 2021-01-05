@@ -91,9 +91,8 @@ class Worker(QThread):
                 ## Add water
                 if orderType == 1 :
                     cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
-                    new_step = cur_step + 1
-                    if self.func_UPDATE_db_item(item_code, 1, new_step) == 1 :   ## update step
-                        self.step = new_step
+                    self.step = cur_step + 1
+                    if self.func_UPDATE_db_item(item_code, 1, self.step) == 1 :   ## update step
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
                                 self.downing = 0
@@ -361,7 +360,7 @@ class Worker(QThread):
                             print("worker", self.seq, "down hooked")
                             try :
                                 f_hook = open("trade_log.txt",'a')
-                                data = self.get_now() + "[HOOKING DOWN] item : " + str(item_code) + str(percent) + '\n'
+                                data = self.get_now() + "[HOOKING DOWN] item : " + str(item_code) + ' ' + str(percent) + '\n'
                                 f_hook.write(data)
                                 f_hook.close()
                             except :
@@ -377,7 +376,7 @@ class Worker(QThread):
                             print("worker", self.seq, "up hooked")
                             try :
                                 f_hook = open("trade_log.txt",'a')
-                                data = self.get_now() + "[HOOKING UP] item : " + str(item_code) + str(percent) + '\n'
+                                data = self.get_now() + "[HOOKING UP] item : " + str(item_code) + ' ' + str(percent) + '\n'
                                 f_hook.write(data)
                                 f_hook.close()
                             except :
@@ -418,7 +417,7 @@ class Worker(QThread):
 
                                             try :
                                                 f_hook = open("trade_log.txt",'a')
-                                                data = self.get_now() + "[HOOK & SELL] item : " + str(item_code) + str(percent) + '\n'
+                                                data = self.get_now() + "[HOOK & SELL] item : " + str(item_code) + ' ' + str(percent) + '\n'
                                                 f_hook.write(data)
                                                 f_hook.close()
                                             except :
@@ -463,6 +462,14 @@ class Worker(QThread):
                                 if MAKE_ORDER == 1 :
                                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                                         if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                                            try :
+                                                f_hook = open("trade_log.txt",'a')
+                                                data = self.get_now() + "[HOOK & SELL] item : " + str(item_code) + ' ' + str(percent) + '\n'
+                                                f_hook.write(data)
+                                                f_hook.close()
+                                            except :
+                                                pass
+
                                             order = {}
                                             order['slot'] = self.seq
                                             order['type'] = 0       ## buy

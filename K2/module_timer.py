@@ -238,7 +238,7 @@ class Timer(QThread):
 
             temp = {}
             temp['item_code'] = self.candidate
-            temp['qty'] = 1             ## 척후병
+            temp['qty'] = qty             ## 척후병
             temp['price'] = price_sell
             self.req_buy.emit(temp)
 
