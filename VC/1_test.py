@@ -122,10 +122,10 @@ k = ThreadJob(foo,event,2)
 
 
 #### 매수
-buy_count = round((5000 / ask_price), 8)
-print("count : ", buy_count)
-ret = upbit.buy_limit_order("KRW-XRP", ask_price, buy_count)
-print(ret)
+# buy_count = round((5000 / ask_price), 8)
+# print("count : ", buy_count)
+# ret = upbit.buy_limit_order("KRW-XRP", ask_price, buy_count)
+# print(ret)
 
 #### 매도
 # ret = upbit.sell_limit_order("KRW-XRP", 1000, 20)

@@ -19,29 +19,29 @@ access_key = key[0]
 secret_key = key[1]
 upbit = pyupbit.Upbit(access_key, secret_key)
 
-# acc_bal = upbit.get_balances()
+acc_bal = upbit.get_balances()
 # print("ccc : ", acc_bal)
-# temp_bal = {}
-# total_coin_KRW = 0
-# for i in range(0, len(acc_bal[0]), 1) :
-#     item = acc_bal[0][i]['currency']
-#     if item == "KRW" :
-#         balance = float(acc_bal[0][i]['balance'])
-#         locked = float(acc_bal[0][i]['locked'])
-#         cashKRW = int(balance + locked)
-#     else :
-#         item_fname = "KRW-" + item
-#         cur_price = pyupbit.get_current_price(item_fname)
-#         count = acc_bal[0][i]['balance']
-#         unit_price = acc_bal[0][i]['avg_buy_price']
+temp_bal = {}
+total_coin_KRW = 0
+for i in range(0, len(acc_bal[0]), 1) :
+    item = acc_bal[0][i]['currency']
+    if item == "KRW" :
+        balance = float(acc_bal[0][i]['balance'])
+        locked = float(acc_bal[0][i]['locked'])
+        cashKRW = int(balance + locked)
+    else :
+        item_fname = "KRW-" + item
+        cur_price = pyupbit.get_current_price(item_fname)
+        count = acc_bal[0][i]['balance']
+        unit_price = acc_bal[0][i]['avg_buy_price']
 
-#         # print("item : ", item, "count : ", count, "unit : ", unit_price, "price : ", price, type(price))
+        # print("item : ", item, "count : ", count, "unit : ", unit_price, "price : ", price, type(price))
 
-#     # total_coin_KRW = total_coin_KRW + (float(unit_price) * float(count))
-#     total_coin_KRW = total_coin_KRW + (float(cur_price) * float(count))
+    # total_coin_KRW = total_coin_KRW + (float(unit_price) * float(count))
+    total_coin_KRW = total_coin_KRW + (float(cur_price) * float(count))
 
-# print("cashKRW : ", cashKRW)
-# print("total Coin : ", int(total_coin_KRW))
+print("cashKRW : ", cashKRW)
+print("total Coin : ", int(total_coin_KRW))
 
 # func_module.func_test("aaa")
 # aaa = func_module.func_test
@@ -61,11 +61,11 @@ upbit = pyupbit.Upbit(access_key, secret_key)
 # order_addwater = func_module.add_water
 # order_addwater("KRW-XRP")
 
-# f_sell = open("trade_log2.txt",'a')
+f_sell = open("trade_log2.txt",'a')
 # data = self.get_now() + "[sell volume_ratio_low] item : " + str(item_code) + "volume_ratio : " + str(volume_ratio) + "percent : " + str(percent) + '\n'
-# data = "test 1234"
-# f_sell.write(data)
-# f_sell.close()
+data = "test 1234"
+f_sell.write(data)
+f_sell.close()
 
 # file = open('../../individual/upas.txt', 'r')
 # s = file.read()
@@ -109,7 +109,7 @@ upbit = pyupbit.Upbit(access_key, secret_key)
 # orderbook = pyupbit.get_orderbook("KRW-XRP")
 # print(orderbook)
 
-# ITEM = "KRW-ETH"
+ITEM = "KRW-ETH"
 
 #### 10 호가
 # orderbook = pyupbit.get_orderbook(ITEM)
@@ -134,13 +134,13 @@ upbit = pyupbit.Upbit(access_key, secret_key)
 
 
 #### 잔고조회
-acc_bal = upbit.get_balances()
-print("acc : ", acc_bal)
-for i in range(0, len(acc_bal[0]), 1) :
-    item = acc_bal[0][i]['currency']
-    count = acc_bal[0][i]['balance']
-    unit_price = acc_bal[0][i]['avg_buy_price']
-    print("item : ", item, '/', count, '/', unit_price)
+# acc_bal = upbit.get_balances()
+# print("acc : ", acc_bal)
+# for i in range(0, len(acc_bal[0]), 1) :
+#     item = acc_bal[0][i]['currency']
+#     count = acc_bal[0][i]['balance']
+#     unit_price = acc_bal[0][i]['avg_buy_price']
+#     print("item : ", item, '/', count, '/', unit_price)
 
 
 

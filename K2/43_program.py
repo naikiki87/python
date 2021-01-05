@@ -23,9 +23,9 @@ form_class = uic.loadUiType("interface.ui")[0]
 ACCOUNT = config.ACCOUNT
 PASSWORD = config.PASSWORD
 NUM_SLOT = config.NUM_SLOT
-SUMMARY_TITLES = ["code", "item", "qty", "unit_p", "매입(A)", "p_BUY", "평가(B)", "수수료(C)", "손익(B-A-C)", "%", "step"]
+SUMMARY_TITLES = ["code", "item", "qty", "unit_p", "매입(A)", "p_BUY", "평가(B)", "수수료(C)", "손익(B-A-C)", "%", "step", "vol_ratio", "vol_sell", "vol_buy"]
 SUMMARY_COL_CNT = len(SUMMARY_TITLES)
-RP_TITLES = ["code", "item", "qty", "unit_p", "t_purchase", "price_buy", "t_evaluation", "total_fee", "total_sum", "percent", "step"]
+RP_TITLES = ["code", "item", "qty", "unit_p", "t_purchase", "price_buy", "t_evaluation", "total_fee", "total_sum", "percent", "step", "vol_ratio", "vol_sell", "vol_buy"]
 
 # print("TARGET : ", len(TARGET_ITEMS))
 
@@ -132,7 +132,7 @@ class Kiwoom(QMainWindow, form_class):
         self.func_SET_table_dailyprofit()   # dailyprofit table
 
     def receive_real_data(self, code, real_type, real_data): 
-        print("[MAIN] receive real : ", code)
+        # print("[MAIN] receive real : ", code)
         if self.possible_time == 1 :
             slot = self.which_slot(code)
             if slot != -1 :
@@ -143,9 +143,9 @@ class Kiwoom(QMainWindow, form_class):
                     
                     price_sell = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 41).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
                     price_buy = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 51).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
-                    # volume_sell = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 61).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
-                    # volume_buy = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 71).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
-                    # volume_ratio = round((volume_sell / volume_buy), 2)
+                    volume_sell = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 61).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
+                    volume_buy = int(self.kiwoom.dynamicCall("GetCommRealData(QString, int)", code, 71).replace('+', '').replace('-', '').strip())       ## 매도호가 수량 1
+                    volume_ratio = round((volume_sell / volume_buy), 2)
 
                     temp = {}
 
@@ -156,10 +156,10 @@ class Kiwoom(QMainWindow, form_class):
                     temp['unit_price'] = float(unit_price)
                     temp['price_buy'] = price_buy
                     temp['price_sell'] = price_sell
-                    temp['deposit'] = int(self.wid_show_deposit_d2.text())
-                    # temp['volume_sell'] = volume_sell
-                    # temp['volume_buy'] = volume_buy
-                    # temp['volume_ratio'] = volume_ratio
+                    # temp['deposit'] = int(self.wid_show_deposit_d2.text())
+                    temp['volume_sell'] = volume_sell
+                    temp['volume_buy'] = volume_buy
+                    temp['volume_ratio'] = volume_ratio
                     # temp['timezone'] = self.timezone
             
                     if slot == 0:
@@ -205,8 +205,7 @@ class Kiwoom(QMainWindow, form_class):
     def update_times(self, data) :
         self.text_edit4.setText(data['time'])
         self.possible_time = data['possible']
-        self.timezone = data['timezone']
-
+        # self.timezone = data['timezone']
         # print("[main] update_times / timezone : ", self.timezone)
 
     @pyqtSlot(dict)
@@ -250,7 +249,7 @@ class Kiwoom(QMainWindow, form_class):
     def th_connected(self, data) :
         self.list_th_connected[self.th_seq] = data
         if 0 not in self.list_th_connected :
-            print(self.now(), "[MAIN] [th_connected] Thread Connect Complete")
+            print("2. ALL THREAD CONNECTED")
 
     def btn_test(self) :
         print("btn test")
@@ -298,12 +297,12 @@ class Kiwoom(QMainWindow, form_class):
     def check_deposit_2(self, rqname, trcode, recordname, item_slot, item_code) :
         slot = int(item_slot)
 
-        d1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
-        d2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
+        # d1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
+        # d2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
         # orderable_money = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "주문가능금액")
 
-        # d1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+1")
-        # d2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+2")
+        d1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+1")
+        d2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+2")
         # orderable_money = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "주문가능현금")
 
         qty = self.check_jan[slot][1]
@@ -350,13 +349,14 @@ class Kiwoom(QMainWindow, form_class):
                 rqname = str(item_code) + str(slot) + "check_deposit"
                 self.win_check_deposit = self.win_check_deposit + 1
 
-                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
-                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00001", 0, str(self.win_check_deposit))
-
                 # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
                 # self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-                # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00005", 0, str(self.win_check_deposit))
+                # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00001", 0, str(self.win_check_deposit))
+
+
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
+                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00005", 0, str(self.win_check_deposit))
         
         elif buy_or_sell == 1 :  ## SELL
             self.ORDER_SELL(item_code, qty, price)
@@ -403,32 +403,6 @@ class Kiwoom(QMainWindow, form_class):
             self.DELETE_Table_Summary_item(slot)        ## recursive call
     
     def create_thread(self) :
-        # cnt_thread = 5
-
-        # self.workers = []
-
-        # for i in range(cnt_thread) :
-        #     self.workers.append(0)
-
-        # for i in range(cnt_thread) :
-        #     self.th_seq = i
-        #     self.workers[i] = module_worker.Worker(self.th_seq)
-        #     self.workers[i].th_con.connect(self.th_connected)
-        #     self.real_dict.connect(self.workers[i].dict_from_main)
-        #     self.che_dict.connect(self.workers[i].che_result)
-        #     self.reply_first_check.connect(self.workers[i].reply_first_check)
-        #     self.sig_worker_resume.connect(self.workers[i].resume_paused)
-        #     self.workers[i].trans_dict.connect(self.rp_dict)
-        #     self.workers[i].rq_order.connect(self.rq_order)
-        #     self.workers[i].first_jumun_check.connect(self.first_rcv_jumun_check)
-        #     self.workers[i].start()
-        #     while True :
-        #         if self.list_th_connected[i] == 1:
-        #             break
-        #         QtTest.QTest.qWait(100)
-
-
-
         ## 1st        
         self.th_seq = 0
         self.worker0 = module_worker.Worker(0)
@@ -593,7 +567,6 @@ class Kiwoom(QMainWindow, form_class):
         self.worker9.start()
         while True :
             if self.list_th_connected[self.th_seq] == 1:
-                print("All thread conneted")
                 break
             QtTest.QTest.qWait(100)
         
@@ -676,9 +649,7 @@ class Kiwoom(QMainWindow, form_class):
             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
             self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
             self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "SETTING", "opw00018", 0, "0101")         ## 계좌 잔고 조회
-            print("SETTING")
     def func_SET_Items(self, rqname, trcode, recordname):
-        print("func SET ITEEMS")
         self.item_count = int(self.func_GET_RepeatCount(trcode, rqname))
         db_codes = self.func_GET_db_item(0, 0)
 
@@ -704,10 +675,6 @@ class Kiwoom(QMainWindow, form_class):
 
         QtTest.QTest.qWait(1000)
 
-        # for item_code in TARGET_ITEMS :
-        #     self.pagenum = self.pagenum + 1
-        #     self.SetRealReg(str(self.pagenum), item_code, "10", "1")      ## 실시간 데이터 수신 등록
-
         for i in range(self.item_count) :
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
             item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
@@ -723,7 +690,8 @@ class Kiwoom(QMainWindow, form_class):
 
             self.SetRealReg("0101", item_code, "41", "1")      ## 실시간 데이터 수신 등록
         
-        print(self.now(), "[MAIN] [func_SET_Items] Set Items END")
+        print("3. ITEM SETTING FINISHED")
+        print("-- READY --")
 
     def load_etc_data(self) :
         ## deposit load
@@ -1039,13 +1007,10 @@ class Kiwoom(QMainWindow, form_class):
                 th_num = self.which_thread(item_code)[1]
                 if orderType != "none" :
                     if orderType == 1 :
-                        # th_num = self.which_thread(item_code)[1]
                         if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
                             self.func_restart_check(th_num, item_code)
 
                     elif orderType == 2 :
-                        # th_num = self.which_thread(item_code)[1]
-
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.func_restart_check(th_num, item_code)
 
@@ -1053,8 +1018,6 @@ class Kiwoom(QMainWindow, form_class):
                         self.item_slot[th_num] = 0      ## unassign slot
                         print("chajan : ", orderType, th_num, self.item_slot)
                         if self.DELETE_Table_Summary_item(th_num) == 0 :    ## table data 삭제
-                            # self.SetRealRemove("ALL", item_code)            ## 실시간 데이터 감시 해제
-
                             che_dict = {}
                             che_dict['th_num'] = th_num
                             che_dict['item_code'] = item_code
@@ -1062,8 +1025,6 @@ class Kiwoom(QMainWindow, form_class):
                             self.che_dict.emit(che_dict)                    ## 결과 전송
 
                     elif orderType == 4 :
-                        # th_num = self.which_thread(item_code)[1]
-
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
                             self.func_restart_check(th_num, item_code)
 
@@ -1075,14 +1036,10 @@ class Kiwoom(QMainWindow, form_class):
                             
 
                     elif orderType == 6 :       ## gi buy (manual)
-                        # th_num = self.which_thread(item_code)[1]
-
                         if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
                             self.func_restart_check(th_num, item_code)
 
                     elif orderType == 7 :       ## sell(manual)
-                        # th_num = self.which_thread(item_code)[1]
-                        
                         if self.DELETE_Table_Summary_item(th_num) == 0 :        ## table의 데이터를 다 지웠을 경우 0
                             self.func_restart_check(th_num, item_code)
 
@@ -1090,8 +1047,6 @@ class Kiwoom(QMainWindow, form_class):
                         self.item_slot[th_num] = 0      ## unassign slot
 
                         if self.DELETE_Table_Summary_item(th_num) == 0 :
-                            # self.SetRealRemove("ALL", item_code)        ## 실시간 데이터 감시 해제
-
                             che_dict = {}
                             che_dict['th_num'] = th_num
                             che_dict['item_code'] = item_code
@@ -1113,15 +1068,15 @@ class Kiwoom(QMainWindow, form_class):
     def func_GET_Deposit(self) :
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
-        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Deposit", "opw00005", 0, "0104")
-        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Deposit", "opw00001", 0, "0104")       ## 모의 계좌
+        self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Deposit", "opw00005", 0, "0104")
+        # self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "GET_Deposit", "opw00001", 0, "0104")       ## 모의 계좌
     def func_SHOW_Deposit(self, rqname, trcode, recordname) :
-        deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
-        d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
-        d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
         # deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
-        # d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+1")
-        # d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+2")
+        # d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+1추정예수금")
+        # d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "d+2추정예수금")
+        deposit = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금")
+        d_1 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+1")
+        d_2 = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "예수금D+2")
         # orderable_money = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "주문가능현금")
 
         self.wid_show_deposit.setText(str('{0:,}'.format(int(deposit))))
@@ -1333,7 +1288,7 @@ class Kiwoom(QMainWindow, form_class):
     @pyqtSlot(int)
     def check_real(self, data) :
         self.SetRealRemove("ALL", "ALL")
-        for i in range(len(self.item_slot)) :
+        for i in range(NUM_SLOT) :
             if self.item_slot[i] != 0 :
                 self.SetRealReg("0101", self.item_slot[i], "41", "1")      ## 실시간 데이터 수신 등록
 
@@ -1342,6 +1297,40 @@ class Kiwoom(QMainWindow, form_class):
         ref_time = self.func_GET_CurrentTime2()
         self.load_etc_data()
         self.wid_refresh_order.setText(ref_time)
+
+        print("refresh status")
+        print(self.item_slot)
+
+        for i in range(NUM_SLOT) :
+            item_temp = self.table_summary.item(i, 0)
+            print(i, ' : ', self.item_slot[i], ' : ', item_temp)
+
+            if item_temp is None and self.item_slot[i] != 0 :
+                rqname = "RSLOT_" + str(i) + '_' + str(self.item_slot[i])
+                self.reset_time = self.reset_time + 1
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "계좌번호", ACCOUNT)
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "비밀번호", PASSWORD)
+                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", rqname, "opw00018", 0, self.reset_time)       # 잔고 출력
+    
+    def func_RESET_Slots(self, rqname, trcode, recordname, slot, code) :
+        print("func RESET Slots : ", slot, code)
+        slot = int(slot)
+
+        item_count = int(self.func_GET_RepeatCount(trcode, rqname))
+
+        for i in range(item_count) :
+            item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+            if item_code == code :
+                item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
+                owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
+                unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
+                break
+        
+        self.func_SET_TableData(1, slot, 0, item_code, 0)
+        self.func_SET_TableData(1, slot, 1, item_name, 0)
+        self.func_SET_TableData(1, slot, 2, str(int(owncount)), 0)
+        self.func_SET_TableData(1, slot, 3, str(round(float(unit_price), 1)), 0)
+
     @pyqtSlot(dict)
     def auto_buy(self, data) :
         item_code = data['item_code']
@@ -1376,6 +1365,7 @@ class Kiwoom(QMainWindow, form_class):
 
     @pyqtSlot(int)
     def timer_con_finish(self, data) :
+        print("1. TIMER CONNECTED")
         self.func_GET_Deposit()
 
         while True :
@@ -1385,9 +1375,6 @@ class Kiwoom(QMainWindow, form_class):
             QtTest.QTest.qWait(100)
 
         self.func_start_check()          # Aloha
-
-    
-
 
     def event_connect(self, err_code):
         timestamp = self.func_GET_CurrentTime()
@@ -1407,7 +1394,6 @@ class Kiwoom(QMainWindow, form_class):
             self.sig_timer_paused.connect(self.timer.rcv_paused)
             self.reply_buy.connect(self.timer.reply_buy)
             self.timer.start()
-            print("timer started")
             
         else:
             print(self.now(), "[MAIN] Login Failed")
@@ -1436,9 +1422,9 @@ class Kiwoom(QMainWindow, form_class):
         self.table_summary.resizeRowsToContents()
 
         for i in range(SUMMARY_COL_CNT):
-            self.table_summary.setColumnWidth(i, 110)
+            self.table_summary.setColumnWidth(i, 90)
         
-        # self.table_summary.setColumnWidth(1, 140)
+        self.table_summary.setColumnWidth(1, 150)
         
         self.table_summary.verticalHeader().setVisible(False)
         self.table_summary.verticalHeader().setDefaultSectionSize(1)
@@ -1505,7 +1491,7 @@ class Kiwoom(QMainWindow, form_class):
         self.table_dailyprofit.resizeRowsToContents()
 
         for i in range(col_count):
-            self.table_dailyprofit.setColumnWidth(i, 100)
+            self.table_dailyprofit.setColumnWidth(i, 125)
 
         self.table_dailyprofit.verticalHeader().setVisible(False)
         self.table_dailyprofit.verticalHeader().setDefaultSectionSize(1)
@@ -1549,6 +1535,11 @@ class Kiwoom(QMainWindow, form_class):
             item_slot = int(rqname[6:7])
             item_code = rqname[8:]
             self.func_RESET_Items(rqname, trcode, recordname, item_slot, item_code)
+        
+        elif "RSLOT_" in rqname:
+            item_slot = int(rqname[6:7])
+            item_code = rqname[8:]
+            self.func_RESET_Slots(rqname, trcode, recordname, item_slot, item_code)
 
         elif "check_deposit" in rqname :
             item_code = rqname[0:6]
@@ -1598,7 +1589,7 @@ class Kiwoom(QMainWindow, form_class):
     def which_slot(self, item_code) :
         slot = -1
 
-        for i in range(len(self.item_slot)) :
+        for i in range(NUM_SLOT) :
             if self.item_slot[i] == item_code :
                 slot = i
                 break

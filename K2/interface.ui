@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1232</width>
+    <width>1341</width>
     <height>801</height>
    </rect>
   </property>
@@ -25,7 +25,7 @@
      <rect>
       <x>10</x>
       <y>70</y>
-      <width>1212</width>
+      <width>1322</width>
       <height>211</height>
      </rect>
     </property>
@@ -499,10 +499,10 @@
    <widget class="QTableWidget" name="table_dailyprofit">
     <property name="geometry">
      <rect>
-      <x>820</x>
-      <y>330</y>
-      <width>402</width>
-      <height>351</height>
+      <x>830</x>
+      <y>320</y>
+      <width>502</width>
+      <height>431</height>
      </rect>
     </property>
     <property name="rowCount">
@@ -524,7 +524,7 @@
    <widget class="QWidget" name="gridLayoutWidget_8">
     <property name="geometry">
      <rect>
-      <x>1010</x>
+      <x>1120</x>
       <y>290</y>
       <width>211</width>
       <height>31</height>
@@ -692,7 +692,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1232</width>
+     <width>1341</width>
      <height>21</height>
     </rect>
    </property>

@@ -15,6 +15,7 @@ import module_finder2
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 import target
+import module_worker
 
 UNIT_PRICE_HI_LIM = config.UNIT_PRICE_HI_LIM
 UNIT_PRICE_LOW_LIM = config.UNIT_PRICE_LOW_LIM
@@ -61,10 +62,11 @@ class Timer(QThread):
         self.kiwoom.OnEventConnect.connect(self.event_connect)
         self.kiwoom.OnReceiveTrData.connect(self.receive_tr_data)
 
+        self.checking_test = 0
+
     def event_connect(self, err_code):
         if err_code == 0 :
             self.timer_on = 1
-            print("timer connect")
             self.timer_connected.emit(1)
 
     def run(self):
@@ -74,7 +76,7 @@ class Timer(QThread):
                 now = datetime.datetime.now()
                 mkt_open = now.replace(hour=9, minute=0, second=0)
                 mkt_close = now.replace(hour=15, minute=30, second=0)
-                am905 = now.replace(hour=9, minute=5, second=0)
+                am901 = now.replace(hour=9, minute=1, second=0)
                 am920 = now.replace(hour=9, minute=20, second=0)
                 am930 = now.replace(hour=9, minute=30, second=0)
                 am931 = now.replace(hour=9, minute=31, second=0)
@@ -82,6 +84,7 @@ class Timer(QThread):
                 pm250 = now.replace(hour=14, minute=50, second=0)
                 pm320 = now.replace(hour=15, minute=20, second=0)
                 check_down_items = now.replace(hour=15, minute=20, second=10)
+                double_check = now.replace(hour=15, minute=21, second=0)
 
                 c_hour = now.strftime('%H')
                 c_min = now.strftime('%M')
@@ -91,8 +94,16 @@ class Timer(QThread):
                 temp_time['time'] = str_time
 
                 if now == check_down_items :
-                    self.finder2 = module_finder2.Finder()
-                    self.finder2.start()
+                    if self.checking_test == 0 :
+                        self.checking_test = 1
+                        self.finder2 = module_finder2.Finder()
+                        self.finder2.start()
+
+                if now == double_check :
+                    if self.checking_test == 0 :
+                        self.checking_test = 1
+                        self.finder2 = module_finder2.Finder()
+                        self.finder2.start()
 
                 if now >= mkt_open and now < mkt_close :
                     temp_time['possible'] = 1
@@ -103,11 +114,11 @@ class Timer(QThread):
                         print(str_time)
                         self.check_real.emit(1)
 
-                    if now >= am905 and now<=pm250 and self.item_checking == 0 :
+                    if now >= am901 and now<=pm250 and self.item_checking == 0 :
                         if c_sec == "20" or c_sec == "50" :
                             self.check_slot.emit(1)
                     
-                    if now >= am905 and now<=pm320 and c_sec == "15" :
+                    if now >= am901 and now<=pm320 and c_sec == "15" :
                         self.sig_main_check_jumun.emit(1)
 
                     if now <= am920 :
@@ -181,24 +192,30 @@ class Timer(QThread):
 
     def res_iteminfo(self, rqname, trcode, recordname) :
         item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목코드")
-        name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "종목명")
         percent = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "등락율").strip()
+        start = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "시가").replace('+', '').replace('-', ''))
+        cur_price = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "현재가").replace('+', '').replace('-', ''))
 
         per_data = float(percent[1:])
 
-        print("percent : ", percent)
+        if percent[0] == '-' :                  ## 금일 가격이 전일 종가보다 내려져 있는 경우
+            if start >= cur_price :             ## 금일 가격이 음봉일 경우
+                print("candidate item CAT 1 : ", item_code, percent, start, cur_price)
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
+                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "CHECK_hoga", "opt10004", 0, "0101")
+            else :                              ## 금일 가격이 양봉일 경우
+                print("candidate item CAT 2 : ", item_code, percent, start, cur_price)
+                self.candidate_seq = self.candidate_seq + 1
+                QtTest.QTest.qWait(500)
+                self.investigate_items()
 
-        if percent[0] == '+' or percent[0] == '0':
-            print("candidate item : ", item_code, name, percent, "TODAY +")
+        elif percent[0] == '+' or percent[0] == '0':
+            print("candidate item CAT 3 : ", item_code, percent)
             self.candidate_seq = self.candidate_seq + 1
             QtTest.QTest.qWait(500)
             self.investigate_items()
-        elif percent[0] == '-' :
-            print("candidate item : ", item_code, name, percent, "TODAY -")
-            self.candidate_seq = self.candidate_seq + 1
-            QtTest.QTest.qWait(500)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
-            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "CHECK_hoga", "opt10004", 0, "0101")
+
+        
 
     def check_hoga_n_order(self, rqname, trcode, recordname) :
         price_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
@@ -217,10 +234,11 @@ class Timer(QThread):
         elif price_sell >= UNIT_PRICE_LOW_LIM and price_sell <= UNIT_PRICE_HI_LIM :
             qty = math.floor(AUTO_BUY_PRICE_LIM / price_sell)
             print(self.now(), "[TIMER] [check_hoga_n_order] : 단가 적당 / ", self.candidate, qty, price_sell)
+            # print(self.now(), "[TIMER] [check_hoga_n_order] : 단가 적당 / ", self.candidate, 1, price_sell)
 
             temp = {}
             temp['item_code'] = self.candidate
-            temp['qty'] = qty
+            temp['qty'] = 1             ## 척후병
             temp['price'] = price_sell
             self.req_buy.emit(temp)
 

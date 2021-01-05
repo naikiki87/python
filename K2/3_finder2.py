@@ -25,20 +25,26 @@ SUBS_CNT = 2000
 SHOW_SCALE = 5
 VOL_FIN_PAGE = 1    # 평균 volume을 구할 표본 수 -> 1 당 10일치
 
+check_dur = 4
+
+code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
+code_df.종목코드 = code_df.종목코드.map('{:06d}'.format) 
+code_df = code_df[['회사명', '종목코드']]
+code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'}) 
+cnt_code = len(code_df)
+
+df_last = pd.DataFrame(columns = ['code', 'ratio_end_deg', 'ratio_min', 'mean_vol', 'today_vol', 'duration'])
+df_temp = pd.DataFrame(columns = ['code', 'ratio_end_deg', 'ratio_min', 'mean_vol', 'today_vol', 'duration'])
+
 def run():
     print(now(), "[FINDER] [run] START Item Discovering")
+    check_price(check_dur)
 
-    code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
-    code_df.종목코드 = code_df.종목코드.map('{:06d}'.format) 
-    code_df = code_df[['회사명', '종목코드']]
-    code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'}) 
-
-    df_last = pd.DataFrame(columns = ['code', 'ratio_end_deg', 'ratio_min', 'mean_vol', 'today_vol'])
-
-    cnt_code = len(code_df)
-    
+def check_price(check_dur) :
+    print("check_price : ", check_dur)
+    global df_last
     # for i in range(len(code_df)) :
-    for i in range(1) :
+    for i in range(500) :
         if i % 10 == 0 :
             print(i)
 
@@ -53,7 +59,6 @@ def run():
 
             df = df.rename(columns={'종가':'end', '시가':'start', '고가':'high', '저가':'low', '거래량' : 'vol'})
             df = df.dropna()
-            print(df)
             mean_vol = int(df.vol.mean())
             today_vol = int(df.vol.iloc[0])
 
@@ -126,24 +131,45 @@ def run():
 
                 ratio_min = round((end0 / min_price), 2)    ## 최근 한달간 최소값 대비 현재값 비율
 
-                if end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
-                    if gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                        df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol]
+                if check_dur == 4 :
+                    if end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                        if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                            df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol, check_dur]
+
+                elif check_dur == 3 :
+                    if end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                        if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                            df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol, check_dur]
+
+                elif check_dur == 2 :
+                    if end2 >= end1 and end1 >= end0 :
+                        if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                            df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol, check_dur]
 
         except :
             pass
 
-    df_last = df_last.sort_values(by=['ratio_end_deg', 'ratio_min'], axis=0, ascending=[True, True])  # sorting by std(descending)
-    df_last = df_last.reset_index(drop=True, inplace=False)     # re-indexing
-    
+    if len(df_last) >= 15 :
+        print("case 1")
+        check_price2()
 
-    filename = "target_items.txt"
-    f = open(filename,'w', encoding='utf8')
-    sys.stdout = f
+    else :
+        if check_dur > 2 :
+            print("case 2")
+            check_dur = check_dur - 1
+            check_price(check_dur)
+        else :
+            print("case 3")
+            check_price2()
+
+def check_price2() :
+    print("check_price2")
+    global df_last
+
+    df_last = df_last.sort_values(by=['duration', 'ratio_end_deg', 'ratio_min'], axis=0, ascending=[False, True, True])  # sorting by std(descending)
+    df_last = df_last.reset_index(drop=True, inplace=False)     # re-indexing
     print(df_last)
 
-    sys.stdout = sys.__stdout__
-    f.close()
 
 def get_market_sum(item_code):
     cnt_0_digit = 0

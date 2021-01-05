@@ -10,7 +10,7 @@ TIME_PER_HIGH = [2, 2, 2]
 ACCOUNT = "5420162210"
 PASSWORD = "6458"
 
-SLOT_RUN = 3
+SLOT_RUN = 1
 TARGET_PERCENT = 3
 
 ## Main
@@ -30,7 +30,7 @@ FEE_SELL = 0.00015
 GOAL_PER = -0.01
 MAKE_ORDER = 1
 PER_LOW = -2
-STEP_LIMIT = 2
+STEP_LIMIT = 1
 
 DOWN_DURATION = 50      ## wating tick times before add-water order
 
