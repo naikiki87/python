@@ -31,7 +31,7 @@ ADD_PRICE = config.ADD_PRICE
 ADD_PRICE_1 = config.ADD_PRICE_1
 ADD_PRICE_2 = config.ADD_PRICE_2
 AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
-TARGET_PER = 1.2
+TARGET_PER = 2
 
 PER_LOW_0 = config.PER_LOW_0
 PER_LOW_1 = config.PER_LOW_1
@@ -39,8 +39,8 @@ PER_LOW_1 = config.PER_LOW_1
 
 print("TARGET PERCENT : ", TARGET_PER)
 print("AUTO BUY PRICE : ", AUTO_BUY_PRICE_LIM)
-# print("ADD PRICE : ", ADD_PRICE_1, ADD_PRICE_2)
-print("ADD PRICE : ", ADD_PRICE)
+print("ADD PRICE : ", ADD_PRICE_1, ADD_PRICE_2)
+# print("ADD PRICE : ", ADD_PRICE)
 
 class Worker(QThread):
     connected = 0
@@ -446,11 +446,14 @@ class Worker(QThread):
 
                             if self.down_level == self.down_maginot :
                                 price = int(price_sell)
-                                qty = math.ceil(ADD_PRICE / price)
-                                # if self.step == 0 :
-                                #     qty = math.ceil(ADD_PRICE_1 / price)
-                                # elif self.step == 1 :
-                                #     qty = math.ceil(ADD_PRICE_2 / price)
+                                # qty = math.ceil(ADD_PRICE / price)
+
+                                if self.step == 0 :
+                                    qty = math.ceil(ADD_PRICE_1 / price)
+
+                                elif self.step == 1 :
+                                    qty = math.ceil(ADD_PRICE_2 / price)
+
 
                                 if MAKE_ORDER == 1 :
                                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
