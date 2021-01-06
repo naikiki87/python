@@ -112,6 +112,8 @@ class Worker(QThread):
                     self.up_level = 0
                     self.up_maginot = -2
                     self.up_hook_per = 0
+
+                    self.step = 0
                     self.lock = 0           ## unlock
 
                 ## new BUY(Manual)
@@ -350,7 +352,7 @@ class Worker(QThread):
                             print("worker", self.seq, "down hooked")
                             try :
                                 f_hook = open("trade_log.txt",'a')
-                                data = self.get_now() + "[HOOKING DOWN] item : " + str(item_code) + str(percent) + '\n'
+                                data = self.get_now() + "[HOOKING DOWN] item : " + str(item_code) + ' ' + str(percent) + '\n'
                                 f_hook.write(data)
                                 f_hook.close()
                             except :

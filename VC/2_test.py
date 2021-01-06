@@ -134,13 +134,17 @@ upbit = pyupbit.Upbit(access_key, secret_key)
 
 
 #### 잔고조회
-acc_bal = upbit.get_balances()
-print("acc : ", acc_bal)
-for i in range(0, len(acc_bal[0]), 1) :
-    item = acc_bal[0][i]['currency']
-    count = acc_bal[0][i]['balance']
-    unit_price = acc_bal[0][i]['avg_buy_price']
-    print("item : ", item, '/', count, '/', unit_price)
+# acc_bal = upbit.get_balances()
+# print("acc : ", acc_bal)
+# for i in range(0, len(acc_bal[0]), 1) :
+#     item = acc_bal[0][i]['currency']
+#     count = acc_bal[0][i]['balance']
+#     unit_price = acc_bal[0][i]['avg_buy_price']
+#     print("item : ", item, '/', count, '/', unit_price)
+
+
+df = pyupbit.get_ohlcv("KRW-BTC", interval="minute30", count=5)
+print(df)
 
 
 

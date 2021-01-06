@@ -147,7 +147,7 @@ class Finder(QThread):
 
                 ratio_min = round((end0 / min_price), 2)    ## 최근 한달간 최소값 대비 현재값 비율
 
-                if ratio_min < 1.15 :
+                if ratio_min < 1.2 :
                     ratio_end_deg = self.df_last.ratio_end_deg[i]
                     mean_vol = self.df_last.mean_vol[i]
                     today_vol = self.df_last.today_vol[i]
@@ -165,7 +165,7 @@ class Finder(QThread):
 
             market_sum = self.get_market_sum(code)
 
-            if market_sum >= 1500 :
+            if market_sum >= 1000 :
                 ratio_end_deg = self.df_last2.ratio_end_deg[i]
                 mean_vol = self.df_last2.mean_vol[i]
                 today_vol = self.df_last2.today_vol[i]
