@@ -18,6 +18,7 @@ NUM_SLOT = 10
 
 ## Worker
 TAX = 0.0025
+a = 0
 
 PER_LOW_0 = -1
 PER_LOW_1 = -1.5

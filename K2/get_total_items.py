@@ -2,6 +2,7 @@ import FinanceDataReader as fdr
 from datetime import datetime, timedelta, date
 import pandas as pd
 import sys
+import time
 
 pd.set_option('display.max_row', 20000)
 
