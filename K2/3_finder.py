@@ -44,12 +44,13 @@ def run():
 
         try :
             code = code_df.code[i]
-            url = 'http://finance.naver.com/item/sise_day.nhn?code={code}'.format(code=code) 
+            print(code)
+            url = 'http://finance.naver.com/item/sise_day.nhn?code={code}&page={page}'.format(code=code, page=1) 
             df = pd.read_html(url, header=0)[0]
 
-            # for page in range(2, VOL_FIN_PAGE + 1) :
-            #     url = 'http://finance.naver.com/item/sise_day.nhn?code={code}&page={page}'.format(code=code, page=page) 
-            #     df = df.append(pd.read_html(url, header=0)[0], ignore_index=True) 
+            for page in range(2, VOL_FIN_PAGE + 1) :
+                url = 'http://finance.naver.com/item/sise_day.nhn?code={code}&page={page}'.format(code=code, page=page) 
+                df = df.append(pd.read_html(url, header=0)[0], ignore_index=True) 
 
             df = df.rename(columns={'종가':'end', '시가':'start', '고가':'high', '저가':'low', '거래량' : 'vol'})
             df = df.dropna()
@@ -135,15 +136,17 @@ def run():
 
     df_last = df_last.sort_values(by=['ratio_end_deg', 'ratio_min'], axis=0, ascending=[True, True])  # sorting by std(descending)
     df_last = df_last.reset_index(drop=True, inplace=False)     # re-indexing
+
+    print(df_last)
     
 
-    filename = "target_items.txt"
-    f = open(filename,'w', encoding='utf8')
-    sys.stdout = f
-    print(df_last)
+    # filename = "target_items.txt"
+    # f = open(filename,'w', encoding='utf8')
+    # sys.stdout = f
+    # print(df_last)
 
-    sys.stdout = sys.__stdout__
-    f.close()
+    # sys.stdout = sys.__stdout__
+    # f.close()
 
 def get_market_sum(item_code):
     cnt_0_digit = 0

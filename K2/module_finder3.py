@@ -1,3 +1,4 @@
+import FinanceDataReader as fdr
 import sys
 import random
 import time
@@ -11,13 +12,13 @@ import requests
 import threading
 from bs4 import BeautifulSoup
 from time import localtime, strftime
+from datetime import datetime, timedelta, date
+import total_items
 
-VOL_FIN_PAGE = 6    # 평균 volume을 구할 표본 수 -> 1 당 10일치
-
-code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
-code_df.종목코드 = code_df.종목코드.map('{:06d}'.format) 
-code_df = code_df[['회사명', '종목코드']]
-code_df = code_df.rename(columns={'회사명': 'name', '종목코드': 'code'}) 
+item_list = total_items.ITEMS
+today = date.today()
+day_bf_12 = today + timedelta(days=-12)
+day_bf_100 = today + timedelta(days=-100)
 
 check_dur = 5
 
@@ -30,32 +31,28 @@ class Finder(QThread):
 
     def run(self):
         start_time = time.time()
-        print("[FINDER 2] [run] START Item Discovering")
+        print("[FINDER 3] [run] START Item Discovering")
 
         self.check_price(check_dur)
     
     def check_price(self, check_dur) :
-        for i in range(len(code_df)) :
+        print("check_duration : ", check_dur)
         # for i in range(2) :
+        for i in range(len(item_list)) :
             if i % 20 == 0 :
                 print(i)
 
             try :
-                code = code_df.code[i]
-                url = 'http://finance.naver.com/item/sise_day.nhn?code={code}'.format(code=code) 
-                df = pd.read_html(url, header=0)[0]
-                df = df.rename(columns={'종가':'end', '시가':'start', '고가':'high', '저가':'low', '거래량' : 'vol'})
-                df = df.dropna()
+                code = item_list[i]
+
+                df = fdr.DataReader(code, day_bf_12, today)
+                df = df.rename(columns={'Close':'end', 'Open':'start', 'High':'high', 'Low':'low', 'Volume' : 'vol'})
+                df = df.sort_values(by=['Date'], axis=0, ascending=[False])  # sorting by std(descending)
 
                 mean_vol = int(df.vol.mean())
                 today_vol = int(df.vol.iloc[0])
 
-                print(df)
-                print(mean_vol, today_vol)
-
                 if mean_vol >= 50000 and today_vol >= 10000 :
-                    end7 = int(df.end.iloc[7])
-                    end6 = int(df.end.iloc[6])
                     end5 = int(df.end.iloc[5])
                     end4 = int(df.end.iloc[4])
                     end3 = int(df.end.iloc[3])
@@ -63,8 +60,6 @@ class Finder(QThread):
                     end1 = int(df.end.iloc[1])
                     end0 = int(df.end.iloc[0])
 
-                    start7 = int(df.start.iloc[7])
-                    start6 = int(df.start.iloc[6])
                     start5 = int(df.start.iloc[5])
                     start4 = int(df.start.iloc[4])
                     start3 = int(df.start.iloc[3])
@@ -72,8 +67,6 @@ class Finder(QThread):
                     start1 = int(df.start.iloc[1])
                     start0 = int(df.start.iloc[0])
 
-                    gap7 = end7 - start7
-                    gap6 = end6 - start6
                     gap5 = end5 - start5
                     gap4 = end4 - start4
                     gap3 = end3 - start3
@@ -114,7 +107,6 @@ class Finder(QThread):
                                     self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
             except :
-                print("no data")
                 pass
 
         print("count df_last : ", len(self.df_last))
@@ -124,7 +116,7 @@ class Finder(QThread):
             self.check_price2()
 
         else :
-            if check_dur > 2 :
+            if check_dur > 3 :
                 print("case 2")
                 check_dur = check_dur - 1
                 self.check_price(check_dur)
@@ -143,15 +135,9 @@ class Finder(QThread):
         for i in range(len(self.df_last)) :
             try :
                 code = self.df_last.code[i]
-                url = 'http://finance.naver.com/item/sise_day.nhn?code={code}'.format(code=code) 
-                df = pd.read_html(url, header=0)[0]
-
-                for page in range(2, VOL_FIN_PAGE + 1) :
-                    url = 'http://finance.naver.com/item/sise_day.nhn?code={code}&page={page}'.format(code=code, page=page) 
-                    df = df.append(pd.read_html(url, header=0)[0], ignore_index=True) 
-
-                df = df.rename(columns={'종가':'end', '시가':'start', '고가':'high', '저가':'low', '거래량' : 'vol'})
-                df = df.dropna()
+                df = fdr.DataReader(code, day_bf_100, today)
+                df = df.rename(columns={'Close':'end', 'Open':'start', 'High':'high', 'Low':'low', 'Volume' : 'vol'})
+                df = df.sort_values(by=['Date'], axis=0, ascending=[False])  # sorting by std(descending)
 
                 end0 = int(df.end.iloc[0])
                 df_end = df[['end']]
@@ -190,12 +176,10 @@ class Finder(QThread):
         print(self.df_last3)
 
         a_item = []
-
         for i in range(len(self.df_last3)) :
             a_item.append(self.df_last3.code[i])
 
         final_item = []
-
         for item in a_item :
             if item not in final_item :
                 final_item.append(item)

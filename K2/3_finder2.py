@@ -25,7 +25,7 @@ SUBS_CNT = 2000
 SHOW_SCALE = 5
 VOL_FIN_PAGE = 1    # 평균 volume을 구할 표본 수 -> 1 당 10일치
 
-check_dur = 4
+check_dur = 2
 
 code_df = pd.read_html('http://kind.krx.co.kr/corpgeneral/corpList.do?method=download&searchType=13', header=0)[0] 
 code_df.종목코드 = code_df.종목코드.map('{:06d}'.format) 
@@ -44,110 +44,100 @@ def check_price(check_dur) :
     print("check_price : ", check_dur)
     global df_last
     # for i in range(len(code_df)) :
-    for i in range(500) :
+    for i in range(1) :
         if i % 10 == 0 :
             print(i)
 
-        try :
-            code = code_df.code[i]
-            url = 'http://finance.naver.com/item/sise_day.nhn?code={code}'.format(code=code) 
-            df = pd.read_html(url, header=0)[0]
+        # try :
+        code = code_df.code[i]
+        code = "005930"
+        print("code : ", code)
+        url = 'http://finance.naver.com/item/sise_day.nhn?code={code}'.format(code=code) 
+        print("url : ", url)
+        df = pd.read_html(url, header=0)[0]
+        print(df)
+        df = df.rename(columns={'종가':'end', '시가':'start', '고가':'high', '저가':'low', '거래량' : 'vol'})
+        df = df.dropna()
 
-            # for page in range(2, VOL_FIN_PAGE + 1) :
-            #     url = 'http://finance.naver.com/item/sise_day.nhn?code={code}&page={page}'.format(code=code, page=page) 
-            #     df = df.append(pd.read_html(url, header=0)[0], ignore_index=True) 
+        print("AA")
+        
 
-            df = df.rename(columns={'종가':'end', '시가':'start', '고가':'high', '저가':'low', '거래량' : 'vol'})
-            df = df.dropna()
-            mean_vol = int(df.vol.mean())
-            today_vol = int(df.vol.iloc[0])
+        
 
-            if today_vol >= 50000 :
-                df_end = df[['end']]
-                min_price = int(df_end.min())
+        mean_vol = int(df.vol.mean())
+        today_vol = int(df.vol.iloc[0])
 
-                end7 = int(df.end.iloc[7])
-                end6 = int(df.end.iloc[6])
-                end5 = int(df.end.iloc[5])
-                end4 = int(df.end.iloc[4])
-                end3 = int(df.end.iloc[3])
-                end2 = int(df.end.iloc[2])
-                end1 = int(df.end.iloc[1])
-                end0 = int(df.end.iloc[0])
+        print("mean vol  ", mean_vol)
 
-                start7 = int(df.start.iloc[7])
-                start6 = int(df.start.iloc[6])
-                start5 = int(df.start.iloc[5])
-                start4 = int(df.start.iloc[4])
-                start3 = int(df.start.iloc[3])
-                start2 = int(df.start.iloc[2])
-                start1 = int(df.start.iloc[1])
-                start0 = int(df.start.iloc[0])
+        print("today vol : ", today_vol)
 
-                low7 = int(df.low.iloc[7])
-                low6 = int(df.low.iloc[6])
-                low5 = int(df.low.iloc[5])
-                low4 = int(df.low.iloc[4])
-                low3 = int(df.low.iloc[3])
-                low2 = int(df.low.iloc[2])
-                low1 = int(df.low.iloc[1])
-                low0 = int(df.low.iloc[0])
+        if today_vol >= 10000 :
+            df_end = df[['end']]
+            min_price = int(df_end.min())
 
-                high7 = int(df.high.iloc[7])
-                high6 = int(df.high.iloc[6])
-                high5 = int(df.high.iloc[5])
-                high4 = int(df.high.iloc[4])
-                high3 = int(df.high.iloc[3])
-                high2 = int(df.high.iloc[2])
-                high1 = int(df.high.iloc[1])
-                high0 = int(df.high.iloc[0])
+            # end7 = int(df.end.iloc[7])
+            # end6 = int(df.end.iloc[6])
+            end5 = int(df.end.iloc[5])
+            end4 = int(df.end.iloc[4])
+            end3 = int(df.end.iloc[3])
+            end2 = int(df.end.iloc[2])
+            end1 = int(df.end.iloc[1])
+            end0 = int(df.end.iloc[0])
 
+            # start7 = int(df.start.iloc[7])
+            # start6 = int(df.start.iloc[6])
+            start5 = int(df.start.iloc[5])
+            start4 = int(df.start.iloc[4])
+            start3 = int(df.start.iloc[3])
+            start2 = int(df.start.iloc[2])
+            start1 = int(df.start.iloc[1])
+            start0 = int(df.start.iloc[0])
 
-                gap7 = end7 - start7
-                gap6 = end6 - start6
-                gap5 = end5 - start5
-                gap4 = end4 - start4
-                gap3 = end3 - start3
-                gap2 = end2 - start2
-                gap1 = end1 - start1
-                gap0 = end0 - start0
+            # gap7 = end7 - start7
+            # gap6 = end6 - start6
+            gap5 = end5 - start5
+            gap4 = end4 - start4
+            gap3 = end3 - start3
+            gap2 = end2 - start2
+            gap1 = end1 - start1
+            gap0 = end0 - start0
 
-                ratio_end = round((end0 / end6), 2)     ## 최근 감소율
-                ratio_end_deg = 0
-                if ratio_end <= 0.5 :
-                    ratio_end_deg = 5
-                elif ratio_end <= 0.6 :
-                    ratio_end_deg = 6
-                elif ratio_end <= 0.7 :
-                    ratio_end_deg = 7
-                elif ratio_end <= 0.8 :
-                    ratio_end_deg = 8
-                elif ratio_end <= 0.9 :
-                    ratio_end_deg = 9
-                elif ratio_end <= 1 :
-                    ratio_end_deg = 10
-                elif ratio_end > 1 :
-                    ratio_end_deg = 11
+            ratio_end = round((end0 / end6), 2)     ## 최근 감소율
+            ratio_end_deg = 0
+            if ratio_end <= 0.5 :
+                ratio_end_deg = 5
+            elif ratio_end <= 0.6 :
+                ratio_end_deg = 6
+            elif ratio_end <= 0.7 :
+                ratio_end_deg = 7
+            elif ratio_end <= 0.8 :
+                ratio_end_deg = 8
+            elif ratio_end <= 0.9 :
+                ratio_end_deg = 9
+            elif ratio_end <= 1 :
+                ratio_end_deg = 10
+            elif ratio_end > 1 :
+                ratio_end_deg = 11
 
-                ratio_min = round((end0 / min_price), 2)    ## 최근 한달간 최소값 대비 현재값 비율
+            ratio_min = round((end0 / min_price), 2)    ## 최근 한달간 최소값 대비 현재값 비율
 
-                if check_dur == 4 :
-                    if end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
-                        if gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                            df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol, check_dur]
+            if check_dur == 4 :
+                if end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                    if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                        df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol, check_dur]
 
-                elif check_dur == 3 :
-                    if end3 >= end2 and end2 >= end1 and end1 >= end0 :
-                        if gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                            df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol, check_dur]
+            elif check_dur == 3 :
+                if end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                    if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                        df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol, check_dur]
 
-                elif check_dur == 2 :
-                    if end2 >= end1 and end1 >= end0 :
-                        if gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                            df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol, check_dur]
+            elif check_dur == 2 :
+                if end2 >= end1 and end1 >= end0 :
+                    # if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                    df_last.loc[len(df_last)] = [code, ratio_end_deg, ratio_min, mean_vol, today_vol, check_dur]
 
-        except :
-            pass
+        # except :
+        #     pass
 
     if len(df_last) >= 15 :
         print("case 1")

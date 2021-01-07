@@ -10,12 +10,10 @@ import pandas as pd
 import requests
 import threading
 from bs4 import BeautifulSoup
-# import module_finder
-import module_finder2
+import module_finder3
 from PyQt5.QtWidgets import *
 from PyQt5.QAxContainer import *
 import target
-import module_worker
 
 UNIT_PRICE_HI_LIM = config.UNIT_PRICE_HI_LIM
 UNIT_PRICE_LOW_LIM = config.UNIT_PRICE_LOW_LIM
@@ -97,14 +95,14 @@ class Timer(QThread):
                 if now == check_down_items :
                     if self.checking_test == 0 :
                         self.checking_test = 1
-                        self.finder2 = module_finder2.Finder()
-                        self.finder2.start()
+                        self.finder3 = module_finder3.Finder()
+                        self.finder3.start()
 
                 if now == double_check :
                     if self.checking_test == 0 :
                         self.checking_test = 1
-                        self.finder2 = module_finder2.Finder()
-                        self.finder2.start()
+                        self.finder3 = module_finder3.Finder()
+                        self.finder3.start()
 
                 if now >= mkt_open and now < mkt_close :
                     temp_time['possible'] = 1

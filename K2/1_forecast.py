@@ -35,16 +35,19 @@ def run():
     df_vol = pd.DataFrame(columns = ['code', 'vol'])
     cnt_code = len(code_df)
 
-    for i in range(len(code_df)) :
-    # for i in range(1) :
+    # for i in range(len(code_df)) :
+    for i in range(1) :
         if i % 100 == 0 :
             print(i)
 
         try :
             code = code_df.code[i]
+            print("code : ", code)
             url = 'http://finance.naver.com/item/sise_day.nhn?code={code}'.format(code=code) 
             # https://finance.naver.com/item/sise_time.nhn?code=005930&thistime=20201216160411
             df = pd.read_html(url, header=0)[0]
+
+            print(df)
 
             for page in range(2, VOL_FIN_PAGE + 1) :
                 url = 'http://finance.naver.com/item/sise_day.nhn?code={code}&page={page}'.format(code=code, page=page) 
