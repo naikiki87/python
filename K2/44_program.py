@@ -313,7 +313,7 @@ class Kiwoom(QMainWindow, form_class):
             self.ORDER_BUY(item_code, self.check_jan[slot][1], self.check_jan[slot][2], self.check_jan[slot][3])
         
         else :
-            if self.check_jan[slot][4] == 9 :                     ## item find를 통해 buy 하는 경우
+            if self.check_jan[slot][3] == 9 :                     ## item find를 통해 buy 하는 경우
                 # if self.func_DELETE_db_item(item_code) == 1 :
                 self.sig_worker_resume.emit(slot)
                 self.item_finder_req = 0                            ## item finder req 해제
@@ -669,7 +669,7 @@ class Kiwoom(QMainWindow, form_class):
                 step = self.func_GET_db_item(item_code, 1)
 
                 if step == "none" :
-                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1)
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1.2)
             except :
                 pass
 
@@ -726,7 +726,8 @@ class Kiwoom(QMainWindow, form_class):
         
         rqname = str(item_code) + str(slot) + "order_buy"
         order = self.kiwoom.dynamicCall("SendOrder(QString, QString, QString, int, QString, int, int, QString, QString)",
-                     [rqname, "0101", ACCOUNT, 1, item_code, qty, price, "00", ""])
+                    #  [rqname, "0101", ACCOUNT, 1, item_code, qty, price, "00", ""])         ## 지정가 매수
+                     [rqname, "0101", ACCOUNT, 1, item_code, qty, 0, "03", ""])         ## 시장가 매수
                     #  [rqname, screen_no, ACCOUNT, order_type, item_code, qty, price, hogagb, orgorderno])
 
         if order == 0 :

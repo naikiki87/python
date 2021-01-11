@@ -17,16 +17,16 @@ import total_items
 
 item_list = total_items.ITEMS
 today = date.today()
-day_bf_12 = today + timedelta(days=-12)
+day_bf_14 = today + timedelta(days=-14)
 day_bf_100 = today + timedelta(days=-100)
 
-check_dur = 5
+check_dur = 6
 
 class Finder(QThread):
     def __init__(self):
         super().__init__()
         self.df_last = pd.DataFrame(columns = ['code', 'ratio_end_deg', 'mean_vol', 'today_vol', 'duration'])
-        self.df_last2 = pd.DataFrame(columns = ['code', 'ratio_end_deg', 'mean_vol', 'today_vol', 'duration', 'ratio_min'])
+        self.df_last2 = pd.DataFrame(columns = ['code', 'ratio_end_deg', 'mean_vol', 'today_vol', 'duration', 'ratio'])
         self.df_last3 = pd.DataFrame(columns = ['code', 'ratio_end_deg', 'mean_vol', 'today_vol', 'duration', 'ratio_min', 'market_sum'])
 
     def run(self):
@@ -45,7 +45,7 @@ class Finder(QThread):
             try :
                 code = item_list[i]
 
-                df = fdr.DataReader(code, day_bf_12, today)
+                df = fdr.DataReader(code, day_bf_14, today)
                 df = df.rename(columns={'Close':'end', 'Open':'start', 'High':'high', 'Low':'low', 'Volume' : 'vol'})
                 df = df.sort_values(by=['Date'], axis=0, ascending=[False])  # sorting by std(descending)
 
@@ -53,6 +53,7 @@ class Finder(QThread):
                 today_vol = int(df.vol.iloc[0])
 
                 if mean_vol >= 50000 and today_vol >= 10000 :
+                    end6 = int(df.end.iloc[6])
                     end5 = int(df.end.iloc[5])
                     end4 = int(df.end.iloc[4])
                     end3 = int(df.end.iloc[3])
@@ -60,6 +61,7 @@ class Finder(QThread):
                     end1 = int(df.end.iloc[1])
                     end0 = int(df.end.iloc[0])
 
+                    start6 = int(df.start.iloc[6])
                     start5 = int(df.start.iloc[5])
                     start4 = int(df.start.iloc[4])
                     start3 = int(df.start.iloc[3])
@@ -67,6 +69,7 @@ class Finder(QThread):
                     start1 = int(df.start.iloc[1])
                     start0 = int(df.start.iloc[0])
 
+                    gap6 = end6 - start6
                     gap5 = end5 - start5
                     gap4 = end4 - start4
                     gap3 = end3 - start3
@@ -74,7 +77,17 @@ class Finder(QThread):
                     gap1 = end1 - start1
                     gap0 = end0 - start0
 
-                    if check_dur == 5 :
+
+
+                    if check_dur == 6 :
+                        ratio_end = round((end0 / end6), 2)     ## 최근 감소율
+                        ratio_end_deg = round(ratio_end, 1)
+                        if ratio_end_deg <= 0.9 :
+                            if end6 >= end5 and end5 >= end4 and end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                                if gap3 < 0 and gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                                    self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
+
+                    elif check_dur == 5 :
                         ratio_end = round((end0 / end5), 2)     ## 최근 감소율
                         ratio_end_deg = round(ratio_end, 1)
                         if ratio_end_deg <= 0.9 :
@@ -116,7 +129,7 @@ class Finder(QThread):
             self.check_price2()
 
         else :
-            if check_dur > 2 :
+            if check_dur > 4 :
                 print("case 2")
                 check_dur = check_dur - 1
                 self.check_price(check_dur)
@@ -142,15 +155,29 @@ class Finder(QThread):
                 end0 = int(df.end.iloc[0])
                 df_end = df[['end']]
                 min_price = int(df_end.min())
+                max_price = int(df_end.max())
 
-                ratio_min = round((end0 / min_price), 2)    ## 최근 한달간 최소값 대비 현재값 비율
+                band = max_price - min_price
+                p_pos = end0 - min_price
+                ratio = round((p_pos / band), 2)
 
-                if ratio_min < 1.11 :
+                if ratio > 0.02 and ratio < 0.2 :
                     ratio_end_deg = self.df_last.ratio_end_deg[i]
                     mean_vol = self.df_last.mean_vol[i]
                     today_vol = self.df_last.today_vol[i]
                     duration = self.df_last.duration[i]
-                    self.df_last2.loc[len(self.df_last2)] = [code, ratio_end_deg, mean_vol, today_vol, duration, ratio_min]
+                    self.df_last2.loc[len(self.df_last2)] = [code, ratio_end_deg, mean_vol, today_vol, duration, ratio]
+
+
+
+                # ratio_min = round((end0 / min_price), 2)    ## 최근 한달간 최소값 대비 현재값 비율
+
+                # if ratio_min < 1.08 :
+                #     ratio_end_deg = self.df_last.ratio_end_deg[i]
+                #     mean_vol = self.df_last.mean_vol[i]
+                #     today_vol = self.df_last.today_vol[i]
+                #     duration = self.df_last.duration[i]
+                #     self.df_last2.loc[len(self.df_last2)] = [code, ratio_end_deg, mean_vol, today_vol, duration, ratio_min]
             
             except :
                 pass
@@ -163,14 +190,14 @@ class Finder(QThread):
 
             market_sum = self.get_market_sum(code)
 
-            if market_sum >= 1000 :
+            if market_sum >= 2000 :
                 ratio_end_deg = self.df_last2.ratio_end_deg[i]
                 mean_vol = self.df_last2.mean_vol[i]
                 today_vol = self.df_last2.today_vol[i]
                 duration = self.df_last2.duration[i]
-                ratio_min = self.df_last2.ratio_min[i]
+                ratio = self.df_last2.ratio[i]
 
-                self.df_last3.loc[len(self.df_last3)] = [code, ratio_end_deg, mean_vol, today_vol, duration, ratio_min, market_sum]
+                self.df_last3.loc[len(self.df_last3)] = [code, ratio_end_deg, mean_vol, today_vol, duration, ratio, market_sum]
 
         print("after 2 :")
         print(self.df_last3)
