@@ -52,7 +52,7 @@ class Finder(QThread):
                 mean_vol = int(df.vol.mean())
                 today_vol = int(df.vol.iloc[0])
 
-                if mean_vol >= 50000 and today_vol >= 10000 :
+                if mean_vol >= 300000 and today_vol >= 100000 :
                     end6 = int(df.end.iloc[6])
                     end5 = int(df.end.iloc[5])
                     end4 = int(df.end.iloc[4])
@@ -81,55 +81,55 @@ class Finder(QThread):
 
                     if check_dur == 6 :
                         ratio_end = round((end0 / end6), 2)     ## 최근 감소율
-                        ratio_end_deg = round(ratio_end, 1)
+                        ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.9 :
-                            if end6 >= end5 and end5 >= end4 and end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
-                                if gap3 < 0 and gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                                    self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
+                            # if end6 >= end5 and end5 >= end4 and end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                            if gap3 < 0 and gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                                self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 5 :
                         ratio_end = round((end0 / end5), 2)     ## 최근 감소율
-                        ratio_end_deg = round(ratio_end, 1)
+                        ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.9 :
-                            if end5 >= end4 and end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
-                                if gap3 < 0 and gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                                    self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
+                            # if end5 >= end4 and end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                            if gap3 < 0 and gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                                self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 4 :
                         ratio_end = round((end0 / end4), 2)     ## 최근 감소율
-                        ratio_end_deg = round(ratio_end, 1)
+                        ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.9 :
-                            if end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
-                                if gap3 < 0 and gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                                    self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
+                            # if end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                            if gap3 < 0 and gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                                self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 3 :
                         ratio_end = round((end0 / end3), 2)     ## 최근 감소율
-                        ratio_end_deg = round(ratio_end, 1)
+                        ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.9 :
-                            if end3 >= end2 and end2 >= end1 and end1 >= end0 :
-                                if gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                                    self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
+                            # if end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                            if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                                self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 2 :
                         ratio_end = round((end0 / end2), 2)     ## 최근 감소율
-                        ratio_end_deg = round(ratio_end, 1)
+                        ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.9 :
-                            if end2 >= end1 and end1 >= end0 :
-                                if gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                                    self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
+                            # if end2 >= end1 and end1 >= end0 :
+                            if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                                self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
             except :
                 pass
 
         print("count df_last : ", len(self.df_last))
 
-        if len(self.df_last) >= 100 :
+        if len(self.df_last) >= 200 :
             print("case 1")
             self.check_price2()
 
         else :
-            if check_dur > 4 :
+            if check_dur > 3 :
                 print("case 2")
                 check_dur = check_dur - 1
                 self.check_price(check_dur)
@@ -161,7 +161,7 @@ class Finder(QThread):
                 p_pos = end0 - min_price
                 ratio = round((p_pos / band), 2)
 
-                if ratio > 0.02 and ratio < 0.2 :
+                if ratio > 0.01 and ratio < 0.25 :
                     ratio_end_deg = self.df_last.ratio_end_deg[i]
                     mean_vol = self.df_last.mean_vol[i]
                     today_vol = self.df_last.today_vol[i]
@@ -190,7 +190,7 @@ class Finder(QThread):
 
             market_sum = self.get_market_sum(code)
 
-            if market_sum >= 2000 :
+            if market_sum >= 3000 :
                 ratio_end_deg = self.df_last2.ratio_end_deg[i]
                 mean_vol = self.df_last2.mean_vol[i]
                 today_vol = self.df_last2.today_vol[i]
