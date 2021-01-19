@@ -31,16 +31,16 @@ ADD_PRICE = config.ADD_PRICE
 ADD_PRICE_1 = config.ADD_PRICE_1
 ADD_PRICE_2 = config.ADD_PRICE_2
 AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
-TARGET_PER = 3
+TARGET_PER = 2
+LOW_LIM = -2.5
 
 PER_LOW_0 = config.PER_LOW_0
 PER_LOW_1 = config.PER_LOW_1
+PURCHASE_LIM = config.PURCHASE_LIM
 
 
-print("TARGET PERCENT : ", TARGET_PER)
-print("AUTO BUY PRICE : ", AUTO_BUY_PRICE_LIM)
-print("ADD PRICE : ", ADD_PRICE_1, ADD_PRICE_2)
-# print("ADD PRICE : ", ADD_PRICE)
+print("TARGET PERCENT : ", TARGET_PER, LOW_LIM)
+print("ADD PRICE : ", ADD_PRICE)
 
 class Worker(QThread):
     connected = 0
@@ -55,11 +55,12 @@ class Worker(QThread):
         self.seq = seq
         self.items = deque()
         self.first_rcv = 1
+        self.timezone = 0
 
         self.step = 0
         self.per_low = 0
         self.add_water = 0
-        self.per_high = 1.5
+        self.per_high = 2
 
         self.uping = 0
         self.up_level = 0
@@ -96,14 +97,10 @@ class Worker(QThread):
                 if orderType == 1 :
                     cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
                     self.step = cur_step + 1
-                    # self.per_high = TARGET_PER + (int(self.step) * 0.5)
+                    self.per_high = TARGET_PER - (int(self.step) * 0.1)
                     if self.func_UPDATE_db_item(item_code, 1, self.step) == 1 :   ## update step
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
-                                self.downing = 0
-                                self.down_level = 0
-                                self.down_maginot = -2
-                                self.down_hook_per = 0
                                 self.add_water = 1
                                 self.lock = 0
 
@@ -181,6 +178,7 @@ class Worker(QThread):
 
     @pyqtSlot(dict)
     def dict_from_main(self, data) :
+        self.timezone = data['timezone']
         if self.lock == 1 :
             print("worker : ", self.seq, "lock : ", self.lock)
         item_code = data['item_code']
@@ -195,7 +193,7 @@ class Worker(QThread):
                     qty = data['qty']
                     price = data['price']
 
-                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1.2)             ## 신규 item db insert
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1.5)             ## 신규 item db insert
 
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:          ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 5) == 1:       ## orderType -> 5(manual buy)
@@ -213,7 +211,7 @@ class Worker(QThread):
                     qty = data['qty']
                     price = data['price']
 
-                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1.2)     ## 신규 item db insert
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1.5)
 
                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
                         if self.func_UPDATE_db_item(item_code, 3, 9) == 1:       ## orderType -> 9(manual item finding buy)
@@ -302,7 +300,7 @@ class Worker(QThread):
             percent = round((total_sum / t_purchase) * 100, 2)
 
             if self.add_water == 1 :
-                self.per_low = round((percent - (1.2 + (self.step * 0.3))), 2)
+                self.per_low = -2
                 if self.func_UPDATE_db_item(item_code, 4, self.per_low) == 1:      ## 현재 perlow 저장
                     self.add_water = 0
 
@@ -326,7 +324,7 @@ class Worker(QThread):
             if self.first_rcv == 1 :
                 self.step = self.func_GET_db_item(item_code, 1)
                 self.per_low = self.func_GET_db_item(item_code, 4)
-                # self.per_high = TARGET_PER + (int(self.step) * 0.5)
+                self.per_high = TARGET_PER - (int(self.step) * 0.1)
 
 
                 if self.lock == 0 :
@@ -343,172 +341,181 @@ class Worker(QThread):
                         self.first_jumun_check.emit(ordered_item)
 
                     else :
-                        # self.first_rcv = 0
                         self.lock = 0
 
             else :      ## 2번째 receive 부터
                 if self.lock == 0 :
                     self.lock = 1       ## lock 체결
 
-                    # if self.downing == 0 and self.uping == 0 :
-                    if self.uping == 0 :
-                        if self.step < STEP_LIMIT and percent <= self.per_low :
-                            try :
-                                f_hook = open("trade_log.txt",'a')
-                                data = self.get_now() + "[ADD WATER] item : " + str(item_code) + ' ' + str(percent) + '\n'
-                                f_hook.write(data)
-                                f_hook.close()
-                            except :
-                                pass
+                    if self.timezone == 1 :
+                        if percent > 0 :
+                            self.func_full_sell(item_code, own_count, price, percent)
+                        
+                        elif percent <= self.per_low :
+                            if self.step == 0 :
+                                if MAKE_ORDER == 1 :
+                                    price = int(price_sell)
+                                    qty = math.ceil(ADD_PRICE / price)
+                                    self.func_add_water(item_code, qty, price, percent)
 
-                            price = int(price_sell)
-                            qty = math.ceil(ADD_PRICE / price)
+                            else :
+                                if t_purchase <= PURCHASE_LIM :
+                                    if MAKE_ORDER == 1 :
+                                        PS = int(price_sell)                # 매도 최우선가
+                                        PB = int(price_buy)                 # 매수 최우선가
+                                        A = t_purchase              # 총 매입금액
+                                        B = t_evaluation            # 총 평가금액
+                                        T = TAX
+                                        FB = FEE_BUY
+                                        FS = FEE_SELL
+                                        P = GOAL_PER
 
-                            if MAKE_ORDER == 1 :
-                                if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                                    if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                                        order = {}
-                                        order['slot'] = self.seq
-                                        order['type'] = 0       ## buy
-                                        order['item_code'] = item_code
-                                        order['qty'] = qty
-                                        order['price'] = price
-                                        order['order_type'] = 1
-                                        self.rq_order.emit(order)       ## make order to master
-                            
-                            # self.down_hook_per = percent
-                            # self.down_level = 0
-                            # self.down_maginot = -2
-                            # self.downing = 1
-                            # self.lock = 0
+                                        X = 1 + P + FB
+                                        Y = 1 - T - FS
 
-                        elif percent >= TARGET_PER :
-                            print("worker", self.seq, "up hooked")
-                            try :
-                                f_hook = open("trade_log.txt",'a')
-                                data = self.get_now() + "[HOOKING UP] item : " + str(item_code) + ' ' + str(percent) + '\n'
-                                f_hook.write(data)
-                                f_hook.close()
-                            except :
-                                pass
+                                        qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
+                                        price = int(price_sell)
 
-                            self.up_hook_per = percent
-                            self.up_level = 0
-                            self.up_maginot = -2
-                            self.uping = 1
-                            self.lock = 0
+                                        self.func_add_water(item_code, qty, price, percent)
 
+                                else :
+                                    if percent < LOW_LIM :              ## 손절 - full sell
+                                        if MAKE_ORDER == 1 :
+                                            self.func_full_sell(item_code, own_count, price_buy, percent)
+                                    
+                                    else :
+                                        print("percent low + t_purchase over")
+                                        self.lock = 0
+                        
                         else :
                             self.lock = 0
 
-                    elif self.uping == 1 :
-                        if percent == self.up_hook_per :
-                            print(self.seq, "UP LEVEL : ", self.up_level, '/', self.up_maginot)
-                            self.lock = 0
-                        
-                        elif percent > self.up_hook_per :
-                            self.up_hook_per = percent           ## 기준 값 갱신
-                            self.up_level = self.up_level + 1
-                            self.up_maginot = self.up_level - 2
-                            print(self.seq, "UP LEVEL : ", self.up_level, '/', self.up_maginot)
-                            self.lock = 0
-
-                        elif percent < self.up_hook_per :
-                            self.up_hook_per = percent           ## 기준 값 갱신
-                            self.up_level = self.up_level - 1
-                            print(self.seq, "UP LEVEL : ", self.up_level, '/', self.up_maginot)
-
-                            if self.up_level == self.up_maginot :
-                                if percent < 1 :
-                                    self.up_hook_per = 0
-                                    self.up_level = 0
-                                    self.up_maginot = -2
-                                    self.uping = 0
-                                    self.lock = 0
-                                else :
+                    if self.timezone == 0 :
+                        if self.uping == 0 :
+                            if percent <= self.per_low :
+                                if self.step == 0 :
                                     if MAKE_ORDER == 1 :
-                                        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
-                                            if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                                        price = int(price_sell)
+                                        qty = math.ceil(ADD_PRICE / price)
+                                        self.func_add_water(item_code, qty, price, percent)
+                            
+                                else :
+                                    if t_purchase <= PURCHASE_LIM :
+                                        if MAKE_ORDER == 1 :
+                                            PS = int(price_sell)                # 매도 최우선가
+                                            PB = int(price_buy)                 # 매수 최우선가
+                                            A = t_purchase              # 총 매입금액
+                                            B = t_evaluation            # 총 평가금액
+                                            T = TAX
+                                            FB = FEE_BUY
+                                            FS = FEE_SELL
+                                            P = GOAL_PER
 
-                                                try :
-                                                    f_hook = open("trade_log.txt",'a')
-                                                    data = self.get_now() + "[HOOK & SELL] item : " + str(item_code) + ' ' + str(percent) + '\n'
-                                                    f_hook.write(data)
-                                                    f_hook.close()
-                                                except :
-                                                    pass
+                                            X = 1 + P + FB
+                                            Y = 1 - T - FS
 
-                                                order = {}
-                                                order['slot'] = self.seq
-                                                order['type'] = 1       ## sell
-                                                order['item_code'] = item_code
-                                                order['qty'] = own_count       ## 전량
-                                                order['price'] = int(price_buy)   ## 매수 최우선가
-                                                order['order_type'] = 3
-                                                # self.indicate_ordered()         ## INDICATE : ordered
-                                                self.rq_order.emit(order)       ## make order to master
+                                            qty = math.ceil((Y*B - X*A) / (PS*X - PB*Y))
+                                            price = int(price_sell)
+
+                                            self.func_add_water(item_code, qty, price, percent)
+
+                                    else :
+                                        if percent < LOW_LIM :              ## 손절 - full sell
+                                            if MAKE_ORDER == 1 :
+                                                self.func_full_sell(item_code, own_count, price_buy, percent)
+                                        
+                                        else :
+                                            print("percent low + t_purchase over")
+                                            self.lock = 0
+                            
+                            elif percent >= self.per_high : 
+                                try :
+                                    f_hook = open("trade_log.txt",'a')
+                                    data = self.get_now() + "[HOOKING UP] item : " + str(item_code) + ' ' + str(percent) + '\n'
+                                    f_hook.write(data)
+                                    f_hook.close()
+                                except :
+                                    pass
+
+                                self.up_hook_per = percent
+                                self.up_level = 0
+                                self.up_maginot = -2
+                                self.uping = 1
+                                self.lock = 0
+
                             else :
                                 self.lock = 0
 
-                    # elif self.downing == 1 :
-                    #     if percent == self.down_hook_per :
-                    #         print(self.seq, "DOWN LEVEL : ", self.down_level, '/', self.down_maginot)
-                    #         self.lock = 0
-                        
-                    #     elif percent < self.down_hook_per :
-                    #         self.down_hook_per = percent
-                    #         self.down_level = self.down_level + 1
-                    #         self.down_maginot = self.down_level - 2
-                    #         print(self.seq, "DOWN LEVEL : ", self.down_level, '/', self.down_maginot)
-                    #         self.lock = 0
+                        if self.uping == 1 :
+                            if percent == self.up_hook_per :
+                                print(self.seq, "UP LEVEL : ", self.up_level, '/', self.up_maginot)
+                                self.lock = 0
+                            
+                            elif percent > self.up_hook_per :
+                                self.up_hook_per = percent           ## 기준 값 갱신
+                                self.up_level = self.up_level + 1
+                                self.up_maginot = self.up_level - 2
+                                print(self.seq, "UP LEVEL : ", self.up_level, '/', self.up_maginot)
+                                self.lock = 0
 
-                    #     elif percent > self.down_hook_per :
-                    #         self.down_hook_per = percent
-                    #         self.down_level = self.down_level - 1
-                    #         print(self.seq, "DOWN LEVEL : ", self.down_level, '/', self.down_maginot)
+                            elif percent < self.up_hook_per :
+                                self.up_hook_per = percent           ## 기준 값 갱신
+                                self.up_level = self.up_level - 1
+                                print(self.seq, "UP LEVEL : ", self.up_level, '/', self.up_maginot)
 
-                    #         if self.down_level == self.down_maginot :
-                    #             if self.step == 0 and self.down_maginot == -2 :
-                    #                 self.down_hook_per = 0
-                    #                 self.down_level = 0
-                    #                 self.down_maginot = -2
-                    #                 self.downing = 0
-                    #                 self.lock = 0
-                                
-                    #             else :
-                    #                 price = int(price_sell)
+                                if self.up_level == self.up_maginot :
+                                    if percent < 0.9 :
+                                        self.up_hook_per = 0
+                                        self.up_level = 0
+                                        self.up_maginot = -2
+                                        self.uping = 0
+                                        self.lock = 0
+                                    else :
+                                        if MAKE_ORDER == 1 :
+                                            self.func_full_sell(item_code, own_count, price_buy, percent)
+                                else :
+                                    self.lock = 0
 
-                    #                 if self.step == 0 :
-                    #                     qty = math.ceil(ADD_PRICE_1 / price)
+    def func_add_water(self, item_code, qty, price, percent) :
+        try :
+            f_hook = open("trade_log.txt",'a')
+            data = self.get_now() + "[ADD WATER] item : " + str(item_code) + ' ' + str(percent) + '\n'
+            f_hook.write(data)
+            f_hook.close()
+        except :
+            pass
 
-                    #                 elif self.step == 1 :
-                    #                     qty = math.ceil(ADD_PRICE_2 / price)
+        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
+            if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
+                order = {}
+                order['slot'] = self.seq
+                order['type'] = 0       ## buy
+                order['item_code'] = item_code
+                order['qty'] = qty
+                order['price'] = price
+                order['order_type'] = 1
+                self.rq_order.emit(order)
 
+    def func_full_sell(self, item_code, qty, price, percent) :
+        try :
+            f_hook = open("trade_log.txt",'a')
+            data = self.get_now() + "[FULL SELL] item : " + str(item_code) + ' ' + str(percent) + '\n'
+            f_hook.write(data)
+            f_hook.close()
+        except :
+            pass
 
-                    #                 if MAKE_ORDER == 1 :
-                    #                     if self.func_UPDATE_db_item(item_code, 2, 1) == 1:       ## ordered -> 1
-                    #                         if self.func_UPDATE_db_item(item_code, 3, 1) == 1:       ## orderType -> 1
-                    #                             try :
-                    #                                 f_hook = open("trade_log.txt",'a')
-                    #                                 data = self.get_now() + "[HOOK & SELL] item : " + str(item_code) + ' ' + str(percent) + '\n'
-                    #                                 f_hook.write(data)
-                    #                                 f_hook.close()
-                    #                             except :
-                    #                                 pass
+        if self.func_UPDATE_db_item(item_code, 2, 1) == 1:      ## ordered 변경 -> 1
+            if self.func_UPDATE_db_item(item_code, 3, 3) == 1:  ## orderType 변경 -> 3
+                order = {}
+                order['slot'] = self.seq
+                order['type'] = 1       ## sell
+                order['item_code'] = item_code
+                order['qty'] = qty       ## 전량
+                order['price'] = int(price)   ## 매수 최우선가
+                order['order_type'] = 3
+                self.rq_order.emit(order)       ## make order to master
 
-                    #                             order = {}
-                    #                             order['slot'] = self.seq
-                    #                             order['type'] = 0       ## buy
-                    #                             order['item_code'] = item_code
-                    #                             order['qty'] = qty
-                    #                             order['price'] = price
-                    #                             order['order_type'] = 1
-                    #                             # self.indicate_ordered()         ## INDICATE : ordered
-                    #                             self.rq_order.emit(order)       ## make order to master
-                    #         else :
-                    #             self.lock = 0
-
-            
     def func_GET_db_item(self, code, col):
         conn = sqlite3.connect("item_status.db")
         cur = conn.cursor()

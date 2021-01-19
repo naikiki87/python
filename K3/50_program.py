@@ -160,7 +160,7 @@ class Kiwoom(QMainWindow, form_class):
                     temp['volume_sell'] = volume_sell
                     temp['volume_buy'] = volume_buy
                     temp['volume_ratio'] = volume_ratio
-                    # temp['timezone'] = self.timezone
+                    temp['timezone'] = self.timezone
             
                     if slot == 0:
                         self.test_dict0.emit(temp)
@@ -205,8 +205,7 @@ class Kiwoom(QMainWindow, form_class):
     def update_times(self, data) :
         self.text_edit4.setText(data['time'])
         self.possible_time = data['possible']
-        # self.timezone = data['timezone']
-        # print("[main] update_times / timezone : ", self.timezone)
+        self.timezone = data['timezone']
 
     @pyqtSlot(dict)
     def rp_dict(self, data):
@@ -669,7 +668,7 @@ class Kiwoom(QMainWindow, form_class):
                 step = self.func_GET_db_item(item_code, 1)
 
                 if step == "none" :
-                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1.2)
+                    self.func_INSERT_db_item(item_code, 0, 0, 0, -1.5)
             except :
                 pass
 
@@ -849,6 +848,7 @@ class Kiwoom(QMainWindow, form_class):
             temp['qty'] = qty
             temp['price'] = price
             temp['deposit'] = int(self.wid_show_deposit_d2.text())
+            temp['timezone'] = self.timezone
 
             # temp['th_num'] = th_num
             
@@ -908,6 +908,7 @@ class Kiwoom(QMainWindow, form_class):
                 
             temp['qty'] = qty
             temp['price'] = price
+            temp['timezone'] = self.timezone
             # temp['th_num'] = th_num
 
             # self.real_dict.emit(temp)

@@ -80,8 +80,10 @@ class Timer(QThread):
                 am921 = now.replace(hour=9, minute=21, second=0)
                 am930 = now.replace(hour=9, minute=30, second=0)
                 am931 = now.replace(hour=9, minute=31, second=0)
+                pm200 = now.replace(hour=14, minute=00, second=0)
                 pm230 = now.replace(hour=14, minute=30, second=0)
                 pm250 = now.replace(hour=14, minute=50, second=0)
+                pm300 = now.replace(hour=15, minute=00, second=0)
                 pm320 = now.replace(hour=15, minute=20, second=0)
                 check_down_items = now.replace(hour=15, minute=20, second=10)
                 double_check = now.replace(hour=15, minute=21, second=0)
@@ -107,26 +109,23 @@ class Timer(QThread):
 
                 if now >= mkt_open and now < mkt_close :
                     temp_time['possible'] = 1
+                    temp_time['timezone'] = 0
+
                     if now >= am920 and c_sec == "00" :
                         self.refresh_status.emit(1)
 
                     if c_sec == "05" :                      ## 매분마다 실시간 등록여부 갱신
-                        print(str_time)
                         self.check_real.emit(1)
 
-                    if now >= am901 and now<=am910 and self.item_checking == 0 :
-                        if c_sec == "10" or c_sec == "30" or c_sec == "50" :
+                    if now >= am910 and now <= pm230 and self.item_checking == 0 :
+                        if c_sec == "10" or c_sec == "40" :
                             self.check_slot.emit(1)
                     
                     if now >= am901 and now<=pm320 and c_sec == "15" :
                         self.sig_main_check_jumun.emit(1)
-
-                    if now <= am920 :
+                    
+                    if now >= pm300 :
                         temp_time['timezone'] = 1
-                    elif now > am920 and now <= pm230 :
-                        temp_time['timezone'] = 2
-                    elif now > pm230 :
-                        temp_time['timezone'] = 2
                         
                 else :
                     temp_time['possible'] = 0
@@ -199,37 +198,22 @@ class Timer(QThread):
 
         per_data = float(percent[1:])
 
-        if cur_price > start :
-            # print("candidate item CAT 1 : ", item_code, percent, start, cur_price)
-            self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
-            self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "CHECK_hoga", "opt10004", 0, "0101")
-        
-        else :
+        if percent[0] == '-' :                  ## 금일 가격이 전일 종가보다 내려져 있는 경우
+            if start >= cur_price :             ## 금일 가격이 음봉일 경우
+                print("candidate item CAT 1 : ", item_code, percent, start, cur_price)
+                self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
+                self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "CHECK_hoga", "opt10004", 0, "0101")
+            else :                              ## 금일 가격이 양봉일 경우
+                print("candidate item CAT 2 : ", item_code, percent, start, cur_price)
+                self.candidate_seq = self.candidate_seq + 1
+                QtTest.QTest.qWait(500)
+                self.investigate_items()
+
+        elif percent[0] == '+' or percent[0] == '0':
+            print("candidate item CAT 3 : ", item_code, percent)
             self.candidate_seq = self.candidate_seq + 1
             QtTest.QTest.qWait(500)
             self.investigate_items()
-
-
-
-
-        # if percent[0] == '-' :                  ## 금일 가격이 전일 종가보다 내려져 있는 경우
-        #     if start >= cur_price :             ## 금일 가격이 음봉일 경우
-        #         print("candidate item CAT 1 : ", item_code, percent, start, cur_price)
-        #         self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
-        #         self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "CHECK_hoga", "opt10004", 0, "0101")
-        #     else :                              ## 금일 가격이 양봉일 경우
-        #         print("candidate item CAT 2 : ", item_code, percent, start, cur_price)
-        #         self.candidate_seq = self.candidate_seq + 1
-        #         QtTest.QTest.qWait(500)
-        #         self.investigate_items()
-
-        # elif percent[0] == '+' or percent[0] == '0':
-        #     print("candidate item CAT 3 : ", item_code, percent)
-        #     self.candidate_seq = self.candidate_seq + 1
-        #     QtTest.QTest.qWait(500)
-        #     self.investigate_items()
-
-        
 
     def check_hoga_n_order(self, rqname, trcode, recordname) :
         price_buy = int(self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, 0, "매수최우선호가").replace('+', '').replace('-', ''))
@@ -238,21 +222,23 @@ class Timer(QThread):
         if price_sell > UNIT_PRICE_HI_LIM :
             print(self.now(), "[TIMER] [check_hoga_n_order] : 단가 너무 쎔")
             self.candidate_seq = self.candidate_seq + 1
+            QtTest.QTest.qWait(500)
             self.investigate_items()
 
         elif price_sell < UNIT_PRICE_LOW_LIM :
             print(self.now(), "[TIMER] [check_hoga_n_order] : 단가 너무 쌈")
             self.candidate_seq = self.candidate_seq + 1
+            QtTest.QTest.qWait(500)
             self.investigate_items()
         
         elif price_sell >= UNIT_PRICE_LOW_LIM and price_sell <= UNIT_PRICE_HI_LIM :
             qty = math.floor(AUTO_BUY_PRICE_LIM / price_sell)
             print(self.now(), "[TIMER] [check_hoga_n_order] : 단가 적당 / ", self.candidate, qty, price_sell)
-            # print(self.now(), "[TIMER] [check_hoga_n_order] : 단가 적당 / ", self.candidate, 1, price_sell)
 
             temp = {}
             temp['item_code'] = self.candidate
             temp['qty'] = qty
+            # temp['qty'] = 1
             temp['price'] = price_sell
             self.req_buy.emit(temp)
 

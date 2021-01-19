@@ -79,43 +79,31 @@ class Finder(QThread):
 
 
 
-                    if check_dur == 6 :
-                        ratio_end = round((end0 / end6), 2)     ## 최근 감소율
-                        ratio_end_deg = round(ratio_end, 2)
-                        if ratio_end_deg <= 0.9 :
-                            # if end6 >= end5 and end5 >= end4 and end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
-                            if gap2 < 0 and gap1 < 0 and gap0 < 0 :
-                                self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
-
-                    elif check_dur == 5 :
+                    if check_dur == 5 :
                         ratio_end = round((end0 / end5), 2)     ## 최근 감소율
                         ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.9 :
-                            # if end5 >= end4 and end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
                             if gap2 < 0 and gap1 < 0 and gap0 < 0 :
                                 self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 4 :
                         ratio_end = round((end0 / end4), 2)     ## 최근 감소율
                         ratio_end_deg = round(ratio_end, 2)
-                        if ratio_end_deg <= 0.9 :
-                            # if end4 >= end3 and end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                        if ratio_end_deg <= 0.92 :
                             if gap2 < 0 and gap1 < 0 and gap0 < 0 :
                                 self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 3 :
                         ratio_end = round((end0 / end3), 2)     ## 최근 감소율
                         ratio_end_deg = round(ratio_end, 2)
-                        if ratio_end_deg <= 0.9 :
-                            # if end3 >= end2 and end2 >= end1 and end1 >= end0 :
+                        if ratio_end_deg <= 0.94 :
                             if gap2 < 0 and gap1 < 0 and gap0 < 0 :
                                 self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 2 :
                         ratio_end = round((end0 / end2), 2)     ## 최근 감소율
                         ratio_end_deg = round(ratio_end, 2)
-                        if ratio_end_deg <= 0.9 :
-                            # if end2 >= end1 and end1 >= end0 :
+                        if ratio_end_deg <= 0.96 :
                             if gap2 < 0 and gap1 < 0 and gap0 < 0 :
                                 self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
@@ -124,12 +112,12 @@ class Finder(QThread):
 
         print("count df_last : ", len(self.df_last))
 
-        if len(self.df_last) >= 200 :
+        if len(self.df_last) >= 500 :
             print("case 1")
             self.check_price2()
 
         else :
-            if check_dur > 3 :
+            if check_dur > 2 :
                 print("case 2")
                 check_dur = check_dur - 1
                 self.check_price(check_dur)
@@ -161,23 +149,12 @@ class Finder(QThread):
                 p_pos = end0 - min_price
                 ratio = round((p_pos / band), 2)
 
-                if ratio > 0.01 and ratio < 0.25 :
+                if ratio < 0.5 :
                     ratio_end_deg = self.df_last.ratio_end_deg[i]
                     mean_vol = self.df_last.mean_vol[i]
                     today_vol = self.df_last.today_vol[i]
                     duration = self.df_last.duration[i]
                     self.df_last2.loc[len(self.df_last2)] = [code, ratio_end_deg, mean_vol, today_vol, duration, ratio]
-
-
-
-                # ratio_min = round((end0 / min_price), 2)    ## 최근 한달간 최소값 대비 현재값 비율
-
-                # if ratio_min < 1.08 :
-                #     ratio_end_deg = self.df_last.ratio_end_deg[i]
-                #     mean_vol = self.df_last.mean_vol[i]
-                #     today_vol = self.df_last.today_vol[i]
-                #     duration = self.df_last.duration[i]
-                #     self.df_last2.loc[len(self.df_last2)] = [code, ratio_end_deg, mean_vol, today_vol, duration, ratio_min]
             
             except :
                 pass
@@ -187,7 +164,6 @@ class Finder(QThread):
 
         for i in range(len(self.df_last2)) :
             code = self.df_last2.code[i]
-
             market_sum = self.get_market_sum(code)
 
             if market_sum >= 5000 :
