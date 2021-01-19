@@ -22,6 +22,8 @@ day_bf_100 = today + timedelta(days=-100)
 
 check_dur = 6
 
+print("Total Items : ", len(item_list))
+
 class Finder(QThread):
     def __init__(self):
         super().__init__()
@@ -78,33 +80,39 @@ class Finder(QThread):
                     gap0 = end0 - start0
 
 
+                    if check_dur == 6 :
+                        ratio_end = round((end0 / end6), 2)     ## 최근 감소율
+                        ratio_end_deg = round(ratio_end, 2)
+                        if ratio_end_deg <= 0.88 :
+                            if gap1 < 0 and gap0 < 0 :
+                                self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
-                    if check_dur == 5 :
+                    elif check_dur == 5 :
                         ratio_end = round((end0 / end5), 2)     ## 최근 감소율
                         ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.9 :
-                            if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                            if gap1 < 0 and gap0 < 0 :
                                 self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 4 :
                         ratio_end = round((end0 / end4), 2)     ## 최근 감소율
                         ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.92 :
-                            if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                            if gap1 < 0 and gap0 < 0 :
                                 self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 3 :
                         ratio_end = round((end0 / end3), 2)     ## 최근 감소율
                         ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.94 :
-                            if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                            if gap1 < 0 and gap0 < 0 :
                                 self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
                     elif check_dur == 2 :
                         ratio_end = round((end0 / end2), 2)     ## 최근 감소율
                         ratio_end_deg = round(ratio_end, 2)
                         if ratio_end_deg <= 0.96 :
-                            if gap2 < 0 and gap1 < 0 and gap0 < 0 :
+                            if gap1 < 0 and gap0 < 0 :
                                 self.df_last.loc[len(self.df_last)] = [code, ratio_end_deg, mean_vol, today_vol, check_dur]
 
             except :

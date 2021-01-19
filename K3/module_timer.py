@@ -51,6 +51,7 @@ class Timer(QThread):
             self.paused_remain_sec.append(0)
 
         self.item_checking = 0
+        self.temp_chk_stop = 0
         self.candidate = ""
 
         self.kiwoom = QAxWidget()
@@ -83,7 +84,7 @@ class Timer(QThread):
                 pm200 = now.replace(hour=14, minute=00, second=0)
                 pm230 = now.replace(hour=14, minute=30, second=0)
                 pm250 = now.replace(hour=14, minute=50, second=0)
-                pm300 = now.replace(hour=15, minute=00, second=0)
+                pm310 = now.replace(hour=15, minute=10, second=0)
                 pm320 = now.replace(hour=15, minute=20, second=0)
                 check_down_items = now.replace(hour=15, minute=20, second=10)
                 double_check = now.replace(hour=15, minute=21, second=0)
@@ -117,20 +118,29 @@ class Timer(QThread):
                     if c_sec == "05" :                      ## 매분마다 실시간 등록여부 갱신
                         self.check_real.emit(1)
 
-                    if now >= am910 and now <= pm230 and self.item_checking == 0 :
+                    if now >= am910 and now <= am920 and self.item_checking == 0 :
                         if c_sec == "10" or c_sec == "40" :
+                            self.check_slot.emit(1)
+                    
+                    if now >= am921 and now <= pm230 and self.item_checking == 0 :
+                        if c_sec == "10" :
                             self.check_slot.emit(1)
                     
                     if now >= am901 and now<=pm320 and c_sec == "15" :
                         self.sig_main_check_jumun.emit(1)
                     
-                    if now >= pm300 :
+                    if now >= pm310 :
                         temp_time['timezone'] = 1
                         
                 else :
                     temp_time['possible'] = 0
                     temp_time['timezone'] = 0
                 self.cur_time.emit(temp_time)       ## 현재시각 및 market status send
+
+                if self.temp_chk_stop > 0 :
+                    self.temp_chk_stop = self.temp_chk_stop - 1
+                    if self.temp_chk_stop == 0 :
+                        self.item_checking = 0
 
                 for i in range(NUM_SLOT) :
                     if self.paused[i] == 1 :
@@ -173,7 +183,8 @@ class Timer(QThread):
 
         if self.candidate_seq >= len(self.candidate_queue) :
             print(self.now(), "[TIMER] [investigate_items] : candidate seq overflow / FINISH")
-            self.item_checking = 0
+            self.temp_chk_stop = 180
+            # self.item_checking = 0
         else :
             self.candidate = self.candidate_queue[self.candidate_seq]
             if self.candidate in self.cur_items :       ## 기보유중인 항목인 경우

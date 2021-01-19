@@ -31,7 +31,7 @@ ADD_PRICE = config.ADD_PRICE
 ADD_PRICE_1 = config.ADD_PRICE_1
 ADD_PRICE_2 = config.ADD_PRICE_2
 AUTO_BUY_PRICE_LIM = config.AUTO_BUY_PRICE_LIM
-TARGET_PER = 2
+TARGET_PER = 2.5
 LOW_LIM = -2.5
 
 PER_LOW_0 = config.PER_LOW_0
@@ -97,7 +97,8 @@ class Worker(QThread):
                 if orderType == 1 :
                     cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
                     self.step = cur_step + 1
-                    self.per_high = TARGET_PER - (int(self.step) * 0.1)
+                    # self.per_high = TARGET_PER - (int(self.step) * 0.1)
+                    self.per_high = TARGET_PER
                     if self.func_UPDATE_db_item(item_code, 1, self.step) == 1 :   ## update step
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
@@ -324,7 +325,8 @@ class Worker(QThread):
             if self.first_rcv == 1 :
                 self.step = self.func_GET_db_item(item_code, 1)
                 self.per_low = self.func_GET_db_item(item_code, 4)
-                self.per_high = TARGET_PER - (int(self.step) * 0.1)
+                # self.per_high = TARGET_PER - (int(self.step) * 0.1)
+                self.per_high = TARGET_PER
 
 
                 if self.lock == 0 :
@@ -349,7 +351,7 @@ class Worker(QThread):
 
                     if self.timezone == 1 :
                         if percent > 0 :
-                            self.func_full_sell(item_code, own_count, price, percent)
+                            self.func_full_sell(item_code, own_count, price_buy, percent)
                         
                         elif percent <= self.per_low :
                             if self.step == 0 :

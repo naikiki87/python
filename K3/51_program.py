@@ -41,6 +41,12 @@ class Kiwoom(QMainWindow, form_class):
     test_dict7 = pyqtSignal(dict)
     test_dict8 = pyqtSignal(dict)
     test_dict9 = pyqtSignal(dict)
+    test_dict10 = pyqtSignal(dict)
+    test_dict11 = pyqtSignal(dict)
+    test_dict12 = pyqtSignal(dict)
+    test_dict13 = pyqtSignal(dict)
+    test_dict14 = pyqtSignal(dict)
+
     che_dict = pyqtSignal(dict)
     res_check_slot = pyqtSignal(list)
     reply_buy = pyqtSignal(int)
@@ -120,8 +126,8 @@ class Kiwoom(QMainWindow, form_class):
         self.btn_SELL.clicked.connect(self.func_ORDER_SELL)
         self.btn_TEST.clicked.connect(self.btn_test)
         self.btn_TEST_2.clicked.connect(self.btn_test_2)
-        self.btn_START.clicked.connect(self.order_start)
-        self.btn_STOP.clicked.connect(self.order_stop)
+        # self.btn_START.clicked.connect(self.order_start)
+        # self.btn_STOP.clicked.connect(self.order_stop)
         # self.btn_HISTORY.clicked.connect(self.func_GET_TradeHistory)
         # self.btn_dailyprofit.clicked.connect(lambda: self.func_GET_DailyProfit(1))
 
@@ -182,6 +188,17 @@ class Kiwoom(QMainWindow, form_class):
                         self.test_dict8.emit(temp)
                     elif slot == 9 :
                         self.test_dict9.emit(temp)
+                    
+                    elif slot == 10 :
+                        self.test_dict10.emit(temp)
+                    elif slot == 11 :
+                        self.test_dict11.emit(temp)
+                    elif slot == 12 :
+                        self.test_dict12.emit(temp)
+                    elif slot == 13 :
+                        self.test_dict13.emit(temp)
+                    elif slot == 14 :
+                        self.test_dict14.emit(temp)
 
                 except :
                     pass
@@ -568,6 +585,91 @@ class Kiwoom(QMainWindow, form_class):
             if self.list_th_connected[self.th_seq] == 1:
                 break
             QtTest.QTest.qWait(100)
+
+        ## 11th
+        self.th_seq = 10
+        self.worker10 = module_worker.Worker(self.th_seq)
+        self.worker10.th_con.connect(self.th_connected)
+        self.test_dict10.connect(self.worker10.dict_from_main)
+        self.che_dict.connect(self.worker10.che_result)
+        self.reply_first_check.connect(self.worker10.reply_first_check)
+        self.sig_worker_resume.connect(self.worker10.resume_paused)
+        self.worker10.trans_dict.connect(self.rp_dict)
+        self.worker10.rq_order.connect(self.rq_order)
+        self.worker10.first_jumun_check.connect(self.first_rcv_jumun_check)
+        self.worker10.start()
+        while True :
+            if self.list_th_connected[self.th_seq] == 1:
+                break
+            QtTest.QTest.qWait(100)
+
+        ## 12th
+        self.th_seq = 11
+        self.worker11 = module_worker.Worker(self.th_seq)
+        self.worker11.th_con.connect(self.th_connected)
+        self.test_dict11.connect(self.worker11.dict_from_main)
+        self.che_dict.connect(self.worker11.che_result)
+        self.reply_first_check.connect(self.worker11.reply_first_check)
+        self.sig_worker_resume.connect(self.worker11.resume_paused)
+        self.worker11.trans_dict.connect(self.rp_dict)
+        self.worker11.rq_order.connect(self.rq_order)
+        self.worker11.first_jumun_check.connect(self.first_rcv_jumun_check)
+        self.worker11.start()
+        while True :
+            if self.list_th_connected[self.th_seq] == 1:
+                break
+            QtTest.QTest.qWait(100)
+
+        ## 13th
+        self.th_seq = 12
+        self.worker12 = module_worker.Worker(self.th_seq)
+        self.worker12.th_con.connect(self.th_connected)
+        self.test_dict12.connect(self.worker12.dict_from_main)
+        self.che_dict.connect(self.worker12.che_result)
+        self.reply_first_check.connect(self.worker12.reply_first_check)
+        self.sig_worker_resume.connect(self.worker12.resume_paused)
+        self.worker12.trans_dict.connect(self.rp_dict)
+        self.worker12.rq_order.connect(self.rq_order)
+        self.worker12.first_jumun_check.connect(self.first_rcv_jumun_check)
+        self.worker12.start()
+        while True :
+            if self.list_th_connected[self.th_seq] == 1:
+                break
+            QtTest.QTest.qWait(100)
+
+        ## 14th
+        self.th_seq = 13
+        self.worker13 = module_worker.Worker(self.th_seq)
+        self.worker13.th_con.connect(self.th_connected)
+        self.test_dict13.connect(self.worker13.dict_from_main)
+        self.che_dict.connect(self.worker13.che_result)
+        self.reply_first_check.connect(self.worker13.reply_first_check)
+        self.sig_worker_resume.connect(self.worker13.resume_paused)
+        self.worker13.trans_dict.connect(self.rp_dict)
+        self.worker13.rq_order.connect(self.rq_order)
+        self.worker13.first_jumun_check.connect(self.first_rcv_jumun_check)
+        self.worker13.start()
+        while True :
+            if self.list_th_connected[self.th_seq] == 1:
+                break
+            QtTest.QTest.qWait(100)
+
+        ## 15th
+        self.th_seq = 14
+        self.worker14 = module_worker.Worker(self.th_seq)
+        self.worker14.th_con.connect(self.th_connected)
+        self.test_dict14.connect(self.worker14.dict_from_main)
+        self.che_dict.connect(self.worker14.che_result)
+        self.reply_first_check.connect(self.worker14.reply_first_check)
+        self.sig_worker_resume.connect(self.worker14.resume_paused)
+        self.worker14.trans_dict.connect(self.rp_dict)
+        self.worker14.rq_order.connect(self.rq_order)
+        self.worker14.first_jumun_check.connect(self.first_rcv_jumun_check)
+        self.worker14.start()
+        while True :
+            if self.list_th_connected[self.th_seq] == 1:
+                break
+            QtTest.QTest.qWait(100)
         
         return 0
 
@@ -879,6 +981,17 @@ class Kiwoom(QMainWindow, form_class):
             elif th_num == 9 :
                 self.test_dict9.emit(temp)
 
+            elif th_num == 10 :
+                self.test_dict10.emit(temp)
+            elif th_num == 11 :
+                self.test_dict11.emit(temp)
+            elif th_num == 12 :
+                self.test_dict12.emit(temp)
+            elif th_num == 13 :
+                self.test_dict13.emit(temp)
+            elif th_num == 14 :
+                self.test_dict14.emit(temp)
+
         except Exception as e:
             print(e)
             pass
@@ -933,6 +1046,17 @@ class Kiwoom(QMainWindow, form_class):
                 self.test_dict8.emit(temp)
             elif th_num == 9 :
                 self.test_dict9.emit(temp)
+
+            elif th_num == 10 :
+                self.test_dict10.emit(temp)
+            elif th_num == 11 :
+                self.test_dict11.emit(temp)
+            elif th_num == 12 :
+                self.test_dict12.emit(temp)
+            elif th_num == 13 :
+                self.test_dict13.emit(temp)
+            elif th_num == 14 :
+                self.test_dict14.emit(temp)
             
             print(self.now(), "[MAIN] [func_ORDER_SELL] : ", item_code, qty, price, th_num)
 
