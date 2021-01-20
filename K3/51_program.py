@@ -203,8 +203,8 @@ class Kiwoom(QMainWindow, form_class):
                 except :
                     pass
             
-        else :
-            print("Market Not Open")
+        # else :
+        #     print("Market Not Open")
 
     def get_now(self) :
         year = strftime("%Y", localtime())

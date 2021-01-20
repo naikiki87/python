@@ -86,7 +86,7 @@ class Timer(QThread):
                 pm250 = now.replace(hour=14, minute=50, second=0)
                 pm310 = now.replace(hour=15, minute=10, second=0)
                 pm320 = now.replace(hour=15, minute=20, second=0)
-                check_down_items = now.replace(hour=15, minute=20, second=10)
+                check_down_items = now.replace(hour=1, minute=35, second=10)
                 double_check = now.replace(hour=15, minute=21, second=0)
 
                 c_hour = now.strftime('%H')
