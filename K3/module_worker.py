@@ -60,7 +60,7 @@ class Worker(QThread):
         self.step = 0
         self.per_low = 0
         self.add_water = 0
-        self.per_high = 2
+        self.per_high = 3
 
         self.uping = 0
         self.up_level = 0
@@ -98,7 +98,7 @@ class Worker(QThread):
                     cur_step = self.func_GET_db_item(item_code, 1)          ## DB : step -> cur_step
                     self.step = cur_step + 1
                     # self.per_high = TARGET_PER - (int(self.step) * 0.1)
-                    self.per_high = TARGET_PER
+                    self.per_high = TARGET_PER + (int(self.step) * 0.5)
                     if self.func_UPDATE_db_item(item_code, 1, self.step) == 1 :   ## update step
                         if self.func_UPDATE_db_item(item_code, 2, 0) == 1:       ## ordered -> 0
                             if self.func_UPDATE_db_item(item_code, 3, 0) == 1:       ## orderType -> 0
@@ -326,7 +326,7 @@ class Worker(QThread):
                 self.step = self.func_GET_db_item(item_code, 1)
                 self.per_low = self.func_GET_db_item(item_code, 4)
                 # self.per_high = TARGET_PER - (int(self.step) * 0.1)
-                self.per_high = TARGET_PER
+                self.per_high = TARGET_PER + (int(self.step) * 0.5)
 
 
                 if self.lock == 0 :
