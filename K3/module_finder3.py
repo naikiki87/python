@@ -92,7 +92,7 @@ class Finder(QThread):
                 mean_vol = int(df.vol.mean())
                 today_vol = int(df.vol.iloc[0])
 
-                if mean_vol >= 300000 and today_vol >= 150000 :
+                if mean_vol >= 1000000 and today_vol >= 50000 :
                     end5 = int(df.end.iloc[5])
                     end4 = int(df.end.iloc[4])
                     end3 = int(df.end.iloc[3])
@@ -163,7 +163,7 @@ class Finder(QThread):
             code = self.df_last2.code[i]
             market_sum = self.get_market_sum(code)
 
-            if market_sum >= 1000 :
+            if market_sum >= 2000 :
                 ratio_end = self.df_last2.ratio_end[i]
                 mean_vol = self.df_last2.mean_vol[i]
                 today_vol = self.df_last2.today_vol[i]
@@ -185,8 +185,10 @@ class Finder(QThread):
                 final_item.append(item)
 
         f_hook = open("target.py",'w')
-        date = "# DATE = " + self.get_now() + '\n'
+        date = "# DATE : " + self.get_now() + '\n'
         f_hook.write(date)
+        cnt = "# CNT : " + str(len(final_item)) + '\n'
+        f_hook.write(cnt)
         data = "ITEMS = " + str(final_item)
         f_hook.write(data)
         f_hook.close()

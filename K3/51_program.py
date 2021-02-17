@@ -1442,10 +1442,14 @@ class Kiwoom(QMainWindow, form_class):
 
         for i in range(item_count) :
             item_code = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목번호").replace('A', '').strip()
+            
             if item_code == code :
+                
                 item_name = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "종목명").strip()
                 owncount = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "보유수량")
                 unit_price = self.kiwoom.dynamicCall("GetCommData(QString, QString, int, QString)", trcode, recordname, i, "매입가")
+
+                print("fffff : ", item_code, code, item_name, owncount, unit_price)
                 break
         
         self.func_SET_TableData(1, slot, 0, item_code, 0)
