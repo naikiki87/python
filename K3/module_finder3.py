@@ -115,7 +115,7 @@ class Finder(QThread):
                     gap0 = end0 - start0
 
                     ratio_end = round((end0 / end5), 2)     ## 최근 감소율
-                    if ratio_end < 1 :
+                    if ratio_end <= 0.95 :
                         self.df_last.loc[len(self.df_last)] = [code, ratio_end, mean_vol, today_vol, check_dur]
 
             except :
@@ -156,11 +156,13 @@ class Finder(QThread):
             except :
                 pass
 
-        print("after 1 ")
+        print("after 1 ", len(self.df_last2))
         print(self.df_last2)
 
         for i in range(len(self.df_last2)) :
+            print(i, "1")
             code = self.df_last2.code[i]
+            print(i, "2")
             market_sum = self.get_market_sum(code)
 
             if market_sum >= 2000 :
@@ -208,34 +210,42 @@ class Finder(QThread):
         return now
 
     def get_market_sum(self, item_code):
-        cnt_0_digit = 0
+        try :
+            print("get market sum : ", item_code)
+            cnt_0_digit = 0
 
-        url = "https://finance.naver.com/item/main.nhn?code={}".format(item_code)
-        res = requests.get(url)
-        soup = BeautifulSoup(res.content, 'lxml')
-        result = soup.select('#_market_sum')[0].text.strip()
-        result = result.replace(',', '')
-        result = result.replace('\t', '')
-        result = result.replace('\n', '')
+            url = "https://finance.naver.com/item/main.nhn?code={}".format(item_code)
+            res = requests.get(url)
+            soup = BeautifulSoup(res.content, 'lxml')
+            result = soup.select('#_market_sum')[0].text.strip()
+            result = result.replace(',', '')
+            result = result.replace('\t', '')
+            result = result.replace('\n', '')
 
-        nextstr = []
-        lensum = len(result)
-        ptr = 0
-        for k in range(0, lensum):
-            if result[k] == '조':
-                ptr = k
-                break           
-            nextstr.append(result[k])
-        
-        if ptr != 0 :
-            cnt_0_digit = 4 - (lensum - (ptr + 1))
+            print("result : ", item_code, result)
 
-            for m in range(0, cnt_0_digit) :
-                nextstr.append('0')
+            nextstr = []
+            lensum = len(result)
+            ptr = 0
+            for k in range(0, lensum):
+                if result[k] == '조':
+                    ptr = k
+                    break           
+                nextstr.append(result[k])
             
-            for n in range(ptr+1, lensum) :
-                nextstr.append(result[n])
+            if ptr != 0 :
+                cnt_0_digit = 4 - (lensum - (ptr + 1))
 
-        market_sum = int("".join(nextstr))
+                for m in range(0, cnt_0_digit) :
+                    nextstr.append('0')
+                
+                for n in range(ptr+1, lensum) :
+                    nextstr.append(result[n])
 
-        return market_sum
+            market_sum = int("".join(nextstr))
+            print("result2 : ", item_code, market_sum)
+
+            return market_sum
+        
+        except :
+            return 10

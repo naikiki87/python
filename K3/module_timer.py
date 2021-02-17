@@ -86,7 +86,7 @@ class Timer(QThread):
                 pm250 = now.replace(hour=14, minute=50, second=0)
                 pm310 = now.replace(hour=15, minute=10, second=0)
                 pm320 = now.replace(hour=15, minute=20, second=0)
-                check_down_items = now.replace(hour=15, minute=30, second=30)
+                check_down_items = now.replace(hour=15, minute=20, second=30)
                 double_check = now.replace(hour=15, minute=21, second=0)
 
                 c_hour = now.strftime('%H')
@@ -212,7 +212,7 @@ class Timer(QThread):
         if percent[0] == '-' :                  ## 금일 가격이 전일 종가보다 내려져 있는 경우
             if start >= cur_price :             ## 금일 가격이 음봉일 경우
                 # if round((cur_price / start), 2) <= 0.98 :
-                if per_data >= 2.5 :
+                if per_data >= 3 :
                     # print("candidate item CAT 1 : ", item_code, percent, start, cur_price)
                     self.kiwoom.dynamicCall("SetInputValue(QString, QString)", "종목코드", self.candidate)
                     self.kiwoom.dynamicCall("CommRqData(QString, QString, int, QString)", "CHECK_hoga", "opt10004", 0, "0101")
